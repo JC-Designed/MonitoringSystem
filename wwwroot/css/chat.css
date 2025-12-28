@@ -1,0 +1,252 @@
+﻿/* ======================== GENERAL LAYOUT ======================== */
+.messages-wrapper {
+    display: flex;
+    height: 80vh;
+    max-height: 800px;
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: auto;
+}
+
+/* ======================== SIDEBAR ======================== */
+.messages-sidebar {
+    width: 280px;
+    background: #fafafa;
+    border-right: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-header {
+    padding: 14px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.sidebar-search {
+    padding: 10px;
+}
+
+    .sidebar-search input {
+        width: 100%;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+
+/* ======================== BUTTON ======================== */
+.new-message-btn {
+    margin: 10px;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #007bff;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .new-message-btn:hover {
+        background: #0056b3;
+    }
+
+/* ======================== CHAT LIST ======================== */
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.chat-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative; /* required for dots menu positioning */
+}
+
+    .chat-item:hover {
+        background: #f3f3f3;
+    }
+
+    .chat-item.active {
+        background: #e7f0ff;
+    }
+
+    .chat-item img {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+    }
+
+.chat-info {
+    flex: 1;
+}
+
+    .chat-info .name {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .chat-info .last-message {
+        font-size: 0.8rem;
+        color: #777;
+    }
+
+/* ======================== DOTS MENU FIX ======================== */
+.dots-menu {
+    display: none; /* hidden by default */
+    position: absolute;
+    top: 40px;
+    right: 10px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    z-index: 100;
+}
+
+/* ======================== CHAT CONTENT ======================== */
+.messages-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+}
+
+/* Chat Header */
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid #eee;
+    padding: 12px;
+}
+
+    .chat-header img {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+    }
+
+    .chat-header .name {
+        font-weight: 700;
+        font-size: 1rem;
+    }
+
+/* ======================== CHAT MESSAGES ======================== */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.message {
+    max-width: 70%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.9rem;
+    word-wrap: break-word;
+}
+
+    .message.sent {
+        background: #007bff;
+        color: #fff;
+        align-self: flex-end;
+    }
+
+    .message.received {
+        background: #f1f1f1;
+        align-self: flex-start;
+    }
+
+.msg-time {
+    font-size: 0.7rem;
+    text-align: right;
+    margin-top: 4px;
+}
+
+/* ======================== CHAT INPUT ======================== */
+.chat-input {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid #eee;
+    background: #fff;
+}
+
+    .chat-input input {
+        flex: 1;
+        min-width: 0;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        padding: 10px;
+    }
+
+    .chat-input button {
+        flex-shrink: 0;
+        background: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+
+        .chat-input button:hover {
+            background: #0056b3;
+        }
+
+/* ======================== MOBILE (MESSENGER STYLE) ======================== */
+@media (max-width: 768px) {
+
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .messages-wrapper {
+        height: 100vh;
+        flex-direction: column;
+        border-radius: 0;
+    }
+
+    /* Show conversation list first */
+    .messages-sidebar {
+        width: 100%;
+        flex: 1;
+        border-right: none;
+    }
+
+    /* 🔥 HIDE CHAT BY DEFAULT */
+    .messages-content {
+        display: none;
+        height: 100%;
+    }
+
+        /* 🔥 SHOW CHAT ONLY AFTER CLICK */
+        .messages-content.active {
+            display: flex;
+        }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    /* Sticky input like Messenger */
+    .chat-input {
+        position: sticky;
+        bottom: 0;
+        background: #fff;
+        z-index: 10;
+    }
+}

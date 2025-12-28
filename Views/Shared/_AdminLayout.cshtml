@@ -1,0 +1,304 @@
+﻿@* _AdminLayout.cshtml *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | Admin Panel</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+    <style>
+        /* Hide school year dropdown by default */
+        .sidebar-schoolyear-wrapper {
+            display: none;
+            transition: all 0.3s ease;
+        }
+        .admin-sidebar.expanded .sidebar-schoolyear-wrapper {
+            display: block !important;
+        }
+    </style>
+
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+    <div class="sidebar-overlay"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="admin-sidebar">
+        <div class="admin-logo-header">
+            <img src="~/images/ctu-logo.png" class="admin-logo" />
+            <div class="admin-logo-text">BALAMBAN CAMPUS</div>
+        </div>
+
+        <!-- ===================== SCHOOL YEAR DROPDOWN ===================== -->
+        <div class="sidebar-schoolyear-wrapper">
+            <div class="sidebar-schoolyear mb-3 px-3">
+                <label class="text-muted small mb-1">School Year</label>
+                <select id="schoolYearDropdown" class="form-select form-select-sm">
+                    @{
+                        int systemStartYear = 2025;
+                        int currentYear = DateTime.Now.Year;
+                        int selectedYear = currentYear;
+
+                        if (ViewBag.SchoolYear != null)
+                            selectedYear = ViewBag.SchoolYear;
+                        else if (Context.Request.Cookies.ContainsKey("SelectedSchoolYear"))
+                            int.TryParse(Context.Request.Cookies["SelectedSchoolYear"], out selectedYear);
+
+                        for (int y = currentYear; y >= systemStartYear; y--)
+                        {
+                            var selectedAttr = (y == selectedYear) ? " selected" : "";
+                            @: <option value="@y"@selectedAttr>@y</option>
+                        }
+                    }
+                </select>
+            </div>
+        </div>
+
+        <nav class="admin-menu">
+            <a asp-action="Dashboard" asp-controller="Admin" class="menu-link">
+                <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+            </a>
+            <a asp-action="Users" asp-controller="Admin" class="menu-link">
+                <i class="bi bi-person-fill"></i> <span>Users</span>
+            </a>
+            <a asp-action="Company" asp-controller="Admin" class="menu-link">
+                <i class="bi bi-building"></i> <span>Company</span>
+            </a>
+            <a asp-action="Messages" asp-controller="Admin" class="menu-link">
+                <i class="bi bi-envelope-fill"></i> <span>Messages</span>
+            </a>
+            <a asp-action="Reports" asp-controller="Admin" class="menu-link">
+                <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
+            </a>
+            <hr />
+        </nav>
+
+        <div class="sidebar-logout">
+            <a asp-action="Logout" asp-controller="Account" class="btn-logout">
+                <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- TOP BAR -->
+    <header class="admin-topbar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-light d-none d-md-inline-flex me-2" id="desktopSidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <button class="btn btn-sm btn-light d-md-none me-2" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <i class="bi bi-house-fill me-2"></i>
+            <span class="topbar-title">@ViewData["Title"]</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Notifications -->
+            <div class="position-relative" id="notifBell" style="cursor:pointer;">
+                <i class="bi bi-bell-fill fs-5"></i>
+                <span class="notif-dot"></span>
+                <div class="notif-popup shadow-sm bg-white rounded p-2"
+                     style="display:none; position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
+                    <h6 class="fw-bold mb-2">Notifications</h6>
+                    <ul id="notifList" class="list-unstyled mb-0"></ul>
+                    <div class="text-center mt-2">
+                        <button class="btn btn-sm btn-outline-secondary w-100" id="clearNotifsBtn">Mark all as read</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Dropdown -->
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown"
+                     data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
+                    <div class="d-flex flex-column" style="font-size: 0.75rem;">
+                        <strong>Administrator</strong> <span>Admin</span>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#adminProfileModal">Profile</a></li>
+                    <li><a class="dropdown-item" asp-action="Logout" asp-controller="Account">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-content">
+        @RenderBody()
+    </main>
+
+    <!-- PROFILE MODAL -->
+    <div class="modal fade" id="adminProfileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content p-4 border-0 shadow-sm">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Administrator Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- PROFILE PIC -->
+                    <div class="mb-4 pb-2 text-center">
+                        <img id="adminProfileImg" src="~/images/ctu-logo.png" class="rounded-circle shadow-sm"
+                             style="width:130px; height:130px; object-fit:cover;" />
+                        <input type="file" id="profilePicInput" class="d-none" accept="image/*"
+                               onchange="previewImage(this,'adminProfileImg')" />
+                        <button class="btn btn-sm btn-outline-primary mt-2" id="editProfilePicBtn">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </div>
+
+                    <!-- BANNER -->
+                    <div class="mb-4 pb-2 text-center">
+                        <img id="adminBannerImg" src="~/images/banner-placeholder.jpg" class="rounded shadow-sm"
+                             style="width:100%; height:180px; object-fit:cover;" />
+                        <input type="file" id="bannerInput" class="d-none" accept="image/*"
+                               onchange="previewImage(this,'adminBannerImg')" />
+                        <button class="btn btn-sm btn-outline-primary mt-2" id="editBannerBtn">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                    </div>
+
+                    <!-- INFO TABLE -->
+                    <div>
+                        <table class="table mb-0" id="adminInfoTable" style="border:none;">
+                            <tbody>
+                                <tr><td class="fw-semibold text-muted" style="width:30%;">Full Name</td><td>Administrator</td></tr>
+                                <tr><td class="fw-semibold text-muted">Email</td><td>admin@ctu.edu.ph</td></tr>
+                                <tr><td class="fw-semibold text-muted">Contact</td><td>0912-345-6789</td></tr>
+                                <tr><td class="fw-semibold text-muted">Address</td><td>Balamban, Cebu</td></tr>
+                                <tr><td class="fw-semibold text-muted">Employee ID</td><td>CTU-ADMIN-001</td></tr>
+                                <tr><td class="fw-semibold text-muted">Department</td><td>CTU Balamban Campus</td></tr>
+                                <tr><td class="fw-semibold text-muted">Position</td><td>System Administrator</td></tr>
+                                <tr><td class="fw-semibold text-muted">Date Joined</td><td>May 12, 2021</td></tr>
+                                <tr><td class="fw-semibold text-muted">Username</td><td>admin01</td></tr>
+                                <tr><td class="fw-semibold text-muted">Last Login</td><td>November 12, 2025 - 8:42 AM</td></tr>
+                                <tr><td class="fw-semibold text-muted">Status</td><td><span class="badge bg-success">Active</span></td></tr>
+                            </tbody>
+                        </table>
+                        <button class="btn btn-primary mt-3" id="editAdminInfoBtn"><i class="bi bi-pencil"></i> Edit</button>
+                        <button class="btn btn-success mt-3 d-none" id="saveAdminInfoBtn">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ===================== SIDEBAR =====================
+        const sidebar = document.querySelector('.admin-sidebar');
+        const desktopToggle = document.getElementById('desktopSidebarToggle');
+        const overlay = document.querySelector('.sidebar-overlay');
+        const mobileToggle = document.getElementById('sidebarToggle');
+        const yearWrapper = document.querySelector('.sidebar-schoolyear-wrapper');
+
+        desktopToggle.addEventListener('click', ()=>{
+            sidebar.classList.toggle('expanded');
+            if(sidebar.classList.contains('expanded')){
+                yearWrapper.classList.remove('d-none');
+            } else {
+                yearWrapper.classList.add('d-none');
+            }
+        });
+
+        mobileToggle.addEventListener('click', ()=>{
+            sidebar.classList.add('expanded','show');
+            overlay.classList.add('active');
+            document.body.classList.add('sidebar-open');
+            yearWrapper.classList.remove('d-none');
+        });
+
+        overlay.addEventListener('click', ()=>{
+            sidebar.classList.remove('show','expanded');
+            overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+            yearWrapper.classList.add('d-none');
+        });
+
+        // ===================== IMAGE PREVIEW =====================
+        function previewImage(input,imgId){
+            const file=input.files[0];
+            if(file){
+                const reader=new FileReader();
+                reader.onload=e=>document.getElementById(imgId).src=e.target.result;
+                reader.readAsDataURL(file);
+            }
+        }
+        document.getElementById("editProfilePicBtn").addEventListener("click",
+            ()=>document.getElementById("profilePicInput").click());
+        document.getElementById("editBannerBtn").addEventListener("click",
+            ()=>document.getElementById("bannerInput").click());
+
+        // ===================== ADMIN INFO EDIT =====================
+        const editAdminInfoBtn=document.getElementById("editAdminInfoBtn");
+        const saveAdminInfoBtn=document.getElementById("saveAdminInfoBtn");
+        editAdminInfoBtn.addEventListener("click", ()=>{
+            const table=document.getElementById("adminInfoTable");
+            const cells=table.querySelectorAll("td:not(:first-child)");
+            cells.forEach(td=>td.setAttribute("contenteditable","true"));
+            saveAdminInfoBtn.classList.remove('d-none');
+            editAdminInfoBtn.classList.add('d-none');
+        });
+        saveAdminInfoBtn.addEventListener("click", ()=>{
+            const table=document.getElementById("adminInfoTable");
+            const cells=table.querySelectorAll("td:not(:first-child)");
+            cells.forEach(td=>td.removeAttribute("contenteditable"));
+            saveAdminInfoBtn.classList.add('d-none');
+            editAdminInfoBtn.classList.remove('d-none');
+            alert("Changes saved (frontend only).");
+        });
+
+        // ===================== NOTIFICATIONS =====================
+        let notifications=[
+            {id:1,text:"New user registered",read:false},
+            {id:2,text:"System update available",read:false},
+            {id:3,text:"Message received",read:false}
+        ];
+        const notifDot=document.querySelector('.notif-dot');
+        const notifBell=document.getElementById('notifBell');
+        const notifPopup=notifBell.querySelector('.notif-popup');
+        const notifList=document.getElementById('notifList');
+        const clearNotifsBtn=document.getElementById('clearNotifsBtn');
+
+        function renderNotifications(){
+            notifList.innerHTML='';
+            let unreadCount=0;
+            notifications.forEach(notif=>{
+                const li=document.createElement('li');
+                li.textContent=notif.text;
+                li.classList.toggle('fw-bold',!notif.read);
+                li.style.cursor='pointer';
+                li.addEventListener('click',()=>{notif.read=true; renderNotifications();});
+                notifList.appendChild(li);
+                if(!notif.read) unreadCount++;
+            });
+            notifDot.style.display=unreadCount>0?'block':'none';
+        }
+        notifBell.addEventListener('click',()=>{notifPopup.style.display=notifPopup.style.display==='none'?'block':'none';});
+        clearNotifsBtn.addEventListener('click',()=>{notifications.forEach(n=>n.read=true); renderNotifications();});
+        document.addEventListener('click',e=>{if(!notifBell.contains(e.target)) notifPopup.style.display='none';});
+        renderNotifications();
+
+        // ===================== SCHOOL YEAR DROPDOWN =====================
+        const schoolYearDropdown=document.getElementById('schoolYearDropdown');
+        schoolYearDropdown.addEventListener('change',()=>{
+            const year=schoolYearDropdown.value;
+            document.cookie=`SelectedSchoolYear=${year};path=/;max-age=${60*60*24*365}`;
+            const url=new URL(window.location.href);
+            url.searchParams.set('schoolYear',year);
+            window.location.href=url.toString();
+        });
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

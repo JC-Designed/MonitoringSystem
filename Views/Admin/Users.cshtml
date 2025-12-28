@@ -1,0 +1,214 @@
+﻿@model List<MonitoringSystem.Models.ApplicationUser>
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "USERS";
+}
+
+<div class="users-page container-fluid py-4">
+    <div class="card shadow-sm rounded-4 p-4">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0">USERS LIST</h5>
+        </div>
+
+        <!-- ================= FILTERS (FIXED HEIGHT & VISIBILITY) ================= -->
+        <div class="row g-3 mb-4 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Search by Name</label>
+                <input type="text"
+                       id="searchName"
+                       class="form-control filter-box"
+                       placeholder="Type name..." />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">User Type</label>
+                <select id="userTypeFilter" class="form-select filter-box">
+                    <option value="">All</option>
+                    <option value="Student">Student</option>
+                    <option value="Company">Company</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Status</label>
+                <select id="statusFilter" class="form-select filter-box">
+                    <option value="">All</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ================= USERS TABLE ================= -->
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        var role = user.Roles.FirstOrDefault() ?? "No Role";
+                        var status = user.IsApproved ? "Approved" : "Pending";
+
+                        <tr data-id="@user.Id"
+                            data-name="@user.UserName"
+                            data-email="@user.Email"
+                            data-type="@role"
+                            data-status="@status">
+
+                            <td>@user.Id</td>
+                            <td>@user.UserName</td>
+                            <td>@user.Email</td>
+                            <td>@role</td>
+                            <td>@status</td>
+                            <td class="text-end">
+                                <!-- Responsive dropdown -->
+                                <div class="dropdown dropend dropend-lg d-inline-block">
+                                    <button class="btn btn-sm btn-light dropdown-toggle"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"></button>
+
+                                    <ul class="dropdown-menu shadow-sm bg-white">
+                                        <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
+                                        <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<!-- ================= EDIT MODAL ================= -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit User</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <form id="editForm">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="editName">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editEmail">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <input type="text" class="form-control" id="editRole">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="editPassword"
+                               placeholder="Leave blank to keep current">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="editConfirmPassword">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+    const tbody = document.querySelector("#usersTable tbody");
+    let rowToEdit = null;
+
+    // ===== FILTER TABLE =====
+    function filterTable() {
+        const nameVal = document.getElementById("searchName").value.toLowerCase();
+        const typeVal = document.getElementById("userTypeFilter").value;
+        const statusVal = document.getElementById("statusFilter").value;
+
+        [...tbody.rows].forEach(row => {
+            let show = true;
+
+            if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
+            if (typeVal && row.dataset.type !== typeVal) show = false;
+            if (statusVal && row.dataset.status !== statusVal) show = false;
+
+            row.style.display = show ? "" : "none";
+        });
+    }
+
+    ["searchName", "userTypeFilter", "statusFilter"]
+        .forEach(id => document.getElementById(id).addEventListener("input", filterTable));
+
+    // ===== EDIT =====
+    document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            e.preventDefault();
+            rowToEdit = btn.closest("tr");
+
+            editName.value = rowToEdit.dataset.name;
+            editEmail.value = rowToEdit.dataset.email;
+            editRole.value = rowToEdit.dataset.type;
+            editPassword.value = "";
+            editConfirmPassword.value = "";
+
+            bootstrap.Modal.getOrCreateInstance(editModal).show();
+        });
+    });
+
+    document.getElementById("editForm").addEventListener("submit", async e => {
+        e.preventDefault();
+
+        if (editPassword.value && editPassword.value !== editConfirmPassword.value) {
+            alert("Passwords do not match!");
+            return;
+        }
+
+        const res = await fetch("/Admin/EditUser", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                Id: rowToEdit.dataset.id,
+                Name: editName.value,
+                Email: editEmail.value,
+                Role: editRole.value,
+                NewPassword: editPassword.value
+            })
+        });
+
+        if (res.ok) {
+            rowToEdit.cells[1].textContent = editName.value;
+            rowToEdit.cells[2].textContent = editEmail.value;
+            rowToEdit.cells[3].textContent = editRole.value;
+            bootstrap.Modal.getInstance(editModal).hide();
+        } else {
+            alert("Update failed");
+        }
+    });
+</script>

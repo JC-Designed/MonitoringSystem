@@ -1,0 +1,197 @@
+﻿@model List<MonitoringSystem.Models.ApplicationUser>
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+
+@{
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Dashboard";
+
+    var currentYear = DateTime.Now.Year;
+    var pendingUsers = ViewBag.PendingUsersList as List<MonitoringSystem.Controllers.AdminController.PendingUserDto>;
+    var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
+
+    // Use approved users only for total users display
+    var totalUsers = ViewBag.ApprovedUsers ?? 0;
+}
+
+<h3 class="mb-4 fw-bold text-primary">Admin Dashboard</h3>
+
+<!-- ===================== STAT CARDS ===================== -->
+<div class="row g-4 mb-5" id="statsSection">
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-primary p-4 text-center"
+             id="pendingCard" style="cursor:pointer;">
+            <h6 class="text-muted">Pending Users</h6>
+            <h2 class="fw-bold" id="pendingUsers">@ViewBag.PendingUsers</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-success p-4 text-center">
+            <h6 class="text-muted">Approved Users</h6>
+            <h2 class="fw-bold" id="approvedUsers">@ViewBag.ApprovedUsers</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-warning p-4 text-center">
+            <h6 class="text-muted">Total Users</h6>
+            <h2 class="fw-bold" id="totalUsers">@totalUsers</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card shadow-sm border-start border-4 border-info p-4 text-center">
+            <h6 class="text-muted">Total Companies</h6>
+            <h2 class="fw-bold" id="totalCompanies">@ViewBag.TotalCompanies</h2>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== CHART ===================== -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm p-4">
+            <h5 class="fw-bold mb-4">User Growth Overview - @currentYear</h5>
+            <div style="height:420px;">
+                <canvas id="userChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== PENDING MODAL ===================== -->
+<div class="modal fade" id="pendingUserModal">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Pending Users</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="pendingUserList">
+                @if (pendingUsers != null && pendingUsers.Count > 0)
+                {
+                    foreach (var user in pendingUsers)
+                    {
+                        <div class="d-flex justify-content-between mb-2 align-items-center" id="user-@user.Id">
+                            <span>@user.Email (@user.Role)</span>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-success btn-sm" onclick="approveUser('@user.Id')">✔</button>
+                                <button class="btn btn-danger btn-sm" onclick="rejectUser('@user.Id')">✖</button>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p>No pending users.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Pending modal
+        const pendingCard = document.getElementById('pendingCard');
+        const pendingUserModal = new bootstrap.Modal(document.getElementById('pendingUserModal'));
+        pendingCard.onclick = () => pendingUserModal.show();
+
+        // Chart.js
+        const ctx = document.getElementById('userChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'New Registrations',
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.MonthlyRegistrations)),
+                        backgroundColor: 'rgba(255,99,132,.6)',
+                        borderRadius: 6
+                    },
+                    {
+                        type: 'line',
+                        label: 'Total Users',
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TotalUsersByMonth)),
+                        borderColor: 'rgba(54,162,235,1)',
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    });
+
+    function approveUser(id) {
+        if (!id) return;
+        fetch('@Url.Action("Approve", "Admin")', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': '@csrfToken',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const userDiv = document.getElementById('user-' + id);
+                if(userDiv) userDiv.remove();
+
+                // Update pending counter
+                const pendingCounter = document.getElementById('pendingUsers');
+                pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
+
+                // Update total users counter
+                const totalCounter = document.getElementById('totalUsers');
+                totalCounter.textContent = parseInt(totalCounter.textContent) + 1;
+
+                alert('User approved!');
+            } else {
+                alert('Failed to approve user.');
+            }
+        });
+    }
+
+    function rejectUser(id) {
+        if (!id) return;
+        fetch('@Url.Action("Reject", "Admin")', {
+            method: 'POST',
+            headers: {
+                'RequestVerificationToken': '@csrfToken',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id: id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const userDiv = document.getElementById('user-' + id);
+                if(userDiv) userDiv.remove();
+
+                // Update pending counter
+                const pendingCounter = document.getElementById('pendingUsers');
+                pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
+
+                alert('User rejected!');
+            } else {
+                alert('Failed to reject user.');
+            }
+        });
+    }
+</script>

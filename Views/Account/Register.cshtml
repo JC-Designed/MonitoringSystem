@@ -1,0 +1,84 @@
+﻿@{
+    ViewData["Title"] = "Register";
+}
+
+<div class="register-card">
+    <!-- Left: Logo -->
+    <div class="logo-container">
+        <img src="~/images/ctu-logo.png" alt="CTU Logo" />
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Right: Form -->
+    <div class="form-side">
+        <h4>Create your account</h4>
+        <form asp-action="Register" method="post">
+            <!-- Role Selection -->
+            <div class="mb-3">
+                <label for="role" class="form-label">Select Role</label>
+                <select name="roleString" id="role" class="form-select" required>
+                    <option value="">Select Role</option>
+                    <option value="Student">Student</option>
+                    <option value="Company">Company</option>
+                    <!-- Admin removed to prevent public self-registration -->
+                </select>
+            </div>
+
+            <!-- Company Name (hidden by default) -->
+            <div class="mb-3" id="companyNameDiv" style="display:none;">
+                <label for="companyName" class="form-label">Company Name</label>
+                <input name="companyName" id="companyName" type="text" class="form-control" placeholder="Company Name" />
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+                <label for="email" class="form-label">Email</label>
+                <input name="email" id="email" type="email" class="form-control" placeholder="Email" required />
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+                <label for="password" class="form-label">Password</label>
+                <input name="password" id="password" type="password" class="form-control" placeholder="Password" required />
+            </div>
+
+            <!-- Submit -->
+            <button type="submit" class="btn-ctu mb-3 w-100">Register</button>
+
+            <!-- Login Link -->
+            <div class="text-center">
+                <small>Already have an account? <a asp-action="Login">Sign In</a></small>
+            </div>
+
+            <!-- Error Message -->
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger mt-3 text-center">@ViewBag.Error</div>
+            }
+
+            <!-- Success Message -->
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success mt-3 text-center">@TempData["Success"]</div>
+            }
+        </form>
+    </div>
+</div>
+
+<script>
+    const roleSelect = document.getElementById('role');
+    const companyDiv = document.getElementById('companyNameDiv');
+    const companyInput = document.getElementById('companyName');
+
+    roleSelect.addEventListener('change', function () {
+        if (this.value === 'Company') {
+            companyDiv.style.display = 'block';
+            companyInput.required = true;
+        } else {
+            companyDiv.style.display = 'none';
+            companyInput.required = false;
+            companyInput.value = '';
+        }
+    });
+</script>

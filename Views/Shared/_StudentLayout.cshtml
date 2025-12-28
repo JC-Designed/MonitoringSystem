@@ -1,0 +1,200 @@
+﻿@* _StudentLayout.cshtml *@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] | Student Panel</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+
+    <style>
+        .notif-dot {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 10px;
+            height: 10px;
+            background: red;
+            border-radius: 50%;
+            display: none;
+        }
+    </style>
+
+    @RenderSection("Styles", required: false)
+</head>
+
+<body>
+    <div class="sidebar-overlay"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside class="admin-sidebar">
+        <div class="admin-logo-header">
+            <img src="~/images/ctu-logo.png" class="admin-logo" />
+            <div class="admin-logo-text">STUDENT PANEL</div>
+        </div>
+
+        <nav class="admin-menu">
+            <a asp-action="Dashboard" asp-controller="StudentPanel" class="menu-link">
+                <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+            </a>
+            <a asp-action="Messages" asp-controller="StudentPanel" class="menu-link">
+                <i class="bi bi-envelope-fill"></i> <span>Message</span>
+            </a>
+            <a asp-action="Task" asp-controller="StudentPanel" class="menu-link">
+                <i class="bi bi-clipboard-check-fill"></i> <span>Task</span>
+            </a>
+            <a asp-action="Reports" asp-controller="StudentPanel" class="menu-link">
+                <i class="bi bi-file-earmark-text-fill"></i> <span>Generate Reports</span>
+            </a>
+            <hr />
+        </nav>
+
+        <div class="sidebar-logout">
+            <a asp-action="Logout" asp-controller="Account" class="btn-logout">
+                <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- TOP BAR -->
+    <header class="admin-topbar d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-light d-none d-md-inline-flex me-2" id="desktopSidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <button class="btn btn-sm btn-light d-md-none me-2" id="sidebarToggle">
+                <i class="bi bi-list"></i>
+            </button>
+            <i class="bi bi-person-circle me-2"></i>
+            <span class="topbar-title">@ViewData["Title"]</span>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <!-- Notifications -->
+            <div class="position-relative" id="notifBell" style="cursor:pointer;">
+                <i class="bi bi-bell-fill fs-5"></i>
+                <span class="notif-dot"></span>
+                <div class="notif-popup shadow-sm bg-white rounded p-2"
+                     style="display:none; position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
+                    <h6 class="fw-bold mb-2">Notifications</h6>
+                    <ul id="notifList" class="list-unstyled mb-0"></ul>
+                    <div class="text-center mt-2">
+                        <button class="btn btn-sm btn-outline-secondary w-100" id="clearNotifsBtn">Mark all as read</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Dropdown -->
+            <div class="dropdown">
+                <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown"
+                     data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
+                    <div class="d-flex flex-column" style="font-size: 0.75rem;">
+                        <strong>Student User</strong>
+                        <span>Student</span>
+                    </div>
+                </div>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#studentProfileModal">Profile</a></li>
+                    <li><a class="dropdown-item" asp-action="Logout" asp-controller="Account">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="admin-content">
+        @RenderBody()
+    </main>
+
+    <!-- PROFILE MODAL -->
+    <div class="modal fade" id="studentProfileModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content p-4 border-0 shadow-sm">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Student Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <img id="studentProfileImg" src="~/images/ctu-logo.png" class="rounded-circle shadow-sm"
+                         style="width:130px; height:130px; object-fit:cover;" />
+                    <input type="file" id="profilePicInput" class="d-none" accept="image/*" />
+                    <button class="btn btn-sm btn-outline-primary mt-2" id="editProfilePicBtn">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ===================== SIDEBAR =====================
+        const sidebar = document.querySelector('.admin-sidebar');
+        const desktopToggle = document.getElementById('desktopSidebarToggle');
+        const overlay = document.querySelector('.sidebar-overlay');
+        const mobileToggle = document.getElementById('sidebarToggle');
+
+        desktopToggle.addEventListener('click', ()=>{
+            sidebar.classList.toggle('expanded');
+        });
+
+        mobileToggle.addEventListener('click', ()=>{
+            sidebar.classList.add('expanded','show');
+            overlay.classList.add('active');
+            document.body.classList.add('sidebar-open');
+        });
+
+        overlay.addEventListener('click', ()=>{
+            sidebar.classList.remove('show','expanded');
+            overlay.classList.remove('active');
+            document.body.classList.remove('sidebar-open');
+        });
+
+        // ===================== IMAGE PREVIEW =====================
+        function previewImage(input,imgId){
+            const file=input.files[0];
+            if(file){
+                const reader=new FileReader();
+                reader.onload=e=>document.getElementById(imgId).src=e.target.result;
+                reader.readAsDataURL(file);
+            }
+        }
+        document.getElementById("editProfilePicBtn").addEventListener("click",
+            ()=>document.getElementById("profilePicInput").click());
+
+        // ===================== NOTIFICATIONS =====================
+        let notifications=[{id:1,text:"New message",read:false}];
+        const notifDot=document.querySelector('.notif-dot');
+        const notifBell=document.getElementById('notifBell');
+        const notifPopup=notifBell.querySelector('.notif-popup');
+        const notifList=document.getElementById('notifList');
+        const clearNotifsBtn=document.getElementById('clearNotifsBtn');
+
+        function renderNotifications(){
+            notifList.innerHTML='';
+            let unreadCount=0;
+            notifications.forEach(notif=>{
+                const li=document.createElement('li');
+                li.textContent=notif.text;
+                li.classList.toggle('fw-bold',!notif.read);
+                li.style.cursor='pointer';
+                li.addEventListener('click',()=>{notif.read=true; renderNotifications();});
+                notifList.appendChild(li);
+                if(!notif.read) unreadCount++;
+            });
+            notifDot.style.display=unreadCount>0?'block':'none';
+        }
+        notifBell.addEventListener('click',()=>{notifPopup.style.display=notifPopup.style.display==='none'?'block':'none';});
+        clearNotifsBtn.addEventListener('click',()=>{notifications.forEach(n=>n.read=true); renderNotifications();});
+        document.addEventListener('click',e=>{if(!notifBell.contains(e.target)) notifPopup.style.display='none';});
+        renderNotifications();
+    </script>
+
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

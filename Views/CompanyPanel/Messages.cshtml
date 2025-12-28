@@ -1,0 +1,54 @@
+﻿@model IEnumerable<MonitoringSystem.Models.Company>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Companies";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Companies</h2>
+        <a class="btn btn-primary" href="@Url.Action("Create")">Add New Company</a>
+    </div>
+
+    <div class="card shadow-sm rounded-4 p-3">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Industry</th>
+                    <th>Address</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int index = 1;
+                    foreach (var company in Model)
+                    {
+                        <tr>
+                            <td>@index</td>
+                            <td>@company.Name</td>
+                            <td>@company.Email</td>
+                            <td>@company.Industry</td>
+                            <td>@company.Address</td>
+                            <td>
+                                <a class="btn btn-sm btn-warning" href="@Url.Action("Edit", new { id = company.Id })">Edit</a>
+                                <a class="btn btn-sm btn-danger" href="@Url.Action("Delete", new { id = company.Id })">Delete</a>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="6" class="text-center">No companies found.</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

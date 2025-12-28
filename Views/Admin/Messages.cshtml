@@ -1,0 +1,128 @@
+﻿@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Messages";
+}
+
+<link rel="stylesheet" href="~/css/chat.css" />
+
+<div class="messages-wrapper">
+    <!-- Sidebar -->
+    <div class="messages-sidebar">
+        <div class="sidebar-header">Conversations</div>
+        <div class="sidebar-search">
+            <input type="text" placeholder="Search..." id="searchBox" />
+        </div>
+        <button id="newMessageBtn" class="new-message-btn" data-bs-toggle="modal" data-bs-target="#newMessageModal">+ New Message</button>
+        <div class="chat-list" id="chatList"></div>
+    </div>
+
+    <!-- Chat Content -->
+    <div class="messages-content">
+        <div class="chat-header mobile-header">
+            <button id="backToList" class="btn btn-light d-md-none">← Back</button>
+            <img src="" alt="User" id="chatHeaderAvatar" />
+            <div class="name" id="chatHeaderName"></div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages"></div>
+
+        <div class="chat-input">
+            <input type="text" placeholder="Type your message..." id="chatInput" />
+            <button id="sendButton">➤</button>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap New Message Modal -->
+<div class="modal fade" id="newMessageModal" tabindex="-1" aria-labelledby="newMessageModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="newMessageModalLabel">Start a New Conversation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="text" id="modalSearch" class="form-control mb-3" placeholder="Search user by name..." />
+                <div id="modalUserList" class="modal-user-list"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            let currentConversationId = null;
+
+            // 1️⃣ Load all conversations
+            function loadConversations() {
+                $.getJSON('@Url.Action("GetConversations", "Messages")', function (data) {
+                    let html = '';
+                    data.forEach(c => {
+                        html += `<div class="chat-item" data-id="${c.id}">
+                                    <img src="https://randomuser.me/api/portraits/lego/1.jpg" alt="User" />
+                                    <div class="chat-info">
+                                        <div class="name">${c.user.userName}</div>
+                                        <div class="last-message">${c.lastMessage || ''}</div>
+                                    </div>
+                                </div>`;
+                    });
+                    $('#chatList').html(html);
+                });
+            }
+
+            // 2️⃣ Load messages for a conversation
+            function loadMessages(conversationId) {
+                currentConversationId = conversationId;
+                $.getJSON('@Url.Action("GetMessages", "Messages")' + '?conversationId=' + conversationId, function (messages) {
+                    let html = '';
+                    messages.forEach(m => {
+                        let senderClass = (m.senderId === "@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier).Value") ? 'sent' : 'received';
+                        html += `<div class="message ${senderClass}">${m.text} <span class="msg-time">${new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>`;
+                    });
+                    $('#chatMessages').html(html);
+                    $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+                });
+            }
+
+            // 3️⃣ Send message
+            function sendMessage() {
+                const text = $('#chatInput').val().trim();
+                if (!text || !currentConversationId) return;
+
+                $.post('@Url.Action("SendMessage", "Messages")', { conversationId: currentConversationId, text: text }, function (data) {
+                    $('#chatInput').val('');
+                    loadMessages(currentConversationId);
+                    loadConversations();
+                }).fail(function(err) {
+                    alert(err.responseText);
+                });
+            }
+
+            // Initial Load
+            loadConversations();
+
+            // Sidebar click
+            $(document).on('click', '.chat-item', function () {
+                const id = $(this).data('id');
+                loadMessages(id);
+                $('.chat-item').removeClass('active');
+                $(this).addClass('active');
+            });
+
+            // Send button
+            $('#sendButton').click(sendMessage);
+            $('#chatInput').keypress(function (e) { if (e.which === 13) sendMessage(); });
+
+            // Mobile back button
+            $('#backToList').click(function () {
+                $('.messages-content').removeClass('active');
+                $('.messages-sidebar').show();
+            });
+
+        });
+    </script>
+}
