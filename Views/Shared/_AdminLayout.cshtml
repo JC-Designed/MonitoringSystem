@@ -20,6 +20,38 @@
         .admin-sidebar.expanded .sidebar-schoolyear-wrapper {
             display: block !important;
         }
+
+        /* Profile modal edit buttons */
+        .profile-edit-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.85rem;
+            padding: 2px 6px;
+        }
+
+        .profile-pic-wrapper, .banner-wrapper {
+            position: relative;
+        }
+
+        .profile-pic-wrapper img {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+        }
+
+        .banner-wrapper img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        /* Edit button floating top-right */
+        #editAdminInfoBtn {
+            top: 0;
+            right: 0;
+            position: absolute;
+        }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -139,36 +171,43 @@
     <div class="modal fade" id="adminProfileModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content p-4 border-0 shadow-sm">
-                <div class="modal-header border-0">
+                
+                <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold">Administrator Profile</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+
+                <div class="modal-body pt-3">
+
                     <!-- PROFILE PIC -->
-                    <div class="mb-4 pb-2 text-center">
-                        <img id="adminProfileImg" src="~/images/ctu-logo.png" class="rounded-circle shadow-sm"
-                             style="width:130px; height:130px; object-fit:cover;" />
-                        <input type="file" id="profilePicInput" class="d-none" accept="image/*"
-                               onchange="previewImage(this,'adminProfileImg')" />
-                        <button class="btn btn-sm btn-outline-primary mt-2" id="editProfilePicBtn">
-                            <i class="bi bi-pencil"></i> Edit
+                    <div class="profile-pic-wrapper mb-3 text-center">
+                        <img id="adminProfileImgModal" src="~/images/ctu-logo.png" class="rounded-circle shadow-sm" />
+                        <input type="file" id="profilePicInputModal" class="d-none" accept="image/*"
+                               onchange="previewImage(this,'adminProfileImgModal')" />
+                        <button class="btn btn-sm btn-outline-primary profile-edit-btn" id="editProfilePicBtnModal">
+                            Edit
                         </button>
                     </div>
 
                     <!-- BANNER -->
-                    <div class="mb-4 pb-2 text-center">
-                        <img id="adminBannerImg" src="~/images/banner-placeholder.jpg" class="rounded shadow-sm"
-                             style="width:100%; height:180px; object-fit:cover;" />
-                        <input type="file" id="bannerInput" class="d-none" accept="image/*"
-                               onchange="previewImage(this,'adminBannerImg')" />
-                        <button class="btn btn-sm btn-outline-primary mt-2" id="editBannerBtn">
-                            <i class="bi bi-pencil"></i> Edit
+                    <div class="banner-wrapper mb-4 text-center">
+                        <img id="adminBannerImgModal" src="~/images/banner-placeholder.jpg" class="rounded shadow-sm" />
+                        <input type="file" id="bannerInputModal" class="d-none" accept="image/*"
+                               onchange="previewImage(this,'adminBannerImgModal')" />
+                        <button class="btn btn-sm btn-outline-primary profile-edit-btn" id="editBannerBtnModal">
+                            Edit
                         </button>
                     </div>
 
                     <!-- INFO TABLE -->
-                    <div>
-                        <table class="table mb-0" id="adminInfoTable" style="border:none;">
+                    <div class="position-relative">
+                        <!-- EDIT BUTTON TOP RIGHT -->
+                        <button class="btn btn-primary btn-sm position-absolute" 
+                                id="editAdminInfoBtn">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+
+                        <table class="table mb-0" id="adminInfoTable" style="border:none; margin-top:1.5rem;">
                             <tbody>
                                 <tr><td class="fw-semibold text-muted" style="width:30%;">Full Name</td><td>Administrator</td></tr>
                                 <tr><td class="fw-semibold text-muted">Email</td><td>admin@ctu.edu.ph</td></tr>
@@ -183,9 +222,13 @@
                                 <tr><td class="fw-semibold text-muted">Status</td><td><span class="badge bg-success">Active</span></td></tr>
                             </tbody>
                         </table>
-                        <button class="btn btn-primary mt-3" id="editAdminInfoBtn"><i class="bi bi-pencil"></i> Edit</button>
-                        <button class="btn btn-success mt-3 d-none" id="saveAdminInfoBtn">Save</button>
+
+                        <!-- SAVE BUTTON BOTTOM RIGHT -->
+                        <div class="text-end mt-3">
+                            <button class="btn btn-success d-none" id="saveAdminInfoBtn">Save</button>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -233,14 +276,16 @@
                 reader.readAsDataURL(file);
             }
         }
-        document.getElementById("editProfilePicBtn").addEventListener("click",
-            ()=>document.getElementById("profilePicInput").click());
-        document.getElementById("editBannerBtn").addEventListener("click",
-            ()=>document.getElementById("bannerInput").click());
+
+        document.getElementById("editProfilePicBtnModal").addEventListener("click",
+            ()=>document.getElementById("profilePicInputModal").click());
+        document.getElementById("editBannerBtnModal").addEventListener("click",
+            ()=>document.getElementById("bannerInputModal").click());
 
         // ===================== ADMIN INFO EDIT =====================
         const editAdminInfoBtn=document.getElementById("editAdminInfoBtn");
         const saveAdminInfoBtn=document.getElementById("saveAdminInfoBtn");
+
         editAdminInfoBtn.addEventListener("click", ()=>{
             const table=document.getElementById("adminInfoTable");
             const cells=table.querySelectorAll("td:not(:first-child)");
@@ -248,6 +293,7 @@
             saveAdminInfoBtn.classList.remove('d-none');
             editAdminInfoBtn.classList.add('d-none');
         });
+
         saveAdminInfoBtn.addEventListener("click", ()=>{
             const table=document.getElementById("adminInfoTable");
             const cells=table.querySelectorAll("td:not(:first-child)");
