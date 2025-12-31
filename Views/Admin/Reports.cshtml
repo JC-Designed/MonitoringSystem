@@ -1,0 +1,157 @@
+﻿@model List<MonitoringSystem.Models.Report>  
+
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "REPORTS";
+}
+
+<div class="reports-page container-fluid py-4">
+    <div class="card shadow-sm rounded-4 p-4">
+
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0">REPORTS LIST</h5>
+        </div>
+
+        <!-- ================= FILTERS ================= -->
+        <div class="row g-3 mb-4 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Search by Reporter</label>
+                <input type="text"
+                       id="searchReporter"
+                       class="form-control filter-box"
+                       placeholder="Type name..." />
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Reporter Type</label>
+                <select id="reporterTypeFilter" class="form-select filter-box">
+                    <option value="">All</option>
+                    <option value="Student">Student</option>
+                    <option value="Company">Company</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Status</label>
+                <select id="statusFilter" class="form-select filter-box">
+                    <option value="">All</option>
+                    <option value="Read">Read</option>
+                    <option value="Unread">Unread</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- ================= REPORTS TABLE ================= -->
+        <div class="table-responsive">
+            <table class="table table-hover table-borderless align-middle mb-0" id="reportsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Reporter Name</th>
+                        <th>Reporter Type</th>
+                        <th>Status</th>
+                        <th>Date Submitted</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var report in Model)
+                    {
+                        <tr data-id="@report.Id"
+                            data-name="@report.ReporterName"
+                            data-type="@report.ReporterType"
+                            data-status="@report.Status"
+                            data-details="@report.Details"
+                            data-date="@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")">
+
+                            <td>@report.Id</td>
+                            <td>@report.ReporterName</td>
+                            <td>@report.ReporterType</td>
+                            <td>@report.Status</td>
+                            <td>@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-primary view-btn">View</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ================= VIEW REPORT MODAL ================= -->
+<div class="modal fade" id="viewReportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Reporter Name</label>
+                    <p id="modalReporterName" class="form-control-plaintext"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Reporter Type</label>
+                    <p id="modalReporterType" class="form-control-plaintext"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Status</label>
+                    <p id="modalStatus" class="form-control-plaintext"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Date Submitted</label>
+                    <p id="modalDate" class="form-control-plaintext"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Details</label>
+                    <p id="modalDetails" class="form-control-plaintext"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= SCRIPT ================= -->
+<script>
+    const tbody = document.querySelector("#reportsTable tbody");
+
+    // ===== FILTER TABLE =====
+    function filterTable() {
+        const nameVal = document.getElementById("searchReporter").value.toLowerCase();
+        const typeVal = document.getElementById("reporterTypeFilter").value;
+        const statusVal = document.getElementById("statusFilter").value;
+
+        [...tbody.rows].forEach(row => {
+            let show = true;
+
+            if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
+            if (typeVal && row.dataset.type !== typeVal) show = false;
+            if (statusVal && row.dataset.status !== statusVal) show = false;
+
+            row.style.display = show ? "" : "none";
+        });
+    }
+
+    ["searchReporter", "reporterTypeFilter", "statusFilter"]
+        .forEach(id => document.getElementById(id).addEventListener("input", filterTable));
+
+    // ===== VIEW REPORT =====
+    document.querySelectorAll(".view-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            const row = btn.closest("tr");
+
+            document.getElementById("modalReporterName").textContent = row.dataset.name;
+            document.getElementById("modalReporterType").textContent = row.dataset.type;
+            document.getElementById("modalStatus").textContent = row.dataset.status;
+            document.getElementById("modalDate").textContent = row.dataset.date;
+            document.getElementById("modalDetails").textContent = row.dataset.details;
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("viewReportModal")).show();
+        });
+    });
+</script>

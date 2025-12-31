@@ -49,15 +49,14 @@
                             <td>@company.Email</td>
                             <td>@company.Industry</td>
                             <td class="text-end">
-                                <div class="dropdown d-flex justify-content-end">
-                                    <button class="btn btn-white btn-sm dropdown-toggle"
+                                <div class="dropdown dropend dropend-lg d-inline-block">
+                                    <button class="btn btn-sm btn-light dropdown-toggle"
                                             type="button"
-                                            data-bs-toggle="dropdown"></button>
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"></button>
 
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                        <li>
-                                            <button class="dropdown-item view-btn" type="button">View Profile</button>
-                                        </li>
+                                    <ul class="dropdown-menu shadow-sm bg-white">
+                                        <li><button class="dropdown-item view-btn" type="button">View Profile</button></li>
                                         <li>
                                             <form method="post" action="@Url.Action("DeleteCompany", "Admin", new { id = company.Id })"
                                                   onsubmit="return confirm('Are you sure you want to delete @company.Name?');">
@@ -87,15 +86,15 @@
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Name</label>
-                    <p id="viewName" class="form-control-plaintext"></p>
+                    <input type="text" id="viewName" class="form-control" readonly>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Email</label>
-                    <p id="viewEmail" class="form-control-plaintext"></p>
+                    <input type="text" id="viewEmail" class="form-control" readonly>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Industry</label>
-                    <p id="viewIndustry" class="form-control-plaintext"></p>
+                    <input type="text" id="viewIndustry" class="form-control" readonly>
                 </div>
             </div>
         </div>
@@ -114,15 +113,15 @@
         });
     });
 
-    // ===== VIEW PROFILE =====
+    // ===== VIEW PROFILE MODAL =====
     document.querySelectorAll(".view-btn").forEach(btn => {
         btn.addEventListener("click", e => {
             e.preventDefault();
             const row = btn.closest("tr");
 
-            document.getElementById("viewName").textContent = row.dataset.name;
-            document.getElementById("viewEmail").textContent = row.dataset.email;
-            document.getElementById("viewIndustry").textContent = row.dataset.industry;
+            document.getElementById("viewName").value = row.dataset.name;
+            document.getElementById("viewEmail").value = row.dataset.email;
+            document.getElementById("viewIndustry").value = row.dataset.industry;
 
             bootstrap.Modal.getOrCreateInstance(viewModal).show();
         });
