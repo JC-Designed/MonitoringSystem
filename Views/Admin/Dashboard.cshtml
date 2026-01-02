@@ -5,7 +5,9 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Dashboard";
 
-    var currentYear = DateTime.Now.Year;
+    // ===== FIXED: use the selected school year =====
+    var currentYear = ViewBag.SchoolYear ?? DateTime.Now.Year;
+
     var pendingUsers = ViewBag.PendingUsersList as List<MonitoringSystem.Controllers.AdminController.PendingUserDto>;
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 

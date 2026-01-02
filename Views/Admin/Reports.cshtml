@@ -1,8 +1,8 @@
-﻿@model List<MonitoringSystem.Models.Report>  
+﻿@model List<MonitoringSystem.Models.Report>
 
 @{
     Layout = "_AdminLayout";
-    ViewData["Title"] = "REPORTS";
+    ViewData["Title"] = "Reports";
 }
 
 <div class="reports-page container-fluid py-4">
@@ -10,7 +10,7 @@
 
         <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="fw-bold mb-0">REPORTS LIST</h5>
+            <h4 class="fw-bold mb-0">Reports</h4>
         </div>
 
         <!-- ================= FILTERS ================= -->
@@ -44,34 +44,42 @@
 
         <!-- ================= REPORTS TABLE ================= -->
         <div class="table-responsive">
-            <table class="table table-hover table-borderless align-middle mb-0" id="reportsTable">
-                <thead class="table-light">
+            <table class="table table-hover align-middle mb-0" id="reportsTable">
+                <thead class="table-light text-center">
                     <tr>
-                        <th>ID</th>
-                        <th>Reporter Name</th>
-                        <th>Reporter Type</th>
-                        <th>Status</th>
-                        <th>Date Submitted</th>
-                        <th class="text-end">Action</th>
+                        <th style="width:10%;">ID</th>
+                        <th style="width:20%;" class="text-center">Reporter Name</th>
+                        <th style="width:15%;">Type</th>
+                        <th style="width:15%;">Status</th>
+                        <th style="width:20%;">Date Submitted</th>
+                        <th style="width:10%;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var report in Model)
                     {
-                        <tr data-id="@report.Id"
+                        <tr data-id="@report.Id.ToString("D7")"
                             data-name="@report.ReporterName"
                             data-type="@report.ReporterType"
                             data-status="@report.Status"
                             data-details="@report.Details"
-                            data-date="@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")">
-
-                            <td>@report.Id</td>
-                            <td>@report.ReporterName</td>
-                            <td>@report.ReporterType</td>
-                            <td>@report.Status</td>
-                            <td>@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")</td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-primary view-btn">View</button>
+                            data-date="@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")"
+                            style="height:55px;">
+                            <td class="text-center">@report.Id.ToString("D7")</td>
+                            <td class="text-center">@report.ReporterName</td>
+                            <td class="text-center">@report.ReporterType</td>
+                            <td class="text-center">@report.Status</td>
+                            <td class="text-center">@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")</td>
+                            <td class="text-center">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        &#9662;
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item view-btn" href="#">View</a></li>
+                                        <li><a class="dropdown-item download-btn" href="#">Export</a></li>
+                                    </ul>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -89,7 +97,6 @@
                 <h5 class="modal-title">Report Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-
             <div class="modal-body">
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Reporter Name</label>
@@ -116,9 +123,26 @@
     </div>
 </div>
 
+<!-- ================= EXPORT FORMAT MODAL ================= -->
+<div class="modal fade" id="exportFormatModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Export Format</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body d-flex justify-content-around">
+                <button type="button" class="btn btn-primary" id="exportPdfBtn">PDF</button>
+                <button type="button" class="btn btn-success" id="exportDocxBtn">DOCX</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- ================= SCRIPT ================= -->
 <script>
     const tbody = document.querySelector("#reportsTable tbody");
+    let selectedReportId = null;
 
     // ===== FILTER TABLE =====
     function filterTable() {
@@ -128,11 +152,9 @@
 
         [...tbody.rows].forEach(row => {
             let show = true;
-
             if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
             if (typeVal && row.dataset.type !== typeVal) show = false;
             if (statusVal && row.dataset.status !== statusVal) show = false;
-
             row.style.display = show ? "" : "none";
         });
     }
@@ -140,18 +162,38 @@
     ["searchReporter", "reporterTypeFilter", "statusFilter"]
         .forEach(id => document.getElementById(id).addEventListener("input", filterTable));
 
-    // ===== VIEW REPORT =====
+    // ===== VIEW REPORT MODAL =====
     document.querySelectorAll(".view-btn").forEach(btn => {
         btn.addEventListener("click", e => {
             const row = btn.closest("tr");
-
             document.getElementById("modalReporterName").textContent = row.dataset.name;
             document.getElementById("modalReporterType").textContent = row.dataset.type;
             document.getElementById("modalStatus").textContent = row.dataset.status;
             document.getElementById("modalDate").textContent = row.dataset.date;
             document.getElementById("modalDetails").textContent = row.dataset.details;
-
             bootstrap.Modal.getOrCreateInstance(document.getElementById("viewReportModal")).show();
         });
+    });
+
+    // ===== EXPORT MODAL TRIGGER =====
+    document.querySelectorAll(".download-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            const row = btn.closest("tr");
+            selectedReportId = row.dataset.id;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById("exportFormatModal")).show();
+        });
+    });
+
+    // ===== HANDLE PDF / DOCX EXPORT =====
+    document.getElementById("exportPdfBtn").addEventListener("click", () => {
+        if (!selectedReportId) return;
+        window.location.href = `/Admin/ExportReportPdf?id=${selectedReportId}`;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("exportFormatModal")).hide();
+    });
+
+    document.getElementById("exportDocxBtn").addEventListener("click", () => {
+        if (!selectedReportId) return;
+        window.location.href = `/Admin/ExportReportDocx?id=${selectedReportId}`;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("exportFormatModal")).hide();
     });
 </script>
