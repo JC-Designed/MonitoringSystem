@@ -13,14 +13,11 @@
             <h5 class="fw-bold mb-0">USERS LIST</h5>
         </div>
 
-        <!-- ================= FILTERS (FIXED HEIGHT & VISIBILITY) ================= -->
+        <!-- ================= FILTERS ================= -->
         <div class="row g-3 mb-4 align-items-end">
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Search by Name</label>
-                <input type="text"
-                       id="searchName"
-                       class="form-control filter-box"
-                       placeholder="Type name..." />
+                <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
             </div>
 
             <div class="col-md-4">
@@ -60,27 +57,26 @@
                     {
                         var role = user.Roles.FirstOrDefault() ?? "No Role";
                         var status = user.IsApproved ? "Approved" : "Pending";
+                        var fullName = $"{user.FirstName} {user.LastName}";
 
                         <tr data-id="@user.Id"
-                            data-name="@user.UserName"
+                            data-firstname="@user.FirstName"
+                            data-lastname="@user.LastName"
                             data-email="@user.Email"
                             data-type="@role"
                             data-status="@status">
 
                             <td>@user.Id</td>
-                            <td>@user.UserName</td>
+                            <td>@fullName</td>
                             <td>@user.Email</td>
                             <td>@role</td>
                             <td>@status</td>
                             <td class="text-end">
-                                <!-- Responsive dropdown -->
-                                <div class="dropdown dropend dropend-lg d-inline-block">
+                                <div class="dropdown dropend d-inline-block">
                                     <button class="btn btn-sm btn-light dropdown-toggle"
                                             type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"></button>
-
-                                    <ul class="dropdown-menu shadow-sm bg-white">
+                                            data-bs-toggle="dropdown"></button>
+                                    <ul class="dropdown-menu shadow-sm">
                                         <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
                                         <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
                                     </ul>
@@ -96,7 +92,7 @@
 </div>
 
 <!-- ================= EDIT MODAL ================= -->
-<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content">
             <div class="modal-header">
@@ -106,9 +102,15 @@
 
             <div class="modal-body">
                 <form id="editForm">
+
                     <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="editName">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" id="editFirstName">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" id="editLastName">
                     </div>
 
                     <div class="mb-3">
@@ -123,8 +125,7 @@
 
                     <div class="mb-3">
                         <label class="form-label">New Password</label>
-                        <input type="password" class="form-control" id="editPassword"
-                               placeholder="Leave blank to keep current">
+                        <input type="password" class="form-control" id="editPassword">
                     </div>
 
                     <div class="mb-3">
@@ -132,9 +133,7 @@
                         <input type="password" class="form-control" id="editConfirmPassword">
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100">
-                        Save Changes
-                    </button>
+                    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
                 </form>
             </div>
         </div>
@@ -146,25 +145,23 @@
     const tbody = document.querySelector("#usersTable tbody");
     let rowToEdit = null;
 
-    // ===== FILTER TABLE =====
     function filterTable() {
-        const nameVal = document.getElementById("searchName").value.toLowerCase();
-        const typeVal = document.getElementById("userTypeFilter").value;
-        const statusVal = document.getElementById("statusFilter").value;
+        const nameVal = searchName.value.toLowerCase();
+        const typeVal = userTypeFilter.value;
+        const statusVal = statusFilter.value;
 
         [...tbody.rows].forEach(row => {
             let show = true;
-
-            if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
+            const fullName = (row.dataset.firstname + " " + row.dataset.lastname).toLowerCase();
+            if (nameVal && !fullName.includes(nameVal)) show = false;
             if (typeVal && row.dataset.type !== typeVal) show = false;
             if (statusVal && row.dataset.status !== statusVal) show = false;
-
             row.style.display = show ? "" : "none";
         });
     }
 
-    ["searchName", "userTypeFilter", "statusFilter"]
-        .forEach(id => document.getElementById(id).addEventListener("input", filterTable));
+    [searchName, userTypeFilter, statusFilter]
+        .forEach(el => el.addEventListener("input", filterTable));
 
     // ===== EDIT =====
     document.querySelectorAll(".edit-btn").forEach(btn => {
@@ -172,7 +169,8 @@
             e.preventDefault();
             rowToEdit = btn.closest("tr");
 
-            editName.value = rowToEdit.dataset.name;
+            editFirstName.value = rowToEdit.dataset.firstname;
+            editLastName.value = rowToEdit.dataset.lastname;
             editEmail.value = rowToEdit.dataset.email;
             editRole.value = rowToEdit.dataset.type;
             editPassword.value = "";
@@ -182,33 +180,22 @@
         });
     });
 
-    document.getElementById("editForm").addEventListener("submit", async e => {
-        e.preventDefault();
+    // ===== DELETE =====
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+        btn.addEventListener("click", async e => {
+            e.preventDefault();
+            const row = btn.closest("tr");
+            if (!confirm("Delete this user?")) return;
 
-        if (editPassword.value && editPassword.value !== editConfirmPassword.value) {
-            alert("Passwords do not match!");
-            return;
-        }
+            const res = await fetch("/Admin/DeleteUser", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ Id: row.dataset.id })
+            });
 
-        const res = await fetch("/Admin/EditUser", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                Id: rowToEdit.dataset.id,
-                Name: editName.value,
-                Email: editEmail.value,
-                Role: editRole.value,
-                NewPassword: editPassword.value
-            })
+            const data = await res.json();
+            if (data.success) row.remove();
+            else alert("Delete failed");
         });
-
-        if (res.ok) {
-            rowToEdit.cells[1].textContent = editName.value;
-            rowToEdit.cells[2].textContent = editEmail.value;
-            rowToEdit.cells[3].textContent = editRole.value;
-            bootstrap.Modal.getInstance(editModal).hide();
-        } else {
-            alert("Update failed");
-        }
     });
 </script>

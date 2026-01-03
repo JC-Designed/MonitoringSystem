@@ -42,47 +42,40 @@ namespace MonitoringSystem.Controllers
             int schoolYear = GetSchoolYear();
             ViewBag.SchoolYear = schoolYear;
 
-            // Get all users up to the current school year
             var allUsers = await _userManager.Users
-                .Where(u => u.CreatedAt.Year <= schoolYear)
+                .Where(u => u.CreatedAt.Year == schoolYear)
                 .ToListAsync();
 
             foreach (var user in allUsers)
                 user.Roles = (await _userManager.GetRolesAsync(user)).ToList();
 
-            // ================== PENDING USERS LIST ==================
             var pendingUsersList = allUsers
-                .Where(u => !u.IsApproved && u.CreatedAt.Year == schoolYear)
+                .Where(u => !u.IsApproved)
                 .Select(u => new PendingUserDto
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    Role = (u.Roles != null && u.Roles.Count > 0) ? u.Roles.First() : "N/A"
+                    Role = (u.Roles != null && u.Roles.Count > 0) ? u.Roles.First() : "N/A",
+                    RegisteredMonth = u.CreatedAt.Month
                 })
                 .ToList();
 
             ViewBag.PendingUsersList = pendingUsersList;
-
-            // ================== DASHBOARD COUNTERS ==================
             ViewBag.PendingUsers = pendingUsersList.Count;
-            ViewBag.ApprovedUsers = allUsers.Count(u => u.IsApproved && u.CreatedAt.Year == schoolYear);
-            ViewBag.TotalUsers = allUsers.Count(u => u.CreatedAt.Year == schoolYear);
+            ViewBag.ApprovedUsers = allUsers.Count(u => u.IsApproved);
+            ViewBag.TotalUsers = allUsers.Count;
 
             ViewBag.TotalCompanies = _db.Companies
                 .Include(c => c.User)
                 .Count(c => c.User != null && c.User.CreatedAt.Year == schoolYear);
 
-            // ================= CHART DATA =================
-            var monthlyRegistrations = new int[12]; // 0 index = Jan
+            var monthlyRegistrations = new int[12];
             var totalUsersByMonth = new int[12];
 
             for (int month = 1; month <= 12; month++)
             {
-                monthlyRegistrations[month - 1] = allUsers
-                    .Count(u => u.CreatedAt.Year == schoolYear && u.CreatedAt.Month == month);
-
-                totalUsersByMonth[month - 1] = allUsers
-                    .Count(u => u.CreatedAt.Year < schoolYear || (u.CreatedAt.Year == schoolYear && u.CreatedAt.Month <= month));
+                monthlyRegistrations[month - 1] = allUsers.Count(u => u.CreatedAt.Month == month);
+                totalUsersByMonth[month - 1] = allUsers.Count(u => u.CreatedAt.Month <= month && u.IsApproved);
             }
 
             ViewBag.MonthlyRegistrations = monthlyRegistrations;
@@ -134,17 +127,99 @@ namespace MonitoringSystem.Controllers
             int schoolYear = GetSchoolYear();
             ViewBag.SchoolYear = schoolYear;
 
-            // For now, we will use demo data to test the front-end
             var reports = new List<Report>
-    {
-        new Report { Id = 1, ReporterName = "John Doe", ReporterType = "Student", Status = "Unread", Details = "Demo report 1", DateSubmitted = new DateTime(schoolYear, 6, 1) },
-        new Report { Id = 2, ReporterName = "Acme Corp", ReporterType = "Company", Status = "Read", Details = "Demo report 2", DateSubmitted = new DateTime(schoolYear, 5, 10) },
-        new Report { Id = 3, ReporterName = "Jane Smith", ReporterType = "Student", Status = "Unread", Details = "Demo report 3", DateSubmitted = new DateTime(schoolYear, 4, 20) }
-    };
+            {
+                new Report { Id = 1, ReporterName = "John Doe", ReporterType = "Student", Status = "Unread", Details = "Demo report 1", DateSubmitted = new DateTime(schoolYear, 6, 1) },
+                new Report { Id = 2, ReporterName = "Acme Corp", ReporterType = "Company", Status = "Read", Details = "Demo report 2", DateSubmitted = new DateTime(schoolYear, 5, 10) },
+                new Report { Id = 3, ReporterName = "Jane Smith", ReporterType = "Student", Status = "Unread", Details = "Demo report 3", DateSubmitted = new DateTime(schoolYear, 4, 20) }
+            };
 
             return View(reports);
         }
 
+        // ================= EDIT USER =================
+        [HttpPost]
+        public async Task<JsonResult> EditUser([FromBody] EditUserDto dto)
+        {
+            if (dto == null || string.IsNullOrEmpty(dto.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            var nameParts = dto.Name.Trim().Split(' ', 2);
+            user.FirstName = nameParts[0];
+            user.LastName = nameParts.Length > 1 ? nameParts[1] : "";
+            user.Email = dto.Email;
+            user.UserName = dto.Email;
+
+            await _userManager.UpdateAsync(user);
+
+            var currentRoles = await _userManager.GetRolesAsync(user);
+            if (!currentRoles.Contains(dto.Role))
+            {
+                await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                await _userManager.AddToRoleAsync(user, dto.Role);
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
+            }
+
+            return Json(new { success = true });
+        }
+
+        // ================= DELETE USER =================
+        [HttpPost]
+        public async Task<JsonResult> DeleteUser([FromBody] DeleteUserDto dto)
+        {
+            if (dto == null || string.IsNullOrEmpty(dto.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            var result = await _userManager.DeleteAsync(user);
+            return Json(new { success = result.Succeeded });
+        }
+
+        // ================= APPROVE USER =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> Approve([FromBody] IdDto dto)
+        {
+            if (dto == null || string.IsNullOrEmpty(dto.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            user.IsApproved = true;
+            var result = await _userManager.UpdateAsync(user);
+
+            return Json(new { success = result.Succeeded });
+        }
+
+        // ================= REJECT USER =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> Reject([FromBody] IdDto dto)
+        {
+            if (dto == null || string.IsNullOrEmpty(dto.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            var result = await _userManager.DeleteAsync(user);
+            return Json(new { success = result.Succeeded });
+        }
 
         // ================= DTOs =================
         public class PendingUserDto
@@ -152,6 +227,7 @@ namespace MonitoringSystem.Controllers
             public string Id { get; set; } = string.Empty;
             public string Email { get; set; } = string.Empty;
             public string Role { get; set; } = string.Empty;
+            public int RegisteredMonth { get; set; }
         }
 
         public class EditUserDto
@@ -168,15 +244,9 @@ namespace MonitoringSystem.Controllers
             public string Id { get; set; } = string.Empty;
         }
 
-        // ================= DEMO REPORT =================
-        public class ReportDemo
+        public class IdDto
         {
-            public int Id { get; set; }
-            public string ReporterName { get; set; } = string.Empty;
-            public string ReporterType { get; set; } = string.Empty;
-            public string Status { get; set; } = "Unread";
-            public string Details { get; set; } = string.Empty;
-            public DateTime DateSubmitted { get; set; }
+            public string Id { get; set; } = string.Empty;
         }
     }
 }

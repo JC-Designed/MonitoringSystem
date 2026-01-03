@@ -5,13 +5,10 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Dashboard";
 
-    // ===== FIXED: use the selected school year =====
     var currentYear = ViewBag.SchoolYear ?? DateTime.Now.Year;
-
     var pendingUsers = ViewBag.PendingUsersList as List<MonitoringSystem.Controllers.AdminController.PendingUserDto>;
     var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
 
-    // Use approved users only for total users display
     var totalUsers = ViewBag.ApprovedUsers ?? 0;
 }
 
@@ -101,7 +98,7 @@
         const pendingUserModal = new bootstrap.Modal(document.getElementById('pendingUserModal'));
         pendingCard.onclick = () => pendingUserModal.show();
 
-        // Chart.js
+        // Chart.js (bars only)
         const ctx = document.getElementById('userChart').getContext('2d');
         new Chart(ctx, {
             type: 'bar',
@@ -109,36 +106,23 @@
                 labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
                 datasets: [
                     {
-                        type: 'bar',
                         label: 'New Registrations',
                         data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.MonthlyRegistrations)),
                         backgroundColor: 'rgba(255,99,132,.6)',
                         borderRadius: 6
-                    },
-                    {
-                        type: 'line',
-                        label: 'Total Users',
-                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.TotalUsersByMonth)),
-                        borderColor: 'rgba(54,162,235,1)',
-                        fill: false,
-                        tension: 0.3,
-                        pointRadius: 5
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' }
-                },
-                scales: {
-                    y: { beginAtZero: true }
-                }
+                plugins: { legend: { position: 'top' } },
+                scales: { y: { beginAtZero: true } }
             }
         });
     });
 
+    // Approve user
     function approveUser(id) {
         if (!id) return;
         fetch('@Url.Action("Approve", "Admin")', {
@@ -155,21 +139,22 @@
                 const userDiv = document.getElementById('user-' + id);
                 if(userDiv) userDiv.remove();
 
-                // Update pending counter
+                // Update counters
                 const pendingCounter = document.getElementById('pendingUsers');
                 pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
 
-                // Update total users counter
+                const approvedCounter = document.getElementById('approvedUsers');
+                approvedCounter.textContent = parseInt(approvedCounter.textContent) + 1;
+
                 const totalCounter = document.getElementById('totalUsers');
                 totalCounter.textContent = parseInt(totalCounter.textContent) + 1;
-
-                alert('User approved!');
             } else {
                 alert('Failed to approve user.');
             }
         });
     }
 
+    // Reject user
     function rejectUser(id) {
         if (!id) return;
         fetch('@Url.Action("Reject", "Admin")', {
@@ -189,8 +174,6 @@
                 // Update pending counter
                 const pendingCounter = document.getElementById('pendingUsers');
                 pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
-
-                alert('User rejected!');
             } else {
                 alert('Failed to reject user.');
             }
