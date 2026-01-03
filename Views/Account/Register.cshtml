@@ -3,61 +3,127 @@
 }
 
 <div class="register-card">
-    <!-- Left: Logo -->
+
+    <!-- LEFT LOGO -->
     <div class="logo-container">
         <img src="~/images/ctu-logo.png" alt="CTU Logo" />
     </div>
 
     <div class="divider"></div>
 
-    <!-- Right: Form -->
+    <!-- RIGHT FORM -->
     <div class="form-side">
-        <h4>Create your account</h4>
+        <h4 class="mb-3">Create your account</h4>
+
         <form asp-action="Register" method="post">
-            <!-- Role Selection -->
+
+            <!-- ROLE -->
             <div class="mb-3">
-                <label for="role" class="form-label">Select Role</label>
+                <label class="form-label">Select Role</label>
                 <select name="roleString" id="role" class="form-select" required>
                     <option value="">Select Role</option>
                     <option value="Student">Student</option>
                     <option value="Company">Company</option>
-                    <!-- Admin removed to prevent public self-registration -->
                 </select>
             </div>
 
-            <!-- Company Name (hidden by default) -->
+            <!-- FIRST & LAST NAME -->
+            <div class="row mb-3">
+                <div class="col-md-6 mb-2 mb-md-0">
+                    <input name="firstName" class="form-control" placeholder="First name" required />
+                </div>
+                <div class="col-md-6">
+                    <input name="lastName" class="form-control" placeholder="Last name" required />
+                </div>
+            </div>
+
+            <!-- BIRTHDAY -->
+            <label class="form-label small">Birthday</label>
+            <div class="row mb-3">
+                <div class="col-4">
+                    <select name="birthMonth" class="form-select" required>
+                        <option value="">Month</option>
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            <option value="@m">
+                                @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
+                            </option>
+                        }
+                    </select>
+                </div>
+                <div class="col-4">
+                    <select name="birthDay" class="form-select" required>
+                        <option value="">Day</option>
+                        @for (int d = 1; d <= 31; d++)
+                        {
+                            <option value="@d">@d</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-4">
+                    <select name="birthYear" class="form-select" required>
+                        <option value="">Year</option>
+                        @for (int y = DateTime.Now.Year; y >= 1950; y--)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- GENDER -->
+            <label class="form-label small">Gender</label>
+            <div class="row mb-3">
+                <div class="col-4">
+                    <label class="gender-box">
+                        Female
+                        <input type="radio" name="gender" value="Female" required />
+                    </label>
+                </div>
+                <div class="col-4">
+                    <label class="gender-box">
+                        Male
+                        <input type="radio" name="gender" value="Male" />
+                    </label>
+                </div>
+                <div class="col-4">
+                    <label class="gender-box">
+                        Custom
+                        <input type="radio" name="gender" value="Custom" />
+                    </label>
+                </div>
+            </div>
+
+            <!-- COMPANY NAME -->
             <div class="mb-3" id="companyNameDiv" style="display:none;">
-                <label for="companyName" class="form-label">Company Name</label>
-                <input name="companyName" id="companyName" type="text" class="form-control" placeholder="Company Name" />
+                <input name="companyName" id="companyName"
+                       class="form-control" placeholder="Company Name" />
             </div>
 
-            <!-- Email -->
+            <!-- EMAIL -->
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input name="email" id="email" type="email" class="form-control" placeholder="Email" required />
+                <input name="email" type="email" class="form-control"
+                       placeholder="Mobile number or email" required />
             </div>
 
-            <!-- Password -->
+            <!-- PASSWORD -->
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input name="password" id="password" type="password" class="form-control" placeholder="Password" required />
+                <input name="password" type="password" class="form-control"
+                       placeholder="New password" required />
             </div>
 
-            <!-- Submit -->
-            <button type="submit" class="btn-ctu mb-3 w-100">Register</button>
+            <!-- SUBMIT -->
+            <button type="submit" class="btn-ctu w-100 mb-3">Register</button>
 
-            <!-- Login Link -->
             <div class="text-center">
                 <small>Already have an account? <a asp-action="Login">Sign In</a></small>
             </div>
 
-            <!-- Error Message -->
             @if (ViewBag.Error != null)
             {
                 <div class="alert alert-danger mt-3 text-center">@ViewBag.Error</div>
             }
 
-            <!-- Success Message -->
             @if (TempData["Success"] != null)
             {
                 <div class="alert alert-success mt-3 text-center">@TempData["Success"]</div>
@@ -65,7 +131,6 @@
         </form>
     </div>
 </div>
-
 <script>
     const roleSelect = document.getElementById('role');
     const companyDiv = document.getElementById('companyNameDiv');
