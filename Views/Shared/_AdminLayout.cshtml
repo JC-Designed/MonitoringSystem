@@ -13,81 +13,36 @@
 
     <style>
         /* Hide school year dropdown by default */
-        .sidebar-schoolyear-wrapper {
-            display: none;
-            transition: all 0.3s ease;
-        }
-        .admin-sidebar.expanded .sidebar-schoolyear-wrapper {
-            display: block !important;
-        }
+        .sidebar-schoolyear-wrapper { display: none; transition: all 0.3s ease; }
+        .admin-sidebar.expanded .sidebar-schoolyear-wrapper { display: block !important; }
 
         /* Profile and banner wrappers */
-        .profile-pic-wrapper, .banner-wrapper {
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-        .profile-pic-wrapper img {
-            width: 150px;
-            height: 150px;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        .banner-wrapper img {
-            width: 100%;
-            height: 200px;
-            object-fit: cover;
-            border-radius: 0.25rem;
-        }
+        .profile-pic-wrapper, .banner-wrapper { text-align: center; margin-bottom: 1rem; }
+        .profile-pic-wrapper img { width: 150px; height: 150px; object-fit: cover; border-radius: 50%; border: 2px solid #dee2e6; }
+        .banner-wrapper img { width: 100%; height: 200px; object-fit: cover; border-radius: 0.25rem; border: 1px solid #dee2e6; }
 
         /* Buttons */
-        .profile-edit-btn {
-            display: inline-block;
-            margin-top: 0.5rem;
-            font-size: 0.85rem;
-            min-width: 120px;
-        }
+        .profile-edit-btn { display: inline-block; margin-top: 0.5rem; font-size: 0.85rem; min-width: 120px; }
         #editAdminInfoBtn { display: inline-block; margin-bottom: 0.5rem; }
 
         /* Admin info table container */
-        .admin-info-container {
-            position: relative;
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #dee2e6;
-            border-radius: 0.25rem;
-            padding: 1.5rem;
-            margin-top: 0.5rem;
-        }
+        .admin-info-container { position: relative; max-height: 450px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 1.5rem; margin-top: 0.5rem; background-color: #f8f9fa; }
+
+        /* Info table styling */
+        #adminInfoTable { width: 100%; border-collapse: separate; border-spacing: 0 0.5rem; }
+        #adminInfoTable td { border: none !important; padding: 0.5rem 0.75rem; }
+        #adminInfoTable td:first-child { font-weight: 600; color: #6c757d; width: 30%; }
+        #adminInfoTable input { width: 100%; }
 
         /* Save button */
-        #saveAdminInfoBtn {
-            position: absolute;
-            bottom: 15px;
-            right: 20px;
-            z-index: 1050;
-        }
+        #saveAdminInfoBtn { position: absolute; bottom: 15px; right: 20px; z-index: 1050; display: block; }
 
         /* Modal body padding for save button */
-        .modal-body {
-            position: relative;
-            padding-bottom: 80px;
-        }
+        .modal-body { position: relative; padding-bottom: 80px; }
 
         /* Notifications */
-        .notif-dot {
-            width: 8px;
-            height: 8px;
-            background-color: red;
-            border-radius: 50%;
-            position: absolute;
-            top: 0;
-            right: 0;
-        }
+        .notif-dot { width: 8px; height: 8px; background-color: red; border-radius: 50%; position: absolute; top: 0; right: 0; }
         .notif-popup { display: none; }
-
-        /* Clean table */
-        #adminInfoTable { border-collapse: separate; border-spacing: 0 0.75rem; }
-        #adminInfoTable td { border: none !important; padding: 0.5rem 0; }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -172,7 +127,7 @@
                 </div>
             </div>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminProfileModal">View Profile</a></li>
+                <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminProfileModal" id="openProfileModalBtn">View Profile</a></li>
                 <li><a class="dropdown-item" asp-action="Logout" asp-controller="Account">Logout</a></li>
             </ul>
         </div>
@@ -195,40 +150,33 @@
             <div class="modal-body pt-3">
                 <!-- PROFILE PIC -->
                 <div class="profile-pic-wrapper text-center">
-                    <img id="adminProfileImgModal" src="~/images/ctu-logo.png" class="shadow-sm mb-2" />
+                    <img id="adminProfileImgModal" src="/images/ctu-logo.png" class="shadow-sm mb-2" />
                 </div>
                 <div class="text-center mb-3">
-                    <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editProfilePicBtnModal">Edit Profile</button>
+                    <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editProfilePicBtnModal">EDIT</button>
                     <input type="file" id="profilePicInputModal" class="d-none" accept="image/*" onchange="previewImage(this,'adminProfileImgModal')" />
                 </div>
 
                 <!-- BANNER -->
                 <div class="banner-wrapper text-center">
-                    <img id="adminBannerImgModal" src="~/images/banner-placeholder.jpg" class="shadow-sm mb-2" style="height:200px;width:100%;" />
+                    <img id="adminBannerImgModal" src="/images/banner-placeholder.jpg" class="shadow-sm mb-2" style="height:200px;width:100%;" />
                 </div>
                 <div class="text-center mb-3">
-                    <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editBannerBtnModal">Edit Banner</button>
+                    <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editBannerBtnModal">EDIT</button>
                     <input type="file" id="bannerInputModal" class="d-none" accept="image/*" onchange="previewImage(this,'adminBannerImgModal')" />
                 </div>
 
                 <!-- INFO TABLE -->
                 <div class="text-center mb-2">
-                    <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editAdminInfoBtn"><i class="bi bi-pencil"></i> Edit Info</button>
+                    <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editAdminInfoBtn"><i class="bi bi-pencil"></i> EDIT</button>
                 </div>
                 <div class="admin-info-container">
                     <table class="table mb-0 table-borderless" id="adminInfoTable">
                         <tbody>
-                            <tr><td class="fw-semibold text-muted" style="width:30%;">Full Name</td><td>Administrator</td></tr>
-                            <tr><td class="fw-semibold text-muted">Email</td><td>admin@ctu.edu.ph</td></tr>
-                            <tr><td class="fw-semibold text-muted">Contact</td><td>0912-345-6789</td></tr>
-                            <tr><td class="fw-semibold text-muted">Address</td><td>Balamban, Cebu</td></tr>
-                            <tr><td class="fw-semibold text-muted">Employee ID</td><td>CTU-ADMIN-001</td></tr>
-                            <tr><td class="fw-semibold text-muted">Department</td><td>CTU Balamban Campus</td></tr>
-                            <tr><td class="fw-semibold text-muted">Position</td><td>System Administrator</td></tr>
-                            <tr><td class="fw-semibold text-muted">Date Joined</td><td>May 12, 2021</td></tr>
-                            <tr><td class="fw-semibold text-muted">Username</td><td>admin01</td></tr>
-                            <tr><td class="fw-semibold text-muted">Last Login</td><td>November 12, 2025 - 8:42 AM</td></tr>
-                            <tr><td class="fw-semibold text-muted">Status</td><td><span class="badge bg-success">Active</span></td></tr>
+                            <tr><td>Full Name</td><td></td></tr>
+                            <tr><td>Email</td><td>jonardcarmelotes09@gmail.com</td></tr>
+                            <tr><td>Contact</td><td></td></tr>
+                            <tr><td>Address</td><td></td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -250,7 +198,6 @@
     const mobileToggle = document.getElementById('sidebarToggle');
     const overlay = document.querySelector('.sidebar-overlay');
 
-    // Sidebar toggle
     if(window.innerWidth >= 768) sidebar.classList.add('expanded');
     desktopToggle?.addEventListener('click', () => sidebar.classList.toggle('expanded'));
     mobileToggle?.addEventListener('click', () => { sidebar.classList.toggle('expanded'); overlay.classList.toggle('active'); });
@@ -282,6 +229,7 @@
             reader.readAsDataURL(file);
         }
     }
+
     document.getElementById('editProfilePicBtnModal').addEventListener('click', ()=> document.getElementById('profilePicInputModal').click());
     document.getElementById('editBannerBtnModal').addEventListener('click', ()=> document.getElementById('bannerInputModal').click());
 
@@ -290,6 +238,7 @@
     const adminInfoTable = document.getElementById('adminInfoTable');
     let isEditing = false;
 
+    // ===== TOGGLE EDIT MODE =====
     editInfoBtn.addEventListener('click', ()=>{
         isEditing = !isEditing;
         adminInfoTable.querySelectorAll('tbody tr').forEach(row=>{
@@ -297,39 +246,39 @@
             if(isEditing){
                 const val = valueCell.textContent.trim();
                 valueCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${val}">`;
-                editInfoBtn.innerHTML = '<i class="bi bi-x-circle"></i> Cancel';
             } else {
                 const input = valueCell.querySelector('input');
                 if(input) valueCell.textContent = input.value;
-                editInfoBtn.innerHTML = '<i class="bi bi-pencil"></i> Edit Info';
             }
         });
-        saveInfoBtn.style.display = isEditing ? 'block' : 'none';
+        editInfoBtn.innerHTML = isEditing ? '<i class="bi bi-x-circle"></i> Cancel' : '<i class="bi bi-pencil"></i> EDIT';
     });
 
-    saveInfoBtn.style.display = 'block';
-    saveInfoBtn.addEventListener('click', ()=>{
+    // ===== SAVE PROFILE =====
+    saveInfoBtn.addEventListener('click', async ()=>{
         const profileFile = document.getElementById('profilePicInputModal').files[0];
         const bannerFile = document.getElementById('bannerInputModal').files[0];
         const formData = new FormData();
         if(profileFile) formData.append('ProfilePicture', profileFile);
         if(bannerFile) formData.append('BannerPicture', bannerFile);
+
         adminInfoTable.querySelectorAll('tbody tr').forEach(row=>{
             const key = row.cells[0].textContent.trim().replace(/\s+/g,'');
             const input = row.cells[1].querySelector('input');
             const value = input ? input.value : row.cells[1].textContent.trim();
             formData.append(key, value);
         });
-        fetch('/Admin/UpdateProfile', { method:'POST', body: formData })
-        .then(res=>res.json())
-        .then(data=>{
+
+        try {
+            const res = await fetch('/Admin/UpdateProfile', { method:'POST', body: formData });
+            const data = await res.json();
             if(data.success){
                 alert('Profile updated successfully!');
                 bootstrap.Modal.getInstance(document.getElementById('adminProfileModal'))?.hide();
             } else {
-                alert('Failed to update profile.');
+                alert('Failed to update profile: ' + (data.message || ''));
             }
-        }).catch(err=>{ console.error(err); alert('Error updating profile.'); });
+        } catch(err){ console.error(err); alert('Error updating profile.'); }
     });
 </script>
 

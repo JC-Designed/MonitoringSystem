@@ -8,6 +8,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
 
 namespace MonitoringSystem.Controllers
 {
@@ -16,11 +18,37 @@ namespace MonitoringSystem.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _db;
+        private readonly IWebHostEnvironment _env;
 
-        public AdminController(UserManager<ApplicationUser> userManager, ApplicationDbContext db)
+        public AdminController(UserManager<ApplicationUser> userManager, ApplicationDbContext db, IWebHostEnvironment env)
         {
             _userManager = userManager;
             _db = db;
+            _env = env;
+
+            // Ensure the admin exists
+            EnsureAdminUser().Wait();
+        }
+
+        // ================= CREATE DEFAULT ADMIN IF NOT EXISTS =================
+        private async Task EnsureAdminUser()
+        {
+            var adminEmail = "jonardcarmelotes09@gmail.com";
+            var admin = await _userManager.FindByEmailAsync(adminEmail);
+            if (admin == null)
+            {
+                admin = new ApplicationUser
+                {
+                    UserName = adminEmail,
+                    Email = adminEmail,
+                    FullName = "", // <-- Leave full name empty for admin to fill
+                    IsApproved = true,
+                    CreatedAt = DateTime.Now
+                };
+                var result = await _userManager.CreateAsync(admin, "admin123");
+                if (result.Succeeded)
+                    await _userManager.AddToRoleAsync(admin, "Admin");
+            }
         }
 
         // ================= HELPER TO GET SCHOOL YEAR =================
@@ -113,24 +141,21 @@ namespace MonitoringSystem.Controllers
 
             return View(companies);
         }
+
         // ================= DELETE COMPANY =================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteCompany(int id)
         {
             var company = await _db.Companies
-                .Include(c => c.User) // include the registered user
+                .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
-            if (company == null)
-            {
-                return NotFound();
-            }
+            if (company == null) return NotFound();
 
             using var transaction = await _db.Database.BeginTransactionAsync();
             try
             {
-                // Delete the user
                 if (company.User != null)
                 {
                     var result = await _userManager.DeleteAsync(company.User);
@@ -141,9 +166,7 @@ namespace MonitoringSystem.Controllers
                     }
                 }
 
-                // Delete the company
                 _db.Companies.Remove(company);
-
                 await _db.SaveChangesAsync();
                 await transaction.CommitAsync();
 
@@ -187,8 +210,7 @@ namespace MonitoringSystem.Controllers
                 return Json(new { success = false });
 
             var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
+            if (user == null) return Json(new { success = false });
 
             var nameParts = dto.Name.Trim().Split(' ', 2);
             user.FirstName = nameParts[0];
@@ -222,8 +244,7 @@ namespace MonitoringSystem.Controllers
                 return Json(new { success = false });
 
             var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
+            if (user == null) return Json(new { success = false });
 
             var result = await _userManager.DeleteAsync(user);
             return Json(new { success = result.Succeeded });
@@ -238,8 +259,7 @@ namespace MonitoringSystem.Controllers
                 return Json(new { success = false });
 
             var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
+            if (user == null) return Json(new { success = false });
 
             user.IsApproved = true;
             var result = await _userManager.UpdateAsync(user);
@@ -256,11 +276,95 @@ namespace MonitoringSystem.Controllers
                 return Json(new { success = false });
 
             var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
+            if (user == null) return Json(new { success = false });
 
             var result = await _userManager.DeleteAsync(user);
             return Json(new { success = result.Succeeded });
+        }
+
+        // ================= GET ADMIN PROFILE =================
+        [HttpGet]
+        public async Task<JsonResult> GetAdminProfile()
+        {
+            var adminEmail = "jonardcarmelotes09@gmail.com";
+            var admin = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == adminEmail);
+            if (admin == null)
+                return Json(new { success = false });
+
+            return Json(new
+            {
+                success = true,
+                fullName = admin.FullName ?? "", // empty if not set
+                email = admin.Email,             // always pre-filled
+                contact = admin.Contact ?? "",
+                address = admin.Address ?? "",
+                profileImage = string.IsNullOrEmpty(admin.ProfileImage) ? "/images/ctu-logo.png" : admin.ProfileImage,
+                bannerImage = string.IsNullOrEmpty(admin.BannerImage) ? "/images/banner-placeholder.jpg" : admin.BannerImage
+            });
+        }
+
+        // ================= UPDATE PROFILE (FULL-STACK VIEW PROFILE) =================
+        [HttpPost]
+        public async Task<JsonResult> UpdateProfile()
+        {
+            try
+            {
+                var form = Request.Form;
+
+                var adminEmail = "jonardcarmelotes09@gmail.com";
+                var admin = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == adminEmail);
+                if (admin == null)
+                    return Json(new { success = false, message = "Admin not found" });
+
+                // Update text fields
+                admin.FullName = form["FullName"];
+                admin.Email = form["Email"];
+                admin.Contact = form["Contact"];
+                admin.Address = form["Address"];
+
+                var files = Request.Form.Files;
+
+                foreach (var file in files)
+                {
+                    if (file.Length <= 0) continue;
+
+                    string fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    string savePath = "";
+
+                    if (file.Name == "ProfilePicture")
+                    {
+                        string profileFolder = Path.Combine(_env.WebRootPath, "images", "profiles");
+                        Directory.CreateDirectory(profileFolder);
+                        savePath = Path.Combine(profileFolder, fileName);
+
+                        using var stream = new FileStream(savePath, FileMode.Create);
+                        await file.CopyToAsync(stream);
+
+                        admin.ProfileImage = "/images/profiles/" + fileName;
+                    }
+
+                    if (file.Name == "BannerPicture")
+                    {
+                        string bannerFolder = Path.Combine(_env.WebRootPath, "images", "banners");
+                        Directory.CreateDirectory(bannerFolder);
+                        savePath = Path.Combine(bannerFolder, fileName);
+
+                        using var stream = new FileStream(savePath, FileMode.Create);
+                        await file.CopyToAsync(stream);
+
+                        admin.BannerImage = "/images/banners/" + fileName;
+                    }
+                }
+
+                await _userManager.UpdateAsync(admin);
+                await _db.SaveChangesAsync();
+
+                return Json(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         // ================= DTOs =================

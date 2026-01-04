@@ -13,8 +13,14 @@ namespace MonitoringSystem.Models
 
         public string Role { get; set; } = string.Empty; // Student, Company, Admin
         public string Gender { get; set; } = string.Empty; // Female, Male, Custom
-
         public DateTime BirthDate { get; set; }
+
+        // ===================== ADMIN PROFILE FIELDS =====================
+        public string FullName { get; set; } = string.Empty;      // For full name display
+        public string Contact { get; set; } = string.Empty;       // Admin contact number
+        public string Address { get; set; } = string.Empty;       // Admin address
+        public string ProfileImage { get; set; } = string.Empty;  // Profile picture path
+        public string BannerImage { get; set; } = string.Empty;   // Banner picture path
 
         // ===================== EXISTING FIELDS =====================
         public bool IsApproved { get; set; } = false;
