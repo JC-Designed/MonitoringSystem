@@ -13,143 +13,137 @@ namespace MonitoringSystem.Controllers
     [Authorize]
     public class MessagesController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public MessagesController(UserManager<ApplicationUser> userManager, ApplicationDbContext db)
+        public MessagesController(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
         {
-            _userManager = userManager;
             _db = db;
+            _userManager = userManager;
         }
 
-        // ===================== Get all users except current =====================
-        [HttpGet]
-        public async Task<IActionResult> GetAllUsers()
-        {
-            var currentUserId = _userManager.GetUserId(User);
-
-            var users = await _userManager.Users
-                .Where(u => u.Id != currentUserId)
-                .Select(u => new { u.Id, u.UserName })
-                .ToListAsync();
-
-            return Json(users);
-        }
-
-        // ===================== Get all conversations for current user =====================
+        // ================= GET ALL CONVERSATIONS =================
         [HttpGet]
         public async Task<IActionResult> GetConversations()
         {
-            var userId = _userManager.GetUserId(User);
+            var currentUserId = _userManager.GetUserId(User);
 
             var conversations = await _db.Conversations
                 .Include(c => c.User1)
                 .Include(c => c.User2)
                 .Include(c => c.Messages)
-                .Where(c => c.User1Id == userId || c.User2Id == userId)
-                .OrderByDescending(c => c.Messages.Max(m => (DateTime?)m.CreatedAt) ?? c.CreatedAt)
+                .Where(c => c.User1Id == currentUserId || c.User2Id == currentUserId)
                 .ToListAsync();
 
-            return Json(conversations.Select(c => new
+            var result = conversations.Select(c =>
             {
-                c.Id,
-                User = c.User1Id == userId ? new { c.User2.Id, c.User2.UserName } : new { c.User1.Id, c.User1.UserName },
-                LastMessage = c.Messages.OrderByDescending(m => m.CreatedAt).Select(m => m.Text).FirstOrDefault()
-            }));
+                var otherUser = c.User1Id == currentUserId ? c.User2 : c.User1;
+                var lastMsg = c.Messages.OrderByDescending(m => m.CreatedAt).FirstOrDefault();
+                return new
+                {
+                    id = c.Id,
+                    user = new { id = otherUser.Id, userName = otherUser.FirstName + " " + otherUser.LastName },
+                    lastMessage = lastMsg?.Text
+                };
+            })
+            .OrderByDescending(c => c.lastMessage)
+            .ToList();
+
+            return Json(result);
         }
 
-        // ===================== Get messages for a conversation =====================
+        // ================= GET MESSAGES FOR A CONVERSATION =================
         [HttpGet]
         public async Task<IActionResult> GetMessages(int conversationId)
         {
-            var userId = _userManager.GetUserId(User);
-
-            var conversation = await _db.Conversations
-                .Include(c => c.Messages)
-                .ThenInclude(m => m.Sender)
-                .FirstOrDefaultAsync(c => c.Id == conversationId && (c.User1Id == userId || c.User2Id == userId));
-
-            if (conversation == null)
-                return NotFound();
-
-            return Json(conversation.Messages
+            var messages = await _db.Messages
+                .Where(m => m.ConversationId == conversationId)
                 .OrderBy(m => m.CreatedAt)
                 .Select(m => new
                 {
-                    m.Id,
-                    m.SenderId,
-                    SenderName = m.Sender.UserName,
-                    m.Text,
-                    m.CreatedAt
-                }));
+                    id = m.Id,
+                    senderId = m.SenderId,
+                    text = m.Text,
+                    createdAt = m.CreatedAt
+                })
+                .ToListAsync();
+
+            return Json(messages);
         }
 
-        // ===================== Send a message =====================
+        // ================= SEND MESSAGE =================
         [HttpPost]
         public async Task<IActionResult> SendMessage(int conversationId, string text)
         {
             if (string.IsNullOrWhiteSpace(text))
-                return BadRequest("Message text cannot be empty.");
+                return BadRequest("Message cannot be empty.");
 
-            var userId = _userManager.GetUserId(User);
-
-            var conversation = await _db.Conversations
-                .FirstOrDefaultAsync(c => c.Id == conversationId && (c.User1Id == userId || c.User2Id == userId));
-
-            if (conversation == null)
-                return NotFound();
+            var currentUserId = _userManager.GetUserId(User);
 
             var message = new Message
             {
                 ConversationId = conversationId,
-                SenderId = userId,
+                SenderId = currentUserId,
                 Text = text,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow
             };
 
             _db.Messages.Add(message);
             await _db.SaveChangesAsync();
 
-            return Ok(new
-            {
-                message.Id,
-                message.SenderId,
-                SenderName = (await _userManager.FindByIdAsync(userId))?.UserName,
-                message.Text,
-                message.CreatedAt
-            });
+            return Ok(message);
         }
 
-        // ===================== Start or get conversation with a specific user =====================
+        // ================= CREATE NEW CONVERSATION =================
         [HttpPost]
-        public async Task<IActionResult> StartConversation(string userId)
+        public async Task<JsonResult> CreateConversation([FromBody] CreateConversationDto dto)
+        {
+            if (dto == null || string.IsNullOrEmpty(dto.User2Id))
+                return Json(new { success = false, message = "Invalid data" });
+
+            var currentUserId = _userManager.GetUserId(User);
+
+            // Check if conversation already exists between these users
+            var existing = await _db.Conversations.FirstOrDefaultAsync(c =>
+                (c.User1Id == currentUserId && c.User2Id == dto.User2Id) ||
+                (c.User1Id == dto.User2Id && c.User2Id == currentUserId)
+            );
+
+            if (existing != null)
+                return Json(new { success = true, conversationId = existing.Id });
+
+            // Create new conversation
+            var conversation = new Conversation
+            {
+                User1Id = currentUserId,
+                User2Id = dto.User2Id
+            };
+
+            _db.Conversations.Add(conversation);
+            await _db.SaveChangesAsync();
+
+            return Json(new { success = true, conversationId = conversation.Id });
+        }
+
+        // ================= GET USERS FOR NEW CONVERSATION SEARCH =================
+        [HttpGet]
+        public async Task<JsonResult> GetUsers(string? search)
         {
             var currentUserId = _userManager.GetUserId(User);
 
-            if (currentUserId == userId)
-                return BadRequest("Cannot start conversation with yourself.");
+            var users = await _userManager.Users
+                .Where(u => u.IsApproved && u.Id != currentUserId &&
+                            (string.IsNullOrEmpty(search) || (u.FirstName + " " + u.LastName).Contains(search)))
+                .Select(u => new { id = u.Id, userName = u.FirstName + " " + u.LastName })
+                .ToListAsync();
 
-            // Check if conversation already exists
-            var conversation = await _db.Conversations
-                .FirstOrDefaultAsync(c =>
-                    (c.User1Id == currentUserId && c.User2Id == userId) ||
-                    (c.User1Id == userId && c.User2Id == currentUserId));
+            return Json(users);
+        }
 
-            // Create new if not exists
-            if (conversation == null)
-            {
-                conversation = new Conversation
-                {
-                    User1Id = currentUserId,
-                    User2Id = userId,
-                    CreatedAt = DateTime.Now
-                };
-
-                _db.Conversations.Add(conversation);
-                await _db.SaveChangesAsync();
-            }
-
-            return Ok(new { conversation.Id });
+        // ================= DTO =================
+        public class CreateConversationDto
+        {
+            public string User2Id { get; set; } = string.Empty;
         }
     }
 }

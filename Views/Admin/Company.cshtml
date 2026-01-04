@@ -5,62 +5,104 @@
     ViewData["Title"] = "COMPANIES";
 }
 
+<style>
+    .profile-header {
+        height: 180px;
+        background: url('/images/student-banner.jpg') center/cover no-repeat;
+        position: relative;
+    }
+
+    .profile-avatar {
+        position: absolute;
+        bottom: -45px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90px;
+        height: 90px;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 4px solid #fff;
+        background: #fff;
+    }
+
+        .profile-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+    .info-box {
+        background: #eeeeee;
+        border-radius: 12px;
+        padding: 24px;
+        margin-top: 60px;
+    }
+
+    .info-row small {
+        display: block;
+        font-size: 12px;
+        color: #6c757d;
+    }
+
+    .info-row div {
+        font-weight: 500;
+    }
+</style>
+
 <div class="companies-page container-fluid py-4">
     <div class="card shadow-sm rounded-4 p-4">
 
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="fw-bold mb-0">COMPANY LIST</h5>
+        <h5 class="fw-bold mb-4">COMPANY LIST</h5>
+
+        <!-- SEARCH -->
+        <div class="mb-4">
+            <label class="form-label fw-semibold">Search by Name</label>
+            <input id="searchName" class="form-control" placeholder="Type name..." />
         </div>
 
-        <!-- ================= FILTERS ================= -->
-        <div class="row g-3 mb-4 align-items-end">
-            <div class="col-md-12">
-                <label class="form-label fw-semibold">Search by Name</label>
-                <input type="text"
-                       id="searchName"
-                       class="form-control filter-box"
-                       placeholder="Type name..." />
-            </div>
-        </div>
-
-        <!-- ================= COMPANY TABLE ================= -->
+        <!-- TABLE -->
         <div class="table-responsive">
-            <table class="table table-hover table-borderless align-middle mb-0" id="companyTable">
+            <table class="table table-hover align-middle" id="companyTable" style="font-size: 0.95rem;">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th>Email</th>
-                        <th>Industry</th>
-                        <th class="text-end">Action</th>
+                        <th style="padding: 12px 15px;">ID</th>
+                        <th style="padding: 12px 15px;">Registered By</th>
+                        <th style="padding: 12px 15px;">Email</th>
+                        <th style="padding: 12px 15px;">Company</th>
+                        <th class="text-end" style="padding: 12px 15px;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var company in Model)
                     {
-                        <tr data-id="@company.Id"
-                            data-name="@company.Name"
-                            data-email="@company.Email"
-                            data-industry="@company.Industry">
+                        <tr style="border-bottom: 1px solid #dee2e6; height: 60px;"
+                            data-name="@($"{company.User.FirstName} {company.User.LastName}")"
+                            data-email="@company.User.Email"
+                            data-company="@company.Name">
 
-                            <td>@company.Id</td>
-                            <td>@company.Name</td>
-                            <td>@company.Email</td>
-                            <td>@company.Industry</td>
-                            <td class="text-end">
-                                <div class="dropdown dropend dropend-lg d-inline-block">
+                            <td style="padding: 12px 15px;">@company.Id</td>
+                            <td style="padding: 12px 15px;">@company.User.FirstName @company.User.LastName</td>
+                            <td style="padding: 12px 15px;">@company.User.Email</td>
+                            <td style="padding: 12px 15px;">@company.Name</td>
+
+                            <td class="text-end" style="padding: 12px 15px;">
+                                <div class="dropdown dropend">
                                     <button class="btn btn-sm btn-light dropdown-toggle"
-                                            type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"></button>
+                                            data-bs-toggle="dropdown"></button>
 
-                                    <ul class="dropdown-menu shadow-sm bg-white">
-                                        <li><button class="dropdown-item view-btn" type="button">View Profile</button></li>
+                                    <ul class="dropdown-menu shadow-sm">
                                         <li>
-                                            <form method="post" action="@Url.Action("DeleteCompany", "Admin", new { id = company.Id })"
-                                                  onsubmit="return confirm('Are you sure you want to delete @company.Name?');">
-                                                <button type="submit" class="dropdown-item text-danger">Delete</button>
+                                            <button class="dropdown-item view-btn" type="button">
+                                                View Profile
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <form method="post"
+                                                  action="@Url.Action("DeleteCompany", "Admin", new { id = company.Id })"
+                                                  onsubmit="return confirm('Delete this company?');">
+                                                <button class="dropdown-item text-danger">
+                                                    Delete
+                                                </button>
                                             </form>
                                         </li>
                                     </ul>
@@ -71,59 +113,110 @@
                 </tbody>
             </table>
         </div>
-    </div>
-</div>
+<!-- ================= PROFILE MODAL ================= -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 overflow-hidden border-0">
 
-<!-- ================= VIEW PROFILE MODAL ================= -->
-<div class="modal fade" id="viewModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Company Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <!-- BANNER -->
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <img src="~/images/student-profile.jpg" />
+                </div>
+
+                <button class="btn btn-sm btn-danger position-absolute top-0 end-0 m-3"
+                        data-bs-dismiss="modal">
+                    CLOSE
+                </button>
             </div>
 
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Name</label>
-                    <input type="text" id="viewName" class="form-control" readonly>
+            <!-- BODY -->
+            <div class="modal-body p-4">
+
+                <div class="info-box mb-4">
+                    <div class="row">
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">Account Information</h6>
+
+                            <div class="info-row">
+                                <small>Registered By</small>
+                                <div id="viewName">—</div>
+                            </div>
+
+                            <div class="info-row">
+                                <small>Email</small>
+                                <div id="viewEmail">—</div>
+                            </div>
+
+                            <div class="info-row">
+                                <small>Company</small>
+                                <div id="viewCompany">—</div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="fw-bold mb-3">Contact & Address</h6>
+
+                            <div class="info-row">
+                                <small>Contact Number</small>
+                                <div>—</div>
+                            </div>
+
+                            <div class="info-row">
+                                <small>Address</small>
+                                <div>—</div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Email</label>
-                    <input type="text" id="viewEmail" class="form-control" readonly>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Industry</label>
-                    <input type="text" id="viewIndustry" class="form-control" readonly>
-                </div>
+
+                <!-- STUDENT LIST -->
+                <h6 class="fw-bold mb-2">Student List</h6>
+
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Course</th>
+                            <th class="text-end">Remaining Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Juan dela Cruz</td>
+                            <td>BIT Computer Technology</td>
+                            <td class="text-end text-primary">120 hrs</td>
+                        </tr>
+                    </tbody>
+                </table>
+
             </div>
         </div>
     </div>
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
     const tbody = document.querySelector("#companyTable tbody");
+    const modal = document.getElementById("viewModal");
 
-    // ===== FILTER TABLE =====
-    document.getElementById("searchName").addEventListener("input", () => {
-        const val = document.getElementById("searchName").value.toLowerCase();
-        [...tbody.rows].forEach(row => {
-            row.style.display = row.dataset.name.toLowerCase().includes(val) ? "" : "none";
+    document.getElementById("searchName").addEventListener("input", function () {
+        const val = this.value.toLowerCase();
+        [...tbody.rows].forEach(r => {
+            r.style.display = r.dataset.name.toLowerCase().includes(val) ? "" : "none";
         });
     });
 
-    // ===== VIEW PROFILE MODAL =====
     document.querySelectorAll(".view-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-            e.preventDefault();
+        btn.addEventListener("click", () => {
             const row = btn.closest("tr");
 
-            document.getElementById("viewName").value = row.dataset.name;
-            document.getElementById("viewEmail").value = row.dataset.email;
-            document.getElementById("viewIndustry").value = row.dataset.industry;
+            viewName.textContent = row.dataset.name;
+            viewEmail.textContent = row.dataset.email;
+            viewCompany.textContent = row.dataset.company;
 
-            bootstrap.Modal.getOrCreateInstance(viewModal).show();
+            bootstrap.Modal.getOrCreateInstance(modal).show();
         });
     });
 </script>

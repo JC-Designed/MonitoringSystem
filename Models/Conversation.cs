@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 
 namespace MonitoringSystem.Models
 {
@@ -8,19 +7,14 @@ namespace MonitoringSystem.Models
     {
         public int Id { get; set; }
 
-        // Users involved in the conversation
-        [Required]
-        public string User1Id { get; set; } = null!;
+        // 1-on-1 users
+        public string User1Id { get; set; } = string.Empty;
         public ApplicationUser User1 { get; set; } = null!;
 
-        [Required]
-        public string User2Id { get; set; } = null!;
+        public string User2Id { get; set; } = string.Empty;
         public ApplicationUser User2 { get; set; } = null!;
 
-        // Messages in the conversation
+        // Messages in this conversation
         public ICollection<Message> Messages { get; set; } = new List<Message>();
-
-        // Created date for the conversation
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

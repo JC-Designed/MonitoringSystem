@@ -113,6 +113,48 @@ namespace MonitoringSystem.Controllers
 
             return View(companies);
         }
+        // ================= DELETE COMPANY =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCompany(int id)
+        {
+            var company = await _db.Companies
+                .Include(c => c.User) // include the registered user
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (company == null)
+            {
+                return NotFound();
+            }
+
+            using var transaction = await _db.Database.BeginTransactionAsync();
+            try
+            {
+                // Delete the user
+                if (company.User != null)
+                {
+                    var result = await _userManager.DeleteAsync(company.User);
+                    if (!result.Succeeded)
+                    {
+                        await transaction.RollbackAsync();
+                        return BadRequest("Failed to delete the user associated with this company.");
+                    }
+                }
+
+                // Delete the company
+                _db.Companies.Remove(company);
+
+                await _db.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return RedirectToAction("Company");
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return BadRequest("An error occurred while deleting the company.");
+            }
+        }
 
         // ================= MESSAGES PAGE =================
         public IActionResult Messages()

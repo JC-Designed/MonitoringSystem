@@ -54,58 +54,80 @@
 
     <script>
         $(document).ready(function () {
-
+            const userId = "@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier).Value";
             let currentConversationId = null;
 
-            // 1️⃣ Load all conversations
+            // ================= Load all conversations =================
             function loadConversations() {
                 $.getJSON('@Url.Action("GetConversations", "Messages")', function (data) {
                     let html = '';
                     data.forEach(c => {
-                        html += `<div class="chat-item" data-id="${c.id}">
-                                    <img src="https://randomuser.me/api/portraits/lego/1.jpg" alt="User" />
-                                    <div class="chat-info">
-                                        <div class="name">${c.user.userName}</div>
-                                        <div class="last-message">${c.lastMessage || ''}</div>
-                                    </div>
-                                </div>`;
+                        html += `
+                            <div class="chat-item" data-id="${c.id}" style="cursor:pointer;">
+                                <img src="https://randomuser.me/api/portraits/lego/1.jpg" alt="User" />
+                                <div class="chat-info">
+                                    <div class="name">${c.user.userName}</div>
+                                    <div class="last-message">${c.lastMessage || ''}</div>
+                                </div>
+                            </div>`;
                     });
                     $('#chatList').html(html);
                 });
             }
 
-            // 2️⃣ Load messages for a conversation
+            // ================= Load messages for a conversation =================
             function loadMessages(conversationId) {
                 currentConversationId = conversationId;
                 $.getJSON('@Url.Action("GetMessages", "Messages")' + '?conversationId=' + conversationId, function (messages) {
                     let html = '';
                     messages.forEach(m => {
-                        let senderClass = (m.senderId === "@User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier).Value") ? 'sent' : 'received';
-                        html += `<div class="message ${senderClass}">${m.text} <span class="msg-time">${new Date(m.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>`;
+                        const senderClass = m.senderId === userId ? 'sent' : 'received';
+                        html += `
+                            <div class="message ${senderClass}">
+                                ${m.text}
+                                <span class="msg-time">${new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute:'2-digit' })}</span>
+                            </div>`;
                     });
                     $('#chatMessages').html(html);
                     $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
                 });
             }
 
-            // 3️⃣ Send message
+            // ================= Send message =================
             function sendMessage() {
                 const text = $('#chatInput').val().trim();
                 if (!text || !currentConversationId) return;
 
-                $.post('@Url.Action("SendMessage", "Messages")', { conversationId: currentConversationId, text: text }, function (data) {
-                    $('#chatInput').val('');
-                    loadMessages(currentConversationId);
-                    loadConversations();
-                }).fail(function(err) {
-                    alert(err.responseText);
+                $.post('@Url.Action("SendMessage", "Messages")', { conversationId: currentConversationId, text: text })
+                    .done(function () {
+                        $('#chatInput').val('');
+                        loadMessages(currentConversationId);
+                        loadConversations();
+                    })
+                    .fail(function(err) {
+                        alert(err.responseText);
+                    });
+            }
+
+            // ================= Load users for modal =================
+            function loadUsers(search = '') {
+                $.getJSON('@Url.Action("GetUsers", "Messages")', { search: search }, function(users) {
+                    let html = '';
+                    if(users.length === 0) html = '<p>No users found</p>';
+                    users.forEach(u => {
+                        html += `<div class="modal-user-item" data-id="${u.id}" style="cursor:pointer;padding:8px;border-bottom:1px solid #eee;">
+                                    ${u.userName}
+                                </div>`;
+                    });
+                    $('#modalUserList').html(html);
                 });
             }
 
-            // Initial Load
+            // ================= Initial Load =================
             loadConversations();
+            loadUsers();
 
-            // Sidebar click
+            // ================= Conversation click =================
             $(document).on('click', '.chat-item', function () {
                 const id = $(this).data('id');
                 loadMessages(id);
@@ -113,14 +135,43 @@
                 $(this).addClass('active');
             });
 
-            // Send button
+            // ================= Send button & Enter key =================
             $('#sendButton').click(sendMessage);
             $('#chatInput').keypress(function (e) { if (e.which === 13) sendMessage(); });
 
-            // Mobile back button
+            // ================= Mobile back button =================
             $('#backToList').click(function () {
                 $('.messages-content').removeClass('active');
                 $('.messages-sidebar').show();
+            });
+
+            // ================= Search in modal =================
+            $('#modalSearch').on('input', function() {
+                loadUsers($(this).val());
+            });
+
+            // ================= Click user to start conversation =================
+            $(document).on('click', '.modal-user-item', function() {
+                const targetUserId = $(this).data('id');
+                $.ajax({
+                    url: '@Url.Action("CreateConversation", "Messages")',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ User2Id: targetUserId }),
+                    success: function(res) {
+                        if(res.success) {
+                            const modal = bootstrap.Modal.getInstance(document.getElementById('newMessageModal'));
+                            modal.hide(); // Properly hide the modal using Bootstrap 5 API
+                            loadConversations();
+                            loadMessages(res.conversationId);
+                        } else {
+                            alert(res.message || 'Failed to create conversation.');
+                        }
+                    },
+                    error: function(err) {
+                        alert(err.responseText);
+                    }
+                });
             });
 
         });

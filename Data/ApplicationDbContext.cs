@@ -23,16 +23,16 @@ namespace MonitoringSystem.Data
         {
             base.OnModelCreating(builder);
 
-            // Conversation relations: prevent multiple cascade paths
+            // 1-on-1 Conversation relationships
             builder.Entity<Conversation>()
                 .HasOne(c => c.User1)
-                .WithMany()
+                .WithMany(u => u.ConversationsAsUser1)
                 .HasForeignKey(c => c.User1Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Conversation>()
                 .HasOne(c => c.User2)
-                .WithMany()
+                .WithMany(u => u.ConversationsAsUser2)
                 .HasForeignKey(c => c.User2Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
@@ -45,7 +45,7 @@ namespace MonitoringSystem.Data
 
             builder.Entity<Message>()
                 .HasOne(m => m.Sender)
-                .WithMany()
+                .WithMany(u => u.MessagesSent)
                 .HasForeignKey(m => m.SenderId)
                 .OnDelete(DeleteBehavior.Restrict);
         }
