@@ -20,14 +20,17 @@ namespace MonitoringSystem.Controllers
         private readonly ApplicationDbContext _db;
         private readonly IWebHostEnvironment _env;
 
-        public AdminController(UserManager<ApplicationUser> userManager, ApplicationDbContext db, IWebHostEnvironment env)
+        public AdminController(
+            UserManager<ApplicationUser> userManager,
+            ApplicationDbContext db,
+            IWebHostEnvironment env)
         {
             _userManager = userManager;
             _db = db;
             _env = env;
 
-            // Ensure the admin exists
-            EnsureAdminUser().Wait();
+            // Ensure admin exists (async-safe)
+            Task.Run(async () => await EnsureAdminUser()).Wait();
         }
 
         // ================= CREATE DEFAULT ADMIN IF NOT EXISTS =================
@@ -35,16 +38,20 @@ namespace MonitoringSystem.Controllers
         {
             var adminEmail = "jonardcarmelotes09@gmail.com";
             var admin = await _userManager.FindByEmailAsync(adminEmail);
+
             if (admin == null)
             {
                 admin = new ApplicationUser
                 {
                     UserName = adminEmail,
                     Email = adminEmail,
-                    FullName = "", // <-- Leave full name empty for admin to fill
+                    FirstName = "",
+                    LastName = "",
+                    Role = "Admin",
                     IsApproved = true,
                     CreatedAt = DateTime.Now
                 };
+
                 var result = await _userManager.CreateAsync(admin, "admin123");
                 if (result.Succeeded)
                     await _userManager.AddToRoleAsync(admin, "Admin");
@@ -202,100 +209,20 @@ namespace MonitoringSystem.Controllers
             return View(reports);
         }
 
-        // ================= EDIT USER =================
-        [HttpPost]
-        public async Task<JsonResult> EditUser([FromBody] EditUserDto dto)
-        {
-            if (dto == null || string.IsNullOrEmpty(dto.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null) return Json(new { success = false });
-
-            var nameParts = dto.Name.Trim().Split(' ', 2);
-            user.FirstName = nameParts[0];
-            user.LastName = nameParts.Length > 1 ? nameParts[1] : "";
-            user.Email = dto.Email;
-            user.UserName = dto.Email;
-
-            await _userManager.UpdateAsync(user);
-
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            if (!currentRoles.Contains(dto.Role))
-            {
-                await _userManager.RemoveFromRolesAsync(user, currentRoles);
-                await _userManager.AddToRoleAsync(user, dto.Role);
-            }
-
-            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
-            {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                await _userManager.ResetPasswordAsync(user, token, dto.NewPassword);
-            }
-
-            return Json(new { success = true });
-        }
-
-        // ================= DELETE USER =================
-        [HttpPost]
-        public async Task<JsonResult> DeleteUser([FromBody] DeleteUserDto dto)
-        {
-            if (dto == null || string.IsNullOrEmpty(dto.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null) return Json(new { success = false });
-
-            var result = await _userManager.DeleteAsync(user);
-            return Json(new { success = result.Succeeded });
-        }
-
-        // ================= APPROVE USER =================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Approve([FromBody] IdDto dto)
-        {
-            if (dto == null || string.IsNullOrEmpty(dto.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null) return Json(new { success = false });
-
-            user.IsApproved = true;
-            var result = await _userManager.UpdateAsync(user);
-
-            return Json(new { success = result.Succeeded });
-        }
-
-        // ================= REJECT USER =================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Reject([FromBody] IdDto dto)
-        {
-            if (dto == null || string.IsNullOrEmpty(dto.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null) return Json(new { success = false });
-
-            var result = await _userManager.DeleteAsync(user);
-            return Json(new { success = result.Succeeded });
-        }
-
         // ================= GET ADMIN PROFILE =================
         [HttpGet]
         public async Task<JsonResult> GetAdminProfile()
         {
-            var adminEmail = "jonardcarmelotes09@gmail.com";
-            var admin = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == adminEmail);
+            var admin = await _userManager.GetUserAsync(User);
             if (admin == null)
                 return Json(new { success = false });
 
             return Json(new
             {
                 success = true,
-                fullName = admin.FullName ?? "", // empty if not set
-                email = admin.Email,             // always pre-filled
+                firstName = admin.FirstName ?? "",
+                lastName = admin.LastName ?? "",
+                email = admin.Email ?? "",
                 contact = admin.Contact ?? "",
                 address = admin.Address ?? "",
                 profileImage = string.IsNullOrEmpty(admin.ProfileImage) ? "/images/ctu-logo.png" : admin.ProfileImage,
@@ -303,61 +230,60 @@ namespace MonitoringSystem.Controllers
             });
         }
 
-        // ================= UPDATE PROFILE (FULL-STACK VIEW PROFILE) =================
+        // ================= UPDATE PROFILE =================
         [HttpPost]
         public async Task<JsonResult> UpdateProfile()
         {
             try
             {
+                var admin = await _userManager.GetUserAsync(User);
+                if (admin == null)
+                    return Json(new { success = false });
+
                 var form = Request.Form;
 
-                var adminEmail = "jonardcarmelotes09@gmail.com";
-                var admin = await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == adminEmail);
-                if (admin == null)
-                    return Json(new { success = false, message = "Admin not found" });
+                // ===== NAME =====
+                admin.FirstName = form["FirstName"];
+                admin.LastName = form["LastName"];
 
-                // Update text fields
-                admin.FullName = form["FullName"];
                 admin.Email = form["Email"];
+                admin.UserName = form["Email"];
                 admin.Contact = form["Contact"];
                 admin.Address = form["Address"];
 
-                var files = Request.Form.Files;
+                // ===== FILE UPLOAD =====
+                string root = Path.Combine(_env.WebRootPath, "uploads");
+                string profileDir = Path.Combine(root, "profiles");
+                string bannerDir = Path.Combine(root, "banners");
 
-                foreach (var file in files)
+                Directory.CreateDirectory(profileDir);
+                Directory.CreateDirectory(bannerDir);
+
+                foreach (var file in Request.Form.Files)
                 {
                     if (file.Length <= 0) continue;
 
-                    string fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                    string savePath = "";
+                    string ext = Path.GetExtension(file.FileName);
+                    string fileName = $"{Guid.NewGuid()}{ext}";
 
                     if (file.Name == "ProfilePicture")
                     {
-                        string profileFolder = Path.Combine(_env.WebRootPath, "images", "profiles");
-                        Directory.CreateDirectory(profileFolder);
-                        savePath = Path.Combine(profileFolder, fileName);
-
-                        using var stream = new FileStream(savePath, FileMode.Create);
+                        string path = Path.Combine(profileDir, fileName);
+                        using var stream = new FileStream(path, FileMode.Create);
                         await file.CopyToAsync(stream);
-
-                        admin.ProfileImage = "/images/profiles/" + fileName;
+                        admin.ProfileImage = "/uploads/profiles/" + fileName;
                     }
 
                     if (file.Name == "BannerPicture")
                     {
-                        string bannerFolder = Path.Combine(_env.WebRootPath, "images", "banners");
-                        Directory.CreateDirectory(bannerFolder);
-                        savePath = Path.Combine(bannerFolder, fileName);
-
-                        using var stream = new FileStream(savePath, FileMode.Create);
+                        string path = Path.Combine(bannerDir, fileName);
+                        using var stream = new FileStream(path, FileMode.Create);
                         await file.CopyToAsync(stream);
-
-                        admin.BannerImage = "/images/banners/" + fileName;
+                        admin.BannerImage = "/uploads/banners/" + fileName;
                     }
                 }
 
                 await _userManager.UpdateAsync(admin);
-                await _db.SaveChangesAsync();
 
                 return Json(new { success = true });
             }

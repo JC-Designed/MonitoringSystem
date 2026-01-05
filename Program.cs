@@ -19,8 +19,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequiredLength = 6;
 })
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddSession();
 
@@ -53,9 +53,15 @@ using (var scope = app.Services.CreateScope())
         {
             UserName = adminEmail,
             Email = adminEmail,
-            FullName = "Leo Soza",
-            IsApproved = true
+
+            // ✅ FIXED: use FirstName & LastName instead of FullName
+            FirstName = "Leo",
+            LastName = "Soza",
+
+            IsApproved = true,
+            CreatedAt = DateTime.Now
         };
+
         var result = await userManager.CreateAsync(admin, adminPassword);
         if (result.Succeeded)
         {
@@ -63,7 +69,7 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // 3️⃣ Ensure Admin role is assigned (in case it was missing)
+    // 3️⃣ Ensure Admin role is assigned
     if (!await userManager.IsInRoleAsync(admin, "Admin"))
         await userManager.AddToRoleAsync(admin, "Admin");
 

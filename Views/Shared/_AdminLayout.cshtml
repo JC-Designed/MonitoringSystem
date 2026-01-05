@@ -121,8 +121,8 @@
         <!-- Profile Dropdown -->
         <div class="dropdown">
             <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
-                <div class="d-flex flex-column" style="font-size: 0.75rem;">
-                    <strong>Administrator</strong>
+                <div class="d-flex flex-column" style="font-size: 0.75rem;" id="sidebarAdminName">
+                    <strong id="sidebarAdminFullName">Administrator</strong>
                     <span>Admin</span>
                 </div>
             </div>
@@ -173,7 +173,8 @@
                 <div class="admin-info-container">
                     <table class="table mb-0 table-borderless" id="adminInfoTable">
                         <tbody>
-                            <tr><td>Full Name</td><td></td></tr>
+                            <tr><td>FirstName</td><td></td></tr>
+                            <tr><td>LastName</td><td></td></tr>
                             <tr><td>Email</td><td>jonardcarmelotes09@gmail.com</td></tr>
                             <tr><td>Contact</td><td></td></tr>
                             <tr><td>Address</td><td></td></tr>
@@ -230,8 +231,8 @@
         }
     }
 
-    document.getElementById('editProfilePicBtnModal').addEventListener('click', ()=> document.getElementById('profilePicInputModal').click());
-    document.getElementById('editBannerBtnModal').addEventListener('click', ()=> document.getElementById('bannerInputModal').click());
+    document.getElementById('editProfilePicBtnModal')?.addEventListener('click', ()=> document.getElementById('profilePicInputModal').click());
+    document.getElementById('editBannerBtnModal')?.addEventListener('click', ()=> document.getElementById('bannerInputModal').click());
 
     const editInfoBtn = document.getElementById('editAdminInfoBtn');
     const saveInfoBtn = document.getElementById('saveAdminInfoBtn');
@@ -239,7 +240,7 @@
     let isEditing = false;
 
     // ===== TOGGLE EDIT MODE =====
-    editInfoBtn.addEventListener('click', ()=>{
+    editInfoBtn?.addEventListener('click', ()=>{
         isEditing = !isEditing;
         adminInfoTable.querySelectorAll('tbody tr').forEach(row=>{
             const valueCell = row.cells[1];
@@ -254,8 +255,31 @@
         editInfoBtn.innerHTML = isEditing ? '<i class="bi bi-x-circle"></i> Cancel' : '<i class="bi bi-pencil"></i> EDIT';
     });
 
+    // ===== FETCH ADMIN PROFILE ON MODAL OPEN =====
+    document.getElementById('openProfileModalBtn')?.addEventListener('click', async ()=>{
+        try{
+            const res = await fetch('/Admin/GetAdminProfile');
+            const data = await res.json();
+            if(data.success){
+                document.getElementById('adminProfileImgModal').src = data.profileImage;
+                document.getElementById('adminBannerImgModal').src = data.bannerImage;
+
+                const rows = adminInfoTable.querySelectorAll('tbody tr');
+                rows[0].cells[1].textContent = data.firstName || '';
+                rows[1].cells[1].textContent = data.lastName || '';
+                rows[2].cells[1].textContent = data.email;
+                rows[3].cells[1].textContent = data.contact;
+                rows[4].cells[1].textContent = data.address;
+
+                // ===== UPDATE SIDEBAR NAME =====
+                const fullName = (data.firstName || '') + ' ' + (data.lastName || '');
+                document.getElementById('sidebarAdminFullName').textContent = fullName.trim() || 'Administrator';
+            }
+        } catch(err){ console.error(err); }
+    });
+
     // ===== SAVE PROFILE =====
-    saveInfoBtn.addEventListener('click', async ()=>{
+    saveInfoBtn?.addEventListener('click', async ()=>{
         const profileFile = document.getElementById('profilePicInputModal').files[0];
         const bannerFile = document.getElementById('bannerInputModal').files[0];
         const formData = new FormData();
@@ -263,7 +287,7 @@
         if(bannerFile) formData.append('BannerPicture', bannerFile);
 
         adminInfoTable.querySelectorAll('tbody tr').forEach(row=>{
-            const key = row.cells[0].textContent.trim().replace(/\s+/g,'');
+            const key = row.cells[0].textContent.trim();
             const input = row.cells[1].querySelector('input');
             const value = input ? input.value : row.cells[1].textContent.trim();
             formData.append(key, value);
@@ -275,6 +299,12 @@
             if(data.success){
                 alert('Profile updated successfully!');
                 bootstrap.Modal.getInstance(document.getElementById('adminProfileModal'))?.hide();
+
+                // ===== UPDATE SIDEBAR AFTER SAVE =====
+                const firstName = adminInfoTable.querySelector('tbody tr:nth-child(1) td:nth-child(2)').textContent.trim();
+                const lastName = adminInfoTable.querySelector('tbody tr:nth-child(2) td:nth-child(2)').textContent.trim();
+                const fullName = (firstName + ' ' + lastName).trim();
+                document.getElementById('sidebarAdminFullName').textContent = fullName || 'Administrator';
             } else {
                 alert('Failed to update profile: ' + (data.message || ''));
             }
