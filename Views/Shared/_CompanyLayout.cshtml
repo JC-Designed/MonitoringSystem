@@ -12,17 +12,19 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
     <style>
+        /* Sidebar notification dot */
         .notif-dot {
             position: absolute;
-            top: 2px;
-            right: 2px;
+            top: 0;
+            right: 0;
             width: 8px;
             height: 8px;
-            background: red;
+            background-color: red;
             border-radius: 50%;
             display: none;
         }
 
+        /* Profile & Banner Images */
         .profile-pic-wrapper img {
             width: 140px;
             height: 140px;
@@ -85,10 +87,14 @@
             <hr />
         </nav>
 
+        <!-- LOGOUT BUTTON (POST) -->
         <div class="sidebar-logout">
-            <a asp-action="Logout" asp-controller="Account" class="btn-logout">
+            <a href="javascript:void(0);" onclick="document.getElementById('companyLogoutForm').submit();" class="btn-logout">
                 <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
             </a>
+            <form id="companyLogoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
+                @Html.AntiForgeryToken()
+            </form>
         </div>
     </aside>
 
@@ -111,13 +117,16 @@
                 <i class="bi bi-bell-fill fs-5"></i>
                 <span class="notif-dot"></span>
                 <div class="notif-popup shadow-sm bg-white rounded p-2"
-                     style="display:none; position:absolute; right:0; top:30px; width:300px;">
+                     style="display:none; position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
                     <h6 class="fw-bold mb-2">Notifications</h6>
                     <ul id="notifList" class="list-unstyled mb-0"></ul>
+                    <div class="text-center mt-2">
+                        <button class="btn btn-sm btn-outline-secondary w-100" id="clearNotifsBtn">Mark all as read</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Profile -->
+            <!-- Profile Dropdown -->
             <div class="dropdown">
                 <div class="dropdown-toggle" data-bs-toggle="dropdown" style="cursor:pointer;">
                     <strong>Company</strong>
@@ -128,7 +137,9 @@
                             View Profile
                         </a>
                     </li>
-                    <li><a class="dropdown-item" asp-action="Logout" asp-controller="Account">Logout</a></li>
+                    <li>
+                        <a href="javascript:void(0);" onclick="document.getElementById('companyLogoutForm').submit();" class="dropdown-item">Logout</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -149,15 +160,12 @@
                 </div>
 
                 <div class="modal-body">
-
                     <!-- PROFILE PIC -->
                     <div class="profile-pic-wrapper text-center mb-2">
                         <img id="companyProfileImg" src="~/images/ctu-logo.png" />
                     </div>
                     <div class="text-center mb-3">
-                        <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editCompanyPicBtn">
-                            Edit Profile
-                        </button>
+                        <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editCompanyPicBtn">Edit Profile</button>
                         <input type="file" id="companyPicInput" class="d-none" accept="image/*"
                                onchange="previewImage(this,'companyProfileImg')" />
                     </div>
@@ -167,9 +175,7 @@
                         <img id="companyBannerImg" src="~/images/banner-placeholder.jpg" />
                     </div>
                     <div class="text-center mb-3">
-                        <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editCompanyBannerBtn">
-                            Edit Banner
-                        </button>
+                        <button class="btn btn-outline-primary btn-sm profile-edit-btn" id="editCompanyBannerBtn">Edit Banner</button>
                         <input type="file" id="companyBannerInput" class="d-none" accept="image/*"
                                onchange="previewImage(this,'companyBannerImg')" />
                     </div>
@@ -197,7 +203,6 @@
                     <div class="text-end mt-3">
                         <button class="btn btn-primary d-none" id="saveCompanyInfoBtn">Save</button>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -206,42 +211,120 @@
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function previewImage(input, targetId) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = e => document.getElementById(targetId).src = e.target.result;
+        // Sidebar toggle
+        const sidebar = document.querySelector('.admin-sidebar');
+        const desktopToggle = document.getElementById('desktopSidebarToggle');
+        const mobileToggle = document.getElementById('sidebarToggle');
+        const overlay = document.querySelector('.sidebar-overlay');
+
+        if(window.innerWidth >= 768) sidebar.classList.add('expanded');
+        desktopToggle?.addEventListener('click', ()=> sidebar.classList.toggle('expanded'));
+        mobileToggle?.addEventListener('click', ()=> {
+            sidebar.classList.toggle('expanded');
+            overlay.classList.toggle('active');
+        });
+        overlay?.addEventListener('click', ()=> {
+            sidebar.classList.remove('expanded');
+            overlay.classList.remove('active');
+        });
+
+        // Notifications
+        const notifBell = document.getElementById('notifBell');
+        const notifPopup = notifBell?.querySelector('.notif-popup');
+        const notifDot = notifBell?.querySelector('.notif-dot');
+        const notifList = document.getElementById('notifList');
+        const clearNotifsBtn = document.getElementById('clearNotifsBtn');
+        let notifications = [{id:1,text:"New notification",read:false}];
+
+        function renderNotifications(){
+            notifList.innerHTML = '';
+            let unreadCount = 0;
+            notifications.forEach(notif=>{
+                const li = document.createElement('li');
+                li.textContent = notif.text;
+                li.classList.toggle('fw-bold',!notif.read);
+                li.style.cursor='pointer';
+                li.addEventListener('click', ()=> { notif.read = true; renderNotifications(); });
+                notifList.appendChild(li);
+                if(!notif.read) unreadCount++;
+            });
+            notifDot.style.display = unreadCount>0 ? 'block' : 'none';
+        }
+        notifBell?.addEventListener('click', ()=> {
+            notifPopup.style.display = (notifPopup.style.display==='block')?'none':'block';
+        });
+        clearNotifsBtn?.addEventListener('click', ()=>{
+            notifications.forEach(n=>n.read=true);
+            renderNotifications();
+        });
+        document.addEventListener('click', e=>{ if(!notifBell.contains(e.target)) notifPopup.style.display='none'; });
+        renderNotifications();
+
+        // Image preview
+        function previewImage(input,imgId){
+            const file=input.files[0];
+            if(file){
+                const reader=new FileReader();
+                reader.onload=e=>document.getElementById(imgId).src=e.target.result;
                 reader.readAsDataURL(file);
             }
         }
+        document.getElementById('editCompanyPicBtn')?.addEventListener('click', ()=> document.getElementById('companyPicInput').click());
+        document.getElementById('editCompanyBannerBtn')?.addEventListener('click', ()=> document.getElementById('companyBannerInput').click());
 
-        document.getElementById('editCompanyPicBtn').onclick =
-            () => document.getElementById('companyPicInput').click();
-
-        document.getElementById('editCompanyBannerBtn').onclick =
-            () => document.getElementById('companyBannerInput').click();
-
+        // Edit company info inline
         const editBtn = document.getElementById('editCompanyInfoBtn');
         const saveBtn = document.getElementById('saveCompanyInfoBtn');
         const table = document.getElementById('companyInfoTable');
         let editing = false;
 
-        editBtn.onclick = () => {
+        editBtn?.addEventListener('click', ()=>{
             editing = !editing;
-            table.querySelectorAll('tr').forEach(row => {
+            table.querySelectorAll('tr').forEach(row=>{
                 const cell = row.cells[1];
-                if (editing) {
+                if(editing){
                     cell.innerHTML = `<input class="form-control form-control-sm" value="${cell.textContent.trim()}">`;
-                } else {
+                }else{
                     const input = cell.querySelector('input');
-                    if (input) cell.textContent = input.value;
+                    if(input) cell.textContent = input.value;
                 }
             });
             editBtn.innerHTML = editing ? '<i class="bi bi-x-circle"></i> Cancel' : '<i class="bi bi-pencil"></i> Edit Info';
             saveBtn.classList.toggle('d-none', !editing);
-        };
+        });
+
+        // Save company profile (fetch POST)
+        saveBtn?.addEventListener('click', async ()=>{
+            const profileFile = document.getElementById('companyPicInput').files[0];
+            const bannerFile = document.getElementById('companyBannerInput').files[0];
+            const formData = new FormData();
+            if(profileFile) formData.append('ProfilePicture',profileFile);
+            if(bannerFile) formData.append('BannerPicture',bannerFile);
+
+            table.querySelectorAll('tr').forEach(row=>{
+                const key = row.cells[0].textContent.trim();
+                const input = row.cells[1].querySelector('input');
+                const value = input ? input.value : row.cells[1].textContent.trim();
+                formData.append(key,value);
+            });
+
+            try{
+                const res = await fetch('/CompanyPanel/UpdateProfile',{method:'POST',body:formData});
+                const data = await res.json();
+                if(data.success){
+                    alert('Profile updated successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('companyProfileModal'))?.hide();
+                }else{
+                    alert('Failed to update profile: ' + (data.message || ''));
+                }
+            }catch(err){
+                console.error(err);
+                alert('Error updating profile.');
+            }
+        });
     </script>
 
     @RenderSection("Scripts", required: false)
 </body>
 </html>
+ 

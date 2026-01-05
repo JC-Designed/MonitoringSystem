@@ -148,9 +148,13 @@ namespace MonitoringSystem.Controllers
 
         // ======================= LOGOUT =======================
         [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
+            // Sign out the user
             await _signInManager.SignOutAsync();
+
+            // Redirect to Login page
             return RedirectToAction("Login");
         }
     }

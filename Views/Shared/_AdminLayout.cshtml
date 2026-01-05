@@ -87,10 +87,14 @@
         <hr />
     </nav>
 
+    <!-- LOGOUT BUTTON (POST) -->
     <div class="sidebar-logout">
-        <a asp-action="Logout" asp-controller="Account" class="btn-logout">
+        <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
             <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
         </a>
+        <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
+            @Html.AntiForgeryToken()
+        </form>
     </div>
 </aside>
 
@@ -128,7 +132,7 @@
             </div>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
                 <li><a class="dropdown-item" data-bs-toggle="modal" data-bs-target="#adminProfileModal" id="openProfileModalBtn">View Profile</a></li>
-                <li><a class="dropdown-item" asp-action="Logout" asp-controller="Account">Logout</a></li>
+                <li><a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="dropdown-item">Logout</a></li>
             </ul>
         </div>
     </div>
