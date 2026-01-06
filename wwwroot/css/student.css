@@ -1,0 +1,139 @@
+﻿/* =====================================
+   Student Dashboard Styles
+===================================== */
+
+/* ===== Dashboard Background ===== */
+.dashboard-bg {
+    background-color: #f8f9fa; /* light gray for contrast */
+    min-height: 100vh;
+    padding-bottom: 50px;
+}
+
+/* ===== Dashboard Container ===== */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ===== Dashboard Cards ===== */
+.dashboard-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+        cursor: pointer;
+    }
+
+    .dashboard-card h5 {
+        margin-top: 1rem;
+        font-size: 1.1rem;
+        color: #212529;
+    }
+
+    .dashboard-card p {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+/* ===== Icon Wrapper ===== */
+.icon-wrapper {
+    font-size: 2.5rem;
+    padding: 1rem;
+    border-radius: 50%;
+    background-color: rgba(13,110,253,0.1); /* default blue background */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 70px;
+    height: 70px;
+    color: #0d6efd;
+    transition: all 0.3s ease;
+    margin-bottom: 0.75rem;
+}
+
+.dashboard-card.task-card .icon-wrapper {
+    background-color: rgba(13,110,253,0.1);
+    color: #0d6efd;
+}
+
+.dashboard-card.reports-card .icon-wrapper {
+    background-color: rgba(25,135,84,0.1);
+    color: #198754;
+}
+
+.dashboard-card.settings-card .icon-wrapper {
+    background-color: rgba(255,193,7,0.1);
+    color: #ffc107;
+}
+
+.dashboard-card.help-card .icon-wrapper {
+    background-color: rgba(13,202,240,0.1);
+    color: #0dcaf0;
+}
+
+/* ===== Links ===== */
+.dashboard-link {
+    text-decoration: none;
+}
+
+/* ===== Chart Card ===== */
+.chart-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 2rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+}
+
+/* Make chart responsive */
+.chart-wrapper {
+    height: 300px;
+    width: 100%;
+}
+
+/* ===== Text Styling ===== */
+.text-center {
+    text-align: center;
+}
+
+.fw-bold {
+    font-weight: 600;
+}
+
+.text-primary {
+    color: #0d6efd;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .dashboard-card {
+        padding: 1.5rem 1rem;
+    }
+
+    .icon-wrapper {
+        font-size: 2rem;
+        width: 60px;
+        height: 60px;
+    }
+}
+
+@media (max-width: 576px) {
+    .dashboard-card h5 {
+        font-size: 1rem;
+    }
+
+    .dashboard-card p {
+        font-size: 0.85rem;
+    }
+}

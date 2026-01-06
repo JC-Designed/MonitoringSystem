@@ -1,7 +1,123 @@
 ﻿@{
     Layout = "_StudentLayout";
-    ViewData["Title"] = "Dashboard"; // Change per page
+    ViewData["Title"] = "Dashboard";
 }
 
-<h1>@ViewData["Title"]</h1>
-<p>Welcome to the Student Panel!</p>
+<link rel="stylesheet" href="~/css/student.css" />
+
+<div class="dashboard-bg py-5">
+    <div class="container dashboard-container">
+
+        <!-- ===== HEADER ===== -->
+        <div class="text-center mb-5">
+            <h1 class="fw-bold text-primary">@ViewData["Title"]</h1>
+            <p class="text-muted">Welcome to the Student Panel</p>
+        </div>
+
+        <!-- ===== DASHBOARD CARDS ===== -->
+        <div class="row g-4 justify-content-center text-center">
+
+            <!-- Tasks -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a asp-action="Task" class="dashboard-link">
+                    <div class="card dashboard-card task-card">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-clipboard-check-fill"></i>
+                        </div>
+                        <h5 class="fw-bold">Tasks</h5>
+                        <p>View and manage assigned tasks</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Reports -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a asp-action="Reports" class="dashboard-link">
+                    <div class="card dashboard-card reports-card">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-file-earmark-text-fill"></i>
+                        </div>
+                        <h5 class="fw-bold">Reports</h5>
+                        <p>Track submitted reports</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Settings -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a asp-action="Settings" class="dashboard-link">
+                    <div class="card dashboard-card settings-card">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-gear-fill"></i>
+                        </div>
+                        <h5 class="fw-bold">Settings</h5>
+                        <p>Manage profile and security</p>
+                    </div>
+                </a>
+            </div>
+
+            <!-- Help -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a asp-action="Help" class="dashboard-link">
+                    <div class="card dashboard-card help-card">
+                        <div class="icon-wrapper">
+                            <i class="bi bi-question-circle-fill"></i>
+                        </div>
+                        <h5 class="fw-bold">Help & Support</h5>
+                        <p>FAQs and support resources</p>
+                    </div>
+                </a>
+            </div>
+
+        </div>
+
+        <!-- ===== CHART ===== -->
+        <div class="row mt-5 justify-content-center">
+            <div class="col-12 col-lg-10">
+                <div class="card chart-card p-4">
+                    <h5 class="fw-bold text-center mb-4">
+                        Tasks Completed Per Month (@DateTime.Now.Year)
+                    </h5>
+                    <div class="chart-wrapper">
+                        <canvas id="tasksChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Placeholder monthly tasks (replace with dynamic data)
+        const monthlyTasks = [5, 8, 12, 7, 9, 10, 15, 6, 8, 11, 7, 10];
+
+        const ctx = document.getElementById('tasksChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [{
+                    label: 'Tasks Completed',
+                    data: monthlyTasks,
+                    backgroundColor: 'rgba(13,110,253,0.7)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 2 }
+                    }
+                }
+            }
+        });
+    </script>
+}
