@@ -135,6 +135,55 @@ namespace MonitoringSystem.Controllers
             return View(allUsers);
         }
 
+        // ================= DELETE USER =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> DeleteUser([FromBody] IdDto dto)
+        {
+            if (string.IsNullOrEmpty(dto?.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            var result = await _userManager.DeleteAsync(user);
+            return Json(new { success = result.Succeeded });
+        }
+
+        // ================= APPROVE PENDING USER =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> Approve([FromBody] IdDto dto)
+        {
+            if (string.IsNullOrEmpty(dto?.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            user.IsApproved = true;
+            var result = await _userManager.UpdateAsync(user);
+            return Json(new { success = result.Succeeded });
+        }
+
+        // ================= REJECT PENDING USER =================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<JsonResult> Reject([FromBody] IdDto dto)
+        {
+            if (string.IsNullOrEmpty(dto?.Id))
+                return Json(new { success = false });
+
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null)
+                return Json(new { success = false });
+
+            var result = await _userManager.DeleteAsync(user);
+            return Json(new { success = result.Succeeded });
+        }
+
         // ================= COMPANY PAGE =================
         public IActionResult Company()
         {
@@ -242,16 +291,13 @@ namespace MonitoringSystem.Controllers
 
                 var form = Request.Form;
 
-                // ===== NAME =====
                 admin.FirstName = form["FirstName"];
                 admin.LastName = form["LastName"];
-
                 admin.Email = form["Email"];
                 admin.UserName = form["Email"];
                 admin.Contact = form["Contact"];
                 admin.Address = form["Address"];
 
-                // ===== FILE UPLOAD =====
                 string root = Path.Combine(_env.WebRootPath, "uploads");
                 string profileDir = Path.Combine(root, "profiles");
                 string bannerDir = Path.Combine(root, "banners");
@@ -284,7 +330,6 @@ namespace MonitoringSystem.Controllers
                 }
 
                 await _userManager.UpdateAsync(admin);
-
                 return Json(new { success = true });
             }
             catch (Exception ex)

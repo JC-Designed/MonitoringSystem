@@ -5,6 +5,9 @@
     ViewData["Title"] = "USERS";
 }
 
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+<input type="hidden" id="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+
 <div class="users-page container-fluid py-4">
     <div class="card shadow-sm rounded-4 p-4">
 
@@ -145,6 +148,11 @@
     const tbody = document.querySelector("#usersTable tbody");
     let rowToEdit = null;
 
+    const searchName = document.getElementById("searchName");
+    const userTypeFilter = document.getElementById("userTypeFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const token = document.getElementById("__RequestVerificationToken").value;
+
     function filterTable() {
         const nameVal = searchName.value.toLowerCase();
         const typeVal = userTypeFilter.value;
@@ -160,8 +168,7 @@
         });
     }
 
-    [searchName, userTypeFilter, statusFilter]
-        .forEach(el => el.addEventListener("input", filterTable));
+    [searchName, userTypeFilter, statusFilter].forEach(el => el.addEventListener("input", filterTable));
 
     // ===== EDIT =====
     document.querySelectorAll(".edit-btn").forEach(btn => {
@@ -189,7 +196,10 @@
 
             const res = await fetch("/Admin/DeleteUser", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "RequestVerificationToken": token
+                },
                 body: JSON.stringify({ Id: row.dataset.id })
             });
 
