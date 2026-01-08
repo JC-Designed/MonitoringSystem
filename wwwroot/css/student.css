@@ -4,15 +4,16 @@
 
 /* ===== Dashboard Background ===== */
 .dashboard-bg {
-    background-color: #f8f9fa; /* light gray for contrast */
+    background-color: #ffffff; /* pure white background */
     min-height: 100vh;
     padding-bottom: 50px;
 }
 
 /* ===== Dashboard Container ===== */
 .dashboard-container {
-    max-width: 1200px;
+    max-width: 1400px; /* wider container */
     margin: 0 auto;
+    padding: 0 15px;
 }
 
 /* ===== Dashboard Cards ===== */
@@ -20,9 +21,10 @@
     background-color: #ffffff;
     border-radius: 1rem;
     padding: 2rem 1.5rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     transition: all 0.3s ease;
     height: 100%;
+    min-height: 260px; /* ensure equal card height */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -31,20 +33,21 @@
 }
 
     .dashboard-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 25px rgba(0,0,0,0.15);
+        transform: translateY(-6px);
+        box-shadow: 0 12px 30px rgba(0,0,0,0.15);
         cursor: pointer;
     }
 
     .dashboard-card h5 {
         margin-top: 1rem;
-        font-size: 1.1rem;
+        font-size: 1.2rem;
         color: #212529;
     }
 
     .dashboard-card p {
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         color: #6c757d;
+        margin-top: 0.25rem;
     }
 
 /* ===== Icon Wrapper ===== */
@@ -52,17 +55,16 @@
     font-size: 2.5rem;
     padding: 1rem;
     border-radius: 50%;
-    background-color: rgba(13,110,253,0.1); /* default blue background */
     display: flex;
     align-items: center;
     justify-content: center;
     width: 70px;
     height: 70px;
-    color: #0d6efd;
     transition: all 0.3s ease;
     margin-bottom: 0.75rem;
 }
 
+/* Card-specific icon colors */
 .dashboard-card.task-card .icon-wrapper {
     background-color: rgba(13,110,253,0.1);
     color: #0d6efd;
@@ -93,12 +95,11 @@
     background-color: #ffffff;
     border-radius: 1rem;
     padding: 2rem;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
 }
 
-/* Make chart responsive */
 .chart-wrapper {
-    height: 300px;
+    height: 400px; /* taller chart */
     width: 100%;
 }
 
@@ -116,15 +117,26 @@
 }
 
 /* ===== Responsive ===== */
+@media (max-width: 992px) {
+    .dashboard-container {
+        max-width: 95%;
+    }
+}
+
 @media (max-width: 768px) {
     .dashboard-card {
         padding: 1.5rem 1rem;
+        min-height: 240px;
     }
 
     .icon-wrapper {
         font-size: 2rem;
         width: 60px;
         height: 60px;
+    }
+
+    .chart-wrapper {
+        height: 300px;
     }
 }
 
@@ -135,5 +147,11 @@
 
     .dashboard-card p {
         font-size: 0.85rem;
+    }
+
+    .icon-wrapper {
+        width: 55px;
+        height: 55px;
+        font-size: 1.8rem;
     }
 }

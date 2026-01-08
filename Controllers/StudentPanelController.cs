@@ -1,5 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MonitoringSystem.Models; // Make sure this namespace contains StudentTask
+using System;
+using System.Collections.Generic;
 
 namespace MonitoringSystem.Controllers
 {
@@ -21,16 +24,49 @@ namespace MonitoringSystem.Controllers
         }
 
         // ======================= TASK =======================
-        public IActionResult Task()
+        public IActionResult Tasks()
         {
-            ViewData["Title"] = "Task";
-            return View();
+            ViewData["Title"] = "Tasks";
+
+            // ===== SAMPLE TASK DATA =====
+            var tasks = new List<StudentTask>
+            {
+                new StudentTask
+                {
+                    Id = 1,
+                    Title = "Design Logo",
+                    Company = "ABC Corp",
+                    Deadline = DateTime.Now.AddDays(5),
+                    Status = "Pending",
+                    Description = "Create a modern logo for ABC Corp's new product."
+                },
+                new StudentTask
+                {
+                    Id = 2,
+                    Title = "Submit Report",
+                    Company = "XYZ Ltd",
+                    Deadline = DateTime.Now.AddDays(-2),
+                    Status = "Completed",
+                    Description = "Submit the monthly monitoring report."
+                },
+                new StudentTask
+                {
+                    Id = 3,
+                    Title = "Update Website",
+                    Company = "DesignHub",
+                    Deadline = DateTime.Now.AddDays(10),
+                    Status = "Overdue",
+                    Description = "Update the website with the new product catalog."
+                }
+            };
+
+            return View(tasks);
         }
 
         // ======================= REPORTS =======================
         public IActionResult Reports()
         {
-            ViewData["Title"] = "Generate Reports";
+            ViewData["Title"] = "Reports";
             return View();
         }
     }
