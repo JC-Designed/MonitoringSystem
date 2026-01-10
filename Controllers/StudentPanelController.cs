@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MonitoringSystem.Models; // Make sure this namespace contains StudentTask
+using MonitoringSystem.Models;
 using System;
 using System.Collections.Generic;
 
@@ -38,7 +38,8 @@ namespace MonitoringSystem.Controllers
                     Company = "ABC Corp",
                     Deadline = DateTime.Now.AddDays(5),
                     Status = "Pending",
-                    Description = "Create a modern logo for ABC Corp's new product."
+                    Description = "Create a modern logo for ABC Corp's new product.",
+                    AttachmentPath = null
                 },
                 new StudentTask
                 {
@@ -47,7 +48,8 @@ namespace MonitoringSystem.Controllers
                     Company = "XYZ Ltd",
                     Deadline = DateTime.Now.AddDays(-2),
                     Status = "Completed",
-                    Description = "Submit the monthly monitoring report."
+                    Description = "Submit the monthly monitoring report.",
+                    AttachmentPath = "/files/report.pdf" // example
                 },
                 new StudentTask
                 {
@@ -56,7 +58,8 @@ namespace MonitoringSystem.Controllers
                     Company = "DesignHub",
                     Deadline = DateTime.Now.AddDays(10),
                     Status = "Overdue",
-                    Description = "Update the website with the new product catalog."
+                    Description = "Update the website with the new product catalog.",
+                    AttachmentPath = null
                 }
             };
 

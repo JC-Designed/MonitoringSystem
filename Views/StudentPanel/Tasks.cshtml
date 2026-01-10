@@ -6,7 +6,8 @@
 }
 
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
-<input type="hidden" id="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
+<input type="hidden" id="__RequestVerificationToken"
+       value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
 <div class="container-fluid py-5">
     <div class="card shadow-sm rounded-4 p-4 task-card">
@@ -24,7 +25,8 @@
         <div class="row g-3 mb-4 align-items-end">
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Search by Task</label>
-                <input type="text" id="searchInput" class="form-control filter-box" placeholder="Type task title or company..." />
+                <input type="text" id="searchInput" class="form-control filter-box"
+                       placeholder="Type task title..." />
             </div>
 
             <div class="col-md-4">
@@ -44,11 +46,10 @@
                 <thead class="table-light">
                     <tr>
                         <th style="width:5%">#</th>
-                        <th style="width:30%">Task Title</th>
-                        <th style="width:25%">Company</th>
-                        <th style="width:15%">Deadline</th>
-                        <th style="width:10%">Status</th>
-                        <th class="text-end" style="width:15%">Action</th>
+                        <th style="width:40%" class="text-center">Task Title</th>
+                        <th style="width:20%">Deadline</th>
+                        <th style="width:15%">Status</th>
+                        <th class="text-end" style="width:20%">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,17 +60,17 @@
                         {
                             <tr data-id="@task.Id"
                                 data-title="@task.Title"
-                                data-company="@task.Company"
                                 data-deadline="@task.Deadline.ToString("yyyy-MM-dd")"
-                                data-status="@task.Status">
+                                data-status="@task.Status"
+                                data-description="@task.Description">
                                 <td>@index</td>
-                                <td>@task.Title</td>
-                                <td>@task.Company</td>
+                                <td class="text-center fw-semibold">@task.Title</td>
                                 <td>@task.Deadline.ToString("yyyy-MM-dd")</td>
                                 <td>@task.Status</td>
                                 <td class="text-end">
                                     <div class="dropdown dropend d-inline-block">
-                                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                        <button class="btn btn-sm btn-light dropdown-toggle"
+                                                type="button" data-bs-toggle="dropdown"></button>
                                         <ul class="dropdown-menu shadow-sm">
                                             <li><a class="dropdown-item view-btn" href="#">View</a></li>
                                             <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
@@ -84,7 +85,7 @@
                     else
                     {
                         <tr>
-                            <td colspan="6" class="text-center">No tasks found.</td>
+                            <td colspan="5" class="text-center">No tasks found.</td>
                         </tr>
                     }
                 </tbody>
@@ -94,7 +95,26 @@
     </div>
 </div>
 
-<!-- ================= MODALS ================= -->
+<!-- ================= VIEW MODAL ================= -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content rounded-4 shadow-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Title:</strong> <span id="viewTitle"></span></p>
+                <p><strong>Deadline:</strong> <span id="viewDeadline"></span></p>
+                <p><strong>Status:</strong> <span id="viewStatus"></span></p>
+                <p><strong>Description:</strong></p>
+                <p id="viewDescription" class="text-muted"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= EDIT MODAL ================= -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content rounded-4 shadow-sm">
@@ -104,21 +124,18 @@
             </div>
             <div class="modal-body">
                 <form id="editForm">
+                    <input type="hidden" id="editTaskId" name="Id">
                     <div class="mb-3">
                         <label class="form-label">Task Title</label>
-                        <input type="text" class="form-control" id="editTaskTitle">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Company</label>
-                        <input type="text" class="form-control" id="editCompany">
+                        <input type="text" class="form-control" id="editTaskTitle" name="Title">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Deadline</label>
-                        <input type="date" class="form-control" id="editDeadline">
+                        <input type="date" class="form-control" id="editDeadline" name="Deadline">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Status</label>
-                        <select id="editStatus" class="form-select">
+                        <select id="editStatus" name="Status" class="form-select">
                             <option>Pending</option>
                             <option>Completed</option>
                             <option>Overdue</option>
@@ -126,13 +143,46 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Assigned To</label>
-                        <input type="text" class="form-control" id="editAssignedTo">
+                        <input type="text" class="form-control" id="editAssignedTo" name="AssignedTo">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea class="form-control" id="editDescription"></textarea>
+                        <textarea class="form-control" id="editDescription" name="Description"></textarea>
                     </div>
                     <button type="submit" class="btn btn-primary w-100">Save Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ================= CREATE TASK MODAL ================= -->
+<div class="modal fade" id="createModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-md">
+        <div class="modal-content rounded-4 shadow-sm">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">Task Title</label>
+                        <input type="text" name="Title" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deadline</label>
+                        <input type="date" name="Deadline" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="Description" class="form-control"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Attach File</label>
+                        <input type="file" name="Attachment" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">Submit Task</button>
                 </form>
             </div>
         </div>
@@ -144,7 +194,6 @@
     const searchInput = document.getElementById("searchInput");
     const statusFilter = document.getElementById("statusFilter");
     const token = document.getElementById("__RequestVerificationToken").value;
-    let rowToEdit = null;
 
     function filterTable() {
         const searchVal = searchInput.value.toLowerCase();
@@ -152,30 +201,53 @@
 
         [...tbody.rows].forEach(row => {
             let show = true;
-            if (searchVal && !row.dataset.title.toLowerCase().includes(searchVal) &&
-                !row.dataset.company.toLowerCase().includes(searchVal)) show = false;
+            if (searchVal && !row.dataset.title.toLowerCase().includes(searchVal)) show = false;
             if (statusVal && row.dataset.status !== statusVal) show = false;
             row.style.display = show ? "" : "none";
         });
     }
-
     [searchInput, statusFilter].forEach(el => el.addEventListener("input", filterTable));
+
+    // ===== VIEW =====
+    document.querySelectorAll(".view-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            e.preventDefault();
+            const row = btn.closest("tr");
+            viewTitle.innerText = row.dataset.title;
+            viewDeadline.innerText = row.dataset.deadline;
+            viewStatus.innerText = row.dataset.status;
+            viewDescription.innerText = row.dataset.description || "—";
+            bootstrap.Modal.getOrCreateInstance(viewModal).show();
+        });
+    });
 
     // ===== EDIT =====
     document.querySelectorAll(".edit-btn").forEach(btn => {
         btn.addEventListener("click", e => {
             e.preventDefault();
-            rowToEdit = btn.closest("tr");
+            const row = btn.closest("tr");
 
-            editTaskTitle.value = rowToEdit.dataset.title;
-            editCompany.value = rowToEdit.dataset.company;
-            editDeadline.value = rowToEdit.dataset.deadline;
-            editStatus.value = rowToEdit.dataset.status;
-            editAssignedTo.value = rowToEdit.dataset.assignedto || "";
-            editDescription.value = rowToEdit.dataset.description || "";
+            editTaskId.value = row.dataset.id;
+            editTaskTitle.value = row.dataset.title;
+            editDeadline.value = row.dataset.deadline;
+            editStatus.value = row.dataset.status;
+            editDescription.value = row.dataset.description;
 
             bootstrap.Modal.getOrCreateInstance(editModal).show();
         });
+    });
+
+    document.getElementById("editForm").addEventListener("submit", async e => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const res = await fetch("/Student/UpdateTask", {
+            method: "POST",
+            headers: { "RequestVerificationToken": token },
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) location.reload();
+        else alert("Update failed");
     });
 
     // ===== DELETE =====
@@ -187,89 +259,29 @@
 
             const res = await fetch("/Student/DeleteTask/" + row.dataset.id, {
                 method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "RequestVerificationToken": token
-                }
+                headers: { "RequestVerificationToken": token }
             });
-
             const data = await res.json();
             if (data.success) row.remove();
             else alert("Delete failed");
         });
     });
 
-    // ===== CREATE TASK BUTTON =====
-    document.getElementById("createTaskBtn").addEventListener("click", () => {
-        // show your create task modal or form here
-        alert("Open Create Task modal here");
+    // ===== CREATE =====
+    createTaskBtn.addEventListener("click", () => {
+        bootstrap.Modal.getOrCreateInstance(createModal).show();
+    });
+
+    createForm.addEventListener("submit", async e => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const res = await fetch("/Student/CreateTask", {
+            method: "POST",
+            headers: { "RequestVerificationToken": token },
+            body: formData
+        });
+        const data = await res.json();
+        if (data.success) location.reload();
+        else alert("Failed to submit task");
     });
 </script>
-
-<style>
-    /* ===== Task List Styles ===== */
-
-    /* Card */
-    .task-card {
-        padding: 2rem;
-        border-radius: 1rem;
-        box-shadow: 0 6px 25px rgba(0,0,0,0.08);
-        margin-bottom: 2rem;
-    }
-
-    /* Filters */
-    .filter-box {
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-    }
-
-    /* Table */
-    #taskTable {
-        font-size: 0.95rem;
-    }
-
-        #taskTable th, #taskTable td {
-            padding: 0.75rem 1rem;
-            vertical-align: middle;
-        }
-
-        #taskTable tbody tr:hover {
-            background-color: rgba(13,110,253,0.05);
-        }
-
-        #taskTable tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-
-        /* Buttons */
-        #taskTable .btn {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.85rem;
-        }
-
-    #createTaskBtn {
-        min-width: 120px;
-    }
-
-    /* Modal */
-    .modal-content {
-        border-radius: 1rem;
-    }
-
-    .modal-body .form-label {
-        font-weight: 600;
-    }
-
-    .modal-body .form-control,
-    .modal-body .form-select,
-    .modal-body textarea {
-        padding: 0.5rem 0.75rem;
-        margin-bottom: 1rem;
-        border-radius: 0.5rem;
-    }
-
-    .modal-body button[type="submit"] {
-        padding: 0.5rem;
-        font-size: 1rem;
-    }
-</style>

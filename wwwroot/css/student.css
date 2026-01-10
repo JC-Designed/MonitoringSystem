@@ -155,3 +155,71 @@
         font-size: 1.8rem;
     }
 }
+/* =======================================================
+   STUDENT TASK LIST PAGE
+   ======================================================= */
+
+/* Card */
+.task-card {
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+}
+
+/* Filters */
+.filter-box {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+}
+
+/* Table */
+#taskTable {
+    font-size: 0.95rem;
+}
+
+    #taskTable th,
+    #taskTable td {
+        padding: 0.75rem 1rem;
+        vertical-align: middle;
+    }
+
+    #taskTable tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    #taskTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    /* Buttons */
+    #taskTable .btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.85rem;
+    }
+
+#createTaskBtn {
+    min-width: 120px;
+}
+
+/* Modal */
+.modal-content {
+    border-radius: 1rem;
+}
+
+.modal-body .form-label {
+    font-weight: 600;
+}
+
+.modal-body .form-control,
+.modal-body .form-select,
+.modal-body textarea {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+}
+
+.modal-body button[type="submit"] {
+    padding: 0.5rem;
+    font-size: 1rem;
+}
