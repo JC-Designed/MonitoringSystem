@@ -5,119 +5,184 @@
 <link rel="stylesheet" href="~/css/chat.css" />
 
 <div class="container-fluid py-0">
-
-    <!-- WHITE CARD CONTAINER -->
     <div class="messages-container">
 
-        <!-- MESSAGES CONTENT -->
-        <div id="mainMessagesContainer">
+        <!-- ================== MAIN MESSAGES ================== -->
+        <div id="mainMessagesContainer" class="fade-visible">
 
-            <!-- TOP BAR: Unread + Create Message -->
-            <div class="top-right-bar d-flex justify-content-between align-items-center flex-wrap mb-2">
+            <!-- TOP BAR -->
+            <div class="top-right-bar d-flex justify-content-between align-items-center flex-wrap mb-3">
                 <h3 class="fw-bold mb-2 flex-grow-1">ADMIN MESSAGES</h3>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="badge rounded-pill badge-unread">
-                        1 Unread
-                    </span>
+                    <span class="badge rounded-pill badge-unread">3 Unread</span>
                     <button id="showCreateMessageBtn" class="btn btn-sm btn-red">
                         Create Message
                     </button>
                 </div>
             </div>
 
-            <!-- SEARCH ROW -->
-            <div class="top-row mb-3">
+            <!-- SEARCH -->
+            <div class="top-row mb-4">
                 <input type="text" class="form-control" placeholder="Search messages..." />
             </div>
 
-            <!-- Messages List -->
+            <!-- ================== MESSAGE LIST ================== -->
             <div class="list-group mt-2">
-                <!-- Message 1 -->
-                <div class="list-group-item shadow-sm rounded-3">
-                    <div class="d-flex align-items-start justify-content-between flex-wrap">
-                        <div class="d-flex align-items-start mb-2">
-                            <div class="me-4">
-                                <i class="bi bi-envelope fs-1 text-secondary"></i>
-                            </div>
-                            <div>
-                                <h5 class="fw-bold">Registration Inquiry</h5>
-                                <small class="text-muted">From: John Doe (Student)</small>
-                                <p class="mt-2 mb-2">
-                                    Hello Admin, I would like to inquire about my registration status. Could you please provide an update?
-                                </p>
-                                <small class="text-muted">2026-01-10</small>
-                            </div>
+
+                <!-- MESSAGE ITEM -->
+                <div class="list-group-item shadow-sm rounded-3 d-flex">
+
+                    <!-- LEFT CONTENT -->
+                    <div class="message-content d-flex flex-grow-1">
+                        <div class="me-4">
+                            <i class="bi bi-envelope-fill fs-2 text-primary"></i>
                         </div>
-                        <div class="text-end">
-                            <span class="badge bg-danger mb-2">High</span><br />
-                            <a href="#" class="text-primary me-2"><i class="bi bi-eye"></i> View</a>
-                            <a href="#" class="text-danger"><i class="bi bi-trash"></i> Delete</a>
+                        <div>
+                            <h5 class="fw-bold mb-1">Registration Inquiry</h5>
+                            <small class="text-muted">From: John Doe (Student)</small>
+                            <p class="mt-2 mb-1">
+                                Hello Admin, I would like to inquire about my registration status.
+                            </p>
+                            <small class="text-muted">Jan 10, 2026</small>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT ACTIONS (BADGE TOP, BUTTONS BOTTOM) -->
+                    <div class="message-actions d-flex flex-column justify-content-between text-end">
+
+                        <!-- TOP -->
+                        <div class="message-priority mb-3">
+                            <span class="badge bg-danger">High</span>
+                        </div>
+
+                        <!-- BOTTOM -->
+                        <div class="message-buttons mt-auto">
+                            <a href="#" class="text-primary">
+                                <i class="bi bi-eye fs-5"></i>
+                                <span class="fs-6">View</span>
+                            </a>
+                            <a href="#" class="text-danger">
+                                <i class="bi bi-trash fs-5"></i>
+                                <span class="fs-6">Delete</span>
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- MESSAGE ITEM -->
+                <div class="list-group-item shadow-sm rounded-3 bg-light d-flex">
+
+                    <div class="message-content d-flex flex-grow-1">
+                        <div class="me-4">
+                            <i class="bi bi-envelope fs-2 text-secondary"></i>
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-1">Password Reset Issue</h5>
+                            <small class="text-muted">From: Jane Smith (Student)</small>
+                            <p class="mt-2 mb-1">
+                                I cannot reset my password. Please assist.
+                            </p>
+                            <small class="text-muted">Jan 09, 2026</small>
+                        </div>
+                    </div>
+
+                    <div class="message-actions d-flex flex-column justify-content-between text-end">
+                        <div class="message-priority mb-3">
+                            <span class="badge bg-danger">High</span>
+                        </div>
+
+                        <div class="message-buttons mt-auto">
+                            <a href="#" class="text-primary">
+                                <i class="bi bi-eye fs-5"></i>
+                                <span class="fs-6">View</span>
+                            </a>
+                            <a href="#" class="text-danger">
+                                <i class="bi bi-trash fs-5"></i>
+                                <span class="fs-6">Delete</span>
+                            </a>
                         </div>
                     </div>
                 </div>
 
-                <!-- Message 2 -->
-                <div class="list-group-item shadow-sm rounded-3 bg-light">
-                    <div class="d-flex align-items-start justify-content-between flex-wrap">
-                        <div class="d-flex align-items-start mb-2">
-                            <div class="me-4">
-                                <i class="bi bi-envelope fs-1 text-primary"></i>
-                            </div>
-                            <div>
-                                <h5 class="fw-bold">Partnership Proposal</h5>
-                                <small class="text-muted">From: Tech Corp (Company)</small>
-                                <p class="mt-2 mb-2">
-                                    We are interested in establishing a partnership with your institution for student internship programs.
-                                </p>
-                                <small class="text-muted">2026-01-09</small>
-                            </div>
+                <!-- MESSAGE ITEM -->
+                <div class="list-group-item shadow-sm rounded-3 d-flex">
+
+                    <div class="message-content d-flex flex-grow-1">
+                        <div class="me-4">
+                            <i class="bi bi-envelope fs-2 text-warning"></i>
                         </div>
-                        <div class="text-end">
-                            <span class="badge bg-warning text-dark mb-2">Medium</span>
-                            <span class="badge bg-primary mb-2">New</span><br />
-                            <a href="#" class="text-primary me-2"><i class="bi bi-eye"></i> View</a>
-                            <a href="#" class="text-danger"><i class="bi bi-trash"></i> Delete</a>
+                        <div>
+                            <h5 class="fw-bold mb-1">Internship Approval</h5>
+                            <small class="text-muted">From: HR Department</small>
+                            <p class="mt-2 mb-1">
+                                Internship slots have been approved.
+                            </p>
+                            <small class="text-muted">Jan 08, 2026</small>
+                        </div>
+                    </div>
+
+                    <div class="message-actions d-flex flex-column justify-content-between text-end">
+                        <div class="message-priority mb-3">
+                            <span class="badge bg-success">Low</span>
+                        </div>
+
+                        <div class="message-buttons mt-auto">
+                            <a href="#" class="text-primary">
+                                <i class="bi bi-eye fs-5"></i>
+                                <span class="fs-6">View</span>
+                            </a>
+                            <a href="#" class="text-danger">
+                                <i class="bi bi-trash fs-5"></i>
+                                <span class="fs-6">Delete</span>
+                            </a>
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
-        <!-- CREATE MESSAGE FORM -->
-        <div id="createMessageFormContainer">
-            <!-- Go Back button -->
+        <!-- ================== CREATE MESSAGE ================== -->
+        <div id="createMessageFormContainer" class="fade-hidden">
             <a href="javascript:void(0);" id="backToMessagesBtn">← Go Back</a>
 
-            <div class="create-form-header mb-3">
+            <div class="create-form-header mb-4">
                 <h3 class="mb-0">Create New Message</h3>
             </div>
 
             <form id="createMessageFormFull">
-                <div class="mb-3">
-                    <label for="recipientTypeFull" class="form-label">Send To</label>
-                    <select class="form-select" id="recipientTypeFull">
-                        <option value="student">Student</option>
-                        <option value="company">Company</option>
-                        <option value="admin">Admin</option>
+                <div class="mb-4">
+                    <label class="form-label">Send To</label>
+                    <select class="form-select form-select-lg">
+                        <option>Student</option>
+                        <option>Company</option>
+                        <option>Admin</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label for="messageSubjectFull" class="form-label">Subject</label>
-                    <input type="text" class="form-control" id="messageSubjectFull" placeholder="Message subject" />
+
+                <div class="mb-4">
+                    <label class="form-label">Subject</label>
+                    <input type="text" class="form-control form-control-lg" />
                 </div>
-                <div class="mb-3">
-                    <label for="messageBodyFull" class="form-label">Message</label>
-                    <textarea class="form-control" id="messageBodyFull" placeholder="Type your message here..."></textarea>
+
+                <div class="mb-4">
+                    <label class="form-label">Message</label>
+                    <textarea class="form-control form-control-lg"></textarea>
                 </div>
-                <div class="text-end mt-auto">
-                    <button type="button" id="cancelCreateFullPage" class="btn btn-secondary btn-sm">Cancel</button>
-                    <button type="submit" class="btn btn-red btn-sm">Send Message</button>
+
+                <div class="text-end">
+                    <button type="button" id="cancelCreateFullPage" class="btn btn-secondary btn-sm me-2">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-red btn-sm">
+                        Send Message
+                    </button>
                 </div>
             </form>
         </div>
 
     </div>
-
 </div>
 
 <script>
@@ -127,21 +192,24 @@
     const cancelBtn = document.getElementById('cancelCreateFullPage');
     const backBtn = document.getElementById('backToMessagesBtn');
 
-    // Show create message form
     showBtn.addEventListener('click', () => {
-        mainContainer.style.display = 'none'; // hide messages + top bar
-        createForm.style.display = 'flex';
+        mainContainer.classList.replace('fade-visible', 'fade-hidden');
+        setTimeout(() => {
+            mainContainer.style.display = 'none';
+            createForm.style.display = 'flex';
+            createForm.classList.replace('fade-hidden', 'fade-visible');
+        }, 200);
     });
 
-    // Cancel goes back to messages
-    cancelBtn.addEventListener('click', () => {
-        createForm.style.display = 'none';
-        mainContainer.style.display = 'flex';
-    });
+    function goBack() {
+        createForm.classList.replace('fade-visible', 'fade-hidden');
+        setTimeout(() => {
+            createForm.style.display = 'none';
+            mainContainer.style.display = 'block';
+            mainContainer.classList.replace('fade-hidden', 'fade-visible');
+        }, 200);
+    }
 
-    // Back button goes back
-    backBtn.addEventListener('click', () => {
-        createForm.style.display = 'none';
-        mainContainer.style.display = 'flex';
-    });
+    cancelBtn.addEventListener('click', goBack);
+    backBtn.addEventListener('click', goBack);
 </script>

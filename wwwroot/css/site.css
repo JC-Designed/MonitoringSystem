@@ -393,6 +393,12 @@ a {
 
 /* ================================ ADMIN SIDEBAR MOBILE ================================ */
 @media (max-width: 768px) {
+
+    .admin-topbar {
+        left: 0 !important;
+        width: 100% !important;
+    }
+
     .admin-sidebar {
         left: -250px;
         width: 250px;
