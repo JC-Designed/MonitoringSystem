@@ -1,0 +1,145 @@
+﻿/* Hide school year dropdown by default */
+.sidebar-schoolyear-wrapper {
+    display: none;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar.expanded .sidebar-schoolyear-wrapper {
+    display: block !important;
+}
+
+/* Profile and banner wrappers */
+.profile-pic-wrapper, .banner-wrapper {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+    .profile-pic-wrapper img {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #dee2e6;
+    }
+
+    .banner-wrapper img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 0.25rem;
+        border: 1px solid #dee2e6;
+    }
+
+/* Buttons */
+.profile-edit-btn {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    min-width: 120px;
+}
+
+#editAdminInfoBtn {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+}
+
+/* Admin info table container */
+.admin-info-container {
+    position: relative;
+    max-height: 450px;
+    overflow-y: auto;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1.5rem;
+    margin-top: 0.5rem;
+    background-color: #f8f9fa;
+}
+
+/* Info table styling */
+#adminInfoTable {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.5rem;
+}
+
+    #adminInfoTable td {
+        border: none !important;
+        padding: 0.5rem 0.75rem;
+    }
+
+        #adminInfoTable td:first-child {
+            font-weight: 600;
+            color: #6c757d;
+            width: 30%;
+        }
+
+    #adminInfoTable input {
+        width: 100%;
+    }
+
+/* Save button */
+#saveAdminInfoBtn {
+    position: absolute;
+    bottom: 15px;
+    right: 20px;
+    z-index: 1050;
+    display: block;
+}
+
+/* Modal body padding for save button */
+.modal-body {
+    position: relative;
+    padding-bottom: 80px;
+}
+
+/* Notifications */
+.notif-dot {
+    width: 8px;
+    height: 8px;
+    background-color: red;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.notif-popup {
+    display: none;
+}
+
+/* SPA content fade */
+#adminMainContent {
+    transition: opacity 0.3s ease-in-out;
+}
+
+/* Profile template styles */
+.profile-page .profile-banner {
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+}
+
+.profile-page .nav-tabs .nav-link {
+    color: #fff;
+}
+
+    .profile-page .nav-tabs .nav-link.active {
+        background-color: #343a40;
+        border-color: #343a40 #343a40 #000;
+    }
+
+/* Banner below topbar and sidebar */
+.top-banner {
+    width: calc(100% - 250px); /* sidebar width */
+    margin-left: 250px;
+    height: 180px;
+    background: #e5e5e5 url('/images/banner-placeholder.jpg') center/cover no-repeat;
+    border-radius: 0.25rem;
+    margin-top: 60px; /* below topbar */
+}
+
+@media (max-width: 767px) {
+    .top-banner {
+        width: 100%;
+        margin-left: 0;
+    }
+}

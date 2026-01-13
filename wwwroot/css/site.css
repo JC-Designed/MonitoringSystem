@@ -1,6 +1,6 @@
 ﻿/* ================================ 🌸 GENERAL PAGE STYLING ================================ */
 body {
-    background-color: #fff5f5;
+    background-color: #ffffff;
     font-family: 'Segoe UI', Arial, sans-serif;
     height: 100vh;
     margin: 0;
@@ -15,10 +15,10 @@ body {
     background: #ffffff;
     border-radius: 15px;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.15);
-    max-width: 1100px; /* ✅ wider */
+    max-width: 1100px;
     width: 95%;
     padding: 60px;
-    min-height: 650px; /* ✅ grows with content */
+    min-height: 650px;
     margin: 60px auto;
     transition: all 0.3s ease-in-out;
 }
@@ -28,7 +28,6 @@ body {
         transform: scale(1.01);
         box-shadow: 0 0 35px rgba(139, 0, 0, 0.2);
     }
-
 
 /* ================================ 🖼️ LEFT SIDE (Logo Section) ================================ */
 .logo-container {
@@ -110,33 +109,7 @@ a {
     font-size: 1rem;
 }
 
-/* ================================ 📱 RESPONSIVE DESIGN ================================ */
-@media (max-width: 992px) {
-    .login-card, .register-card {
-        flex-direction: column;
-        padding: 30px;
-        max-width: 600px;
-        height: auto;
-    }
-
-    .divider {
-        display: none;
-    }
-
-    .logo-container {
-        margin-bottom: 20px;
-    }
-
-        .logo-container img {
-            width: 200px;
-        }
-
-    .form-side h4 {
-        font-size: 1.4rem;
-    }
-}
-
-/* ================================ ⭐ ADMIN UI DESIGN (UPDATED COLLAPSIBLE SIDEBAR) ================================ */
+/* ================================ ⭐ ADMIN SIDEBAR ================================ */
 .admin-sidebar {
     width: 80px;
     height: 100vh;
@@ -218,8 +191,9 @@ a {
     display: none;
 }
 
-.menu-link.active, .menu-link:hover {
-    background: #f9f9f9;
+.menu-link.active,
+.menu-link:hover {
+    background: #ffffff;
     border-color: #bbbbbb;
     transform: translateX(4px);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
@@ -256,15 +230,16 @@ a {
 }
 
 .btn-logout:hover {
-    background: #f9f9f9;
+    background: #ffffff;
     border-color: #bbbbbb;
     transform: translateX(4px);
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
+/* ================================ 🟥 ADMIN TOPBAR ================================ */
 .admin-topbar {
     background: #8B0000;
-    height: 90px;
+    height: 100px;
     width: calc(100% - 80px);
     position: fixed;
     left: 80px;
@@ -284,12 +259,26 @@ a {
     left: 250px;
 }
 
+.admin-topbar i,
+.admin-topbar .btn,
+.admin-topbar .dropdown-toggle {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.admin-topbar .topbar-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+/* ================================ MAIN CONTENT ================================ */
 .admin-content {
     margin-left: 80px;
-    margin-top: 90px;
+    margin-top: 100px;
     padding: 36px;
-    background: #f4f5f7;
-    min-height: calc(100vh - 90px);
+    /* background removed - now transparent/white */
+    min-height: calc(100vh - 100px);
     transition: margin-left 0.3s ease;
 }
 
@@ -297,6 +286,7 @@ a {
     margin-left: 250px;
 }
 
+/* ================================ SIDEBAR OVERLAY ================================ */
 .sidebar-overlay {
     position: fixed;
     top: 0;
@@ -324,10 +314,9 @@ a {
     box-shadow: 0 6px 22px rgba(0,0,0,0.06);
 }
 
-/* ================================ USERS PAGE CARD ================================ */
 .users-page .card {
-    min-height: 85vh; /* taller white background */
-    padding-bottom: 40px; /* extra spacing at bottom */
+    min-height: 85vh;
+    padding-bottom: 40px;
 }
 
 .users-page .table-responsive {
@@ -336,7 +325,7 @@ a {
 }
 
 .users-page #usersTable .dropdown-menu {
-    min-width: 120px; /* ensures edit/delete buttons fit */
+    min-width: 120px;
 }
 
 .users-page #usersTable td,
@@ -367,36 +356,51 @@ a {
     font-size: 0.95rem;
     border-radius: 0.75rem;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    height: 52px; /* ✅ taller input */
-    line-height: 1.4; /* ✅ text centered & visible */
+    height: 52px;
+    line-height: 1.4;
 }
 
-/* ================================ USERS TABLE MOBILE FIXES ================================ */
-@media (max-width: 991.98px) {
-    .users-page .dropend .dropdown-menu {
-        left: auto !important;
-        right: 0 !important; /* dropdown stays visible */
+/* ================================ RESPONSIVE MEDIA QUERIES ================================ */
+@media (max-width: 992px) {
+    .login-card, .register-card {
+        flex-direction: column;
+        padding: 30px;
+        max-width: 600px;
+        height: auto;
+    }
+
+    .divider {
+        display: none;
+    }
+
+    .logo-container {
+        margin-bottom: 20px;
+    }
+
+        .logo-container img {
+            width: 200px;
+        }
+
+    .form-side h4 {
+        font-size: 1.4rem;
     }
 
     .users-page .table-responsive {
-        overflow-x: auto !important; /* horizontal scroll if table too wide */
+        overflow-x: auto !important;
+    }
+
+    .users-page .dropend .dropdown-menu {
+        left: auto !important;
+        right: 0 !important;
     }
 }
 
-/* Stack filters vertically on small screens */
-@media (max-width: 767.98px) {
-    .users-page .row.g-3.align-items-end > div {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
-}
-
-/* ================================ ADMIN SIDEBAR MOBILE ================================ */
 @media (max-width: 768px) {
-
     .admin-topbar {
         left: 0 !important;
         width: 100% !important;
+        height: 80px;
+        padding: 0 20px;
     }
 
     .admin-sidebar {
@@ -417,11 +421,6 @@ a {
         overflow: hidden;
     }
 
-    img {
-        max-width: 100%;
-        height: auto;
-    }
-
     #adminProfileModal #adminProfileImg {
         width: 100px;
         height: 100px;
@@ -439,46 +438,7 @@ a {
         height: 90px;
         margin-top: -45px;
     }
-}
-/* ================================ USERS PAGE MOBILE RESPONSIVENESS ================================ */
 
-/* Make filters stack vertically on small screens */
-@media (max-width: 767.98px) {
-    .users-page .row.g-3.align-items-end > div {
-        flex: 0 0 100%;
-        max-width: 100%;
-    }
-}
-
-/* Table responsive adjustments */
-@media (max-width: 991.98px) {
-    .users-page .table-responsive {
-        overflow-x: auto; /* allow horizontal scroll if table is too wide */
-    }
-
-    /* Ensure dropdowns appear correctly on smaller screens */
-    .users-page .dropend .dropdown-menu {
-        left: auto !important;
-        right: 0 !important; /* dropdown stays fully visible */
-    }
-
-    /* Smaller padding for table cells on mobile */
-    #usersTable td, #usersTable th {
-        padding: 12px 10px;
-        font-size: 0.9rem;
-    }
-
-    /* Reduce filter box height slightly to fit */
-    .users-page .filter-box.form-control,
-    .users-page .filter-box.form-select {
-        height: 50px !important;
-        padding: 0.8rem 0.9rem !important;
-        font-size: 0.9rem !important;
-    }
-}
-
-/* Modals adjustment for smaller screens */
-@media (max-width: 576px) {
     #editModal .modal-dialog {
         max-width: 95%;
         margin: 1rem;
@@ -498,9 +458,10 @@ a {
     }
 }
 
-/* Ensure dropdown items fit on mobile */
-@media (max-width: 768px) {
-    #usersTable .dropdown-menu {
-        min-width: 120px !important;
+/* Stack filters vertically on very small screens */
+@media (max-width: 767.98px) {
+    .users-page .row.g-3.align-items-end > div {
+        flex: 0 0 100%;
+        max-width: 100%;
     }
 }
