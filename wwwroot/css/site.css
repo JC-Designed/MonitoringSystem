@@ -277,10 +277,24 @@ a {
     margin-left: 80px;
     margin-top: 100px;
     padding: 36px;
-    /* background removed - now transparent/white */
+    background: #ffffff; /* Clean white */
     min-height: calc(100vh - 100px);
     transition: margin-left 0.3s ease;
 }
+
+/* Improve cards and panels for clean dashboard */
+.attendance-panel, #usersTable tbody tr, .users-page .card {
+    background: #ffffff; /* White background for all panels/cards */
+    border-radius: 14px;
+    padding: 30px;
+    border: 1px solid #e2e2e2;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
+    transition: all 0.2s ease;
+}
+
+    .attendance-panel:hover, #usersTable tbody tr:hover, .users-page .card:hover {
+        box-shadow: 0 8px 22px rgba(0,0,0,0.1);
+    }
 
 .admin-sidebar.expanded ~ .admin-content {
     margin-left: 250px;
@@ -305,20 +319,7 @@ a {
         visibility: visible;
     }
 
-/* ================================ TABLES & PANELS ================================ */
-.attendance-panel, #usersTable tbody tr {
-    background: #fff;
-    border-radius: 14px;
-    padding: 30px;
-    border: 1px solid #d8d8d8;
-    box-shadow: 0 6px 22px rgba(0,0,0,0.06);
-}
-
-.users-page .card {
-    min-height: 85vh;
-    padding-bottom: 40px;
-}
-
+/* ================================ TABLES ================================ */
 .users-page .table-responsive {
     max-height: 75vh;
     overflow-y: auto;
@@ -348,7 +349,7 @@ a {
 }
 
 #usersTable tbody tr:hover {
-    background-color: #f1f1f1;
+    background-color: #f9f9f9;
 }
 
 .filter-box {
@@ -464,4 +465,50 @@ a {
         flex: 0 0 100%;
         max-width: 100%;
     }
+}
+/* ================================ SIDEBAR LOGOUT BUTTON ================================ */
+.sidebar-logout {
+    margin-top: auto; /* pushes logout to bottom */
+    padding: 0 16px 20px 16px;
+}
+
+.btn-logout {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* center icon + text */
+    gap: 10px;
+    padding: 14px;
+    font-weight: 600;
+    font-size: 1.05rem;
+    background-color: #8B0000; /* main red */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
+}
+
+    .btn-logout i {
+        font-size: 1.25rem;
+        color: white;
+    }
+
+    .btn-logout span {
+        display: inline-block;
+    }
+
+    .btn-logout:hover {
+        background-color: #a40000; /* darker red */
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+.admin-sidebar:not(.expanded) .btn-logout span {
+    display: none; /* hide text when sidebar collapsed */
+}
+
+.admin-sidebar:not(.expanded) .btn-logout {
+    justify-content: center; /* center icon when collapsed */
 }
