@@ -21,61 +21,68 @@
 
     <!-- LEFT SIDEBAR -->
     <aside class="admin-sidebar">
-        <!-- Logo -->
-        <div class="admin-logo-header">
-            <img src="~/images/ctu-logo.png" class="admin-logo" />
-            <div class="admin-logo-text">BALAMBAN CAMPUS</div>
-        </div>
+        <!-- Scroll wrapper for hidden scrollbars -->
+        <div class="scroll-wrapper" style="flex:1; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;">
+            <style>
+                .scroll-wrapper::-webkit-scrollbar { display:none; }
+            </style>
 
-        <!-- School Year Dropdown -->
-        <div class="sidebar-schoolyear-wrapper">
-            <div class="sidebar-schoolyear mb-3 px-3">
-                <label class="text-muted small mb-1">School Year</label>
-                <select id="schoolYearDropdown" class="form-select form-select-sm">
-                    @{
-                        int systemStartYear = 2025;
-                        int currentYear = DateTime.Now.Year;
-                        int selectedYear = ViewBag.SchoolYear ?? currentYear;
-                        if (Context.Request.Cookies.ContainsKey("SelectedSchoolYear"))
-                            int.TryParse(Context.Request.Cookies["SelectedSchoolYear"], out selectedYear);
-                        for (int y = currentYear; y >= systemStartYear; y--)
-                        {
-                            var selectedAttr = (y == selectedYear) ? " selected" : "";
-                            @: <option value="@y"@selectedAttr>@y</option>
-                        }
-                    }
-                </select>
+            <!-- Logo -->
+            <div class="admin-logo-header">
+                <img src="~/images/ctu-logo.png" class="admin-logo" />
+                <div class="admin-logo-text">BALAMBAN CAMPUS</div>
             </div>
-        </div>
 
-        <!-- Menu -->
-        <nav class="admin-menu">
-            <a asp-action="Dashboard" asp-controller="Admin" class="menu-link" id="dashboardBtn">
-                <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
-            </a>
-            <a asp-action="Users" asp-controller="Admin" class="menu-link">
-                <i class="bi bi-person-fill"></i> <span>Users</span>
-            </a>
-            <a asp-action="Company" asp-controller="Admin" class="menu-link">
-                <i class="bi bi-building"></i> <span>Company</span>
-            </a>
-            <a asp-action="Messages" asp-controller="Admin" class="menu-link">
-                <i class="bi bi-envelope-fill"></i> <span>Messages</span>
-            </a>
-            <a asp-action="Reports" asp-controller="Admin" class="menu-link">
-                <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
-            </a>
-            <hr />
-        </nav>
+            <!-- School Year Dropdown -->
+            <div class="sidebar-schoolyear-wrapper">
+                <div class="sidebar-schoolyear mb-3 px-3">
+                    <label class="text-muted small mb-1">School Year</label>
+                    <select id="schoolYearDropdown" class="form-select form-select-sm">
+                        @{
+                            int systemStartYear = 2025;
+                            int currentYear = DateTime.Now.Year;
+                            int selectedYear = ViewBag.SchoolYear ?? currentYear;
+                            if (Context.Request.Cookies.ContainsKey("SelectedSchoolYear"))
+                                int.TryParse(Context.Request.Cookies["SelectedSchoolYear"], out selectedYear);
+                            for (int y = currentYear; y >= systemStartYear; y--)
+                            {
+                                var selectedAttr = (y == selectedYear) ? " selected" : "";
+                                @: <option value="@y"@selectedAttr>@y</option>
+                            }
+                        }
+                    </select>
+                </div>
+            </div>
 
-        <!-- Logout -->
-        <div class="sidebar-logout">
-            <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
-                <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-            </a>
-            <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
-                @Html.AntiForgeryToken()
-            </form>
+            <!-- Menu -->
+            <nav class="admin-menu">
+                <a asp-action="Dashboard" asp-controller="Admin" class="menu-link" id="dashboardBtn">
+                    <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+                </a>
+                <a asp-action="Users" asp-controller="Admin" class="menu-link">
+                    <i class="bi bi-person-fill"></i> <span>Users</span>
+                </a>
+                <a asp-action="Company" asp-controller="Admin" class="menu-link">
+                    <i class="bi bi-building"></i> <span>Company</span>
+                </a>
+                <a asp-action="Messages" asp-controller="Admin" class="menu-link">
+                    <i class="bi bi-envelope-fill"></i> <span>Messages</span>
+                </a>
+                <a asp-action="Reports" asp-controller="Admin" class="menu-link">
+                    <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
+                </a>
+                <hr />
+            </nav>
+
+            <!-- Logout -->
+            <div class="sidebar-logout">
+                <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
+                    <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+                </a>
+                <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
+                    @Html.AntiForgeryToken()
+                </form>
+            </div>
         </div>
     </aside>
 
@@ -182,8 +189,10 @@
         const mobileToggle = document.getElementById('sidebarToggle');
         const overlay = document.querySelector('.sidebar-overlay');
 
+        // Expand sidebar on desktop by default
         if(window.innerWidth >= 768) sidebar.classList.add('expanded');
 
+        // Toggle sidebar
         desktopToggle?.addEventListener('click', () => sidebar.classList.toggle('expanded'));
         mobileToggle?.addEventListener('click', () => {
             sidebar.classList.toggle('expanded');
@@ -194,7 +203,7 @@
             overlay.classList.remove('active');
         });
 
-        // Notifications
+        // Notifications popup
         const notifBell = document.getElementById('notifBell');
         const notifPopup = notifBell?.querySelector('.notif-popup');
         notifBell?.addEventListener('click', () => {
@@ -213,7 +222,7 @@
             });
         }
 
-        // Profile SPA JS
+        // SPA Profile
         const mainContent = document.getElementById("adminMainContent");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
         const originalDashboardHTML = mainContent.innerHTML;
@@ -255,7 +264,7 @@
             }, 200);
         });
 
-        // Go back to dashboard
+        // Back to Dashboard
         document.getElementById("dashboardBtn")?.addEventListener("click", () => {
             mainContent.style.opacity = 0;
             setTimeout(() => {
@@ -265,15 +274,26 @@
             }, 200);
         });
 
-        // Dark Mode Toggle (starts light)
+        // ===================== DARK MODE PERSISTENT =====================
         const themeToggle = document.getElementById("themeToggle");
         const themeIcon = document.getElementById("themeIcon");
 
+        // Apply saved preference on load
+        if(localStorage.getItem("darkMode") === "true"){
+            document.body.classList.add("dark-mode");
+            themeIcon.classList.remove("bi-moon-fill");
+            themeIcon.classList.add("bi-sun-fill");
+        }
+
+        // Toggle dark mode
         themeToggle?.addEventListener("click", () => {
             document.body.classList.toggle("dark-mode");
             const isDark = document.body.classList.contains("dark-mode");
             themeIcon.classList.toggle("bi-moon-fill", !isDark);
             themeIcon.classList.toggle("bi-sun-fill", isDark);
+
+            // Save state
+            localStorage.setItem("darkMode", isDark);
         });
     </script>
 

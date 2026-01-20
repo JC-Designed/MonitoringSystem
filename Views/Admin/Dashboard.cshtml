@@ -115,22 +115,22 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'top', labels: { color: '#333' } } },
+                plugins: {
+                    legend: { position: 'top', labels: { color: '#333' } }
+                },
                 scales: {
-                    y: { beginAtZero: true, ticks: { color: '#333' }, grid: { color: '#ddd' } },
-                    x: { ticks: { color: '#333' }, grid: { color: '#ddd' } }
+                    y: { beginAtZero: true, ticks: { color: '#333', font: { weight: 'bold' } }, grid: { color: '#ddd' } },
+                    x: { ticks: { color: '#333', font: { weight: 'bold' } }, grid: { color: '#ddd' } }
                 }
             }
         });
 
-        // Update chart and all text when dark mode toggled
-        const observer = new MutationObserver(() => {
-            const isDark = document.body.classList.contains('dark-mode');
+        // Function to update chart for dark mode
+        function updateChartColors(isDark) {
             const colors = isDark
                 ? { bg: 'rgba(100,255,255,0.6)', border: '#00ffff', text: '#fff', grid: '#555' }
                 : { bg: 'rgba(100,100,255,0.6)', border: '#4466ff', text: '#000', grid: '#ddd' };
 
-            // Chart colors
             userChart.data.datasets[0].backgroundColor = colors.bg;
             userChart.data.datasets[0].borderColor = colors.border;
             userChart.options.plugins.legend.labels.color = colors.text;
@@ -140,15 +140,22 @@
             userChart.options.scales.y.grid.color = colors.grid;
             userChart.update();
 
-            // Update all card/modal text
+            // Update all card text color
             document.querySelectorAll('.card-text').forEach(el => el.style.color = colors.text);
-        });
+        }
 
+        // Initial dark mode check
+        updateChartColors(document.body.classList.contains('dark-mode'));
+
+        // Observe body class changes for dark mode toggle
+        const observer = new MutationObserver(() => {
+            updateChartColors(document.body.classList.contains('dark-mode'));
+        });
         observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
 
     });
 
-    // Approve user
+    // ===================== Approve / Reject Users =====================
     function approveUser(id) {
         if (!id) return;
         fetch('@Url.Action("Approve", "Admin")', {
@@ -174,7 +181,6 @@
         });
     }
 
-    // Reject user
     function rejectUser(id) {
         if (!id) return;
         fetch('@Url.Action("Reject", "Admin")', {
