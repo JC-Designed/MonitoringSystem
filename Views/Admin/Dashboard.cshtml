@@ -12,36 +12,33 @@
     var totalUsers = ViewBag.ApprovedUsers ?? 0;
 }
 
-<h3 class="mb-4 fw-bold text-primary">Admin Dashboard</h3>
-
 <!-- ===================== STAT CARDS ===================== -->
 <div class="row g-4 mb-5" id="statsSection">
     <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-primary p-4 text-center"
-             id="pendingCard" style="cursor:pointer;">
-            <h6 class="text-muted">Pending Users</h6>
-            <h2 class="fw-bold" id="pendingUsers">@ViewBag.PendingUsers</h2>
+        <div class="card shadow-sm p-4 text-center" id="pendingCard" style="cursor:pointer;">
+            <h6 class="card-text">Pending Users</h6>
+            <h2 class="fw-bold card-text" id="pendingUsers">@ViewBag.PendingUsers</h2>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-success p-4 text-center">
-            <h6 class="text-muted">Approved Users</h6>
-            <h2 class="fw-bold" id="approvedUsers">@ViewBag.ApprovedUsers</h2>
+        <div class="card shadow-sm p-4 text-center">
+            <h6 class="card-text">Approved Users</h6>
+            <h2 class="fw-bold card-text" id="approvedUsers">@ViewBag.ApprovedUsers</h2>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-warning p-4 text-center">
-            <h6 class="text-muted">Total Users</h6>
-            <h2 class="fw-bold" id="totalUsers">@totalUsers</h2>
+        <div class="card shadow-sm p-4 text-center">
+            <h6 class="card-text">Total Users</h6>
+            <h2 class="fw-bold card-text" id="totalUsers">@totalUsers</h2>
         </div>
     </div>
 
     <div class="col-md-3">
-        <div class="card shadow-sm border-start border-4 border-info p-4 text-center">
-            <h6 class="text-muted">Total Companies</h6>
-            <h2 class="fw-bold" id="totalCompanies">@ViewBag.TotalCompanies</h2>
+        <div class="card shadow-sm p-4 text-center">
+            <h6 class="card-text">Total Companies</h6>
+            <h2 class="fw-bold card-text" id="totalCompanies">@ViewBag.TotalCompanies</h2>
         </div>
     </div>
 </div>
@@ -50,7 +47,7 @@
 <div class="row">
     <div class="col-12">
         <div class="card shadow-sm p-4">
-            <h5 class="fw-bold mb-4">User Growth Overview - @currentYear</h5>
+            <h5 class="fw-bold mb-4 card-text">User Growth Overview - @currentYear</h5>
             <div style="height:420px;">
                 <canvas id="userChart"></canvas>
             </div>
@@ -63,16 +60,16 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Pending Users</h5>
+                <h5 class="modal-title card-text">Pending Users</h5>
                 <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body" id="pendingUserList">
+            <div class="modal-body card-text" id="pendingUserList">
                 @if (pendingUsers != null && pendingUsers.Count > 0)
                 {
                     foreach (var user in pendingUsers)
                     {
                         <div class="d-flex justify-content-between mb-2 align-items-center" id="user-@user.Id">
-                            <span>@user.Email (@user.Role)</span>
+                            <span class="card-text">@user.Email (@user.Role)</span>
                             <div class="d-flex gap-1">
                                 <button class="btn btn-success btn-sm" onclick="approveUser('@user.Id')">✔</button>
                                 <button class="btn btn-danger btn-sm" onclick="rejectUser('@user.Id')">✖</button>
@@ -82,44 +79,73 @@
                 }
                 else
                 {
-                    <p>No pending users.</p>
+                    <p class="card-text">No pending users.</p>
                 }
             </div>
         </div>
     </div>
 </div>
 
+<!-- ===================== DARK MODE CSS ===================== -->
+<link rel="stylesheet" href="~/css/darkmode.css" />
+
 <!-- ===================== SCRIPTS ===================== -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+
         // Pending modal
         const pendingCard = document.getElementById('pendingCard');
         const pendingUserModal = new bootstrap.Modal(document.getElementById('pendingUserModal'));
         pendingCard.onclick = () => pendingUserModal.show();
 
-        // Chart.js (bars only)
+        // Chart.js setup
         const ctx = document.getElementById('userChart').getContext('2d');
-        new Chart(ctx, {
+        const userChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets: [
-                    {
-                        label: 'New Registrations',
-                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.MonthlyRegistrations)),
-                        backgroundColor: 'rgba(255,99,132,.6)',
-                        borderRadius: 6
-                    }
-                ]
+                datasets: [{
+                    label: 'New Registrations',
+                    data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.MonthlyRegistrations)),
+                    backgroundColor: 'rgba(100,100,255,0.6)',
+                    borderRadius: 6
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true } }
+                plugins: { legend: { position: 'top', labels: { color: '#333' } } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { color: '#333' }, grid: { color: '#ddd' } },
+                    x: { ticks: { color: '#333' }, grid: { color: '#ddd' } }
+                }
             }
         });
+
+        // Update chart and all text when dark mode toggled
+        const observer = new MutationObserver(() => {
+            const isDark = document.body.classList.contains('dark-mode');
+            const colors = isDark
+                ? { bg: 'rgba(100,255,255,0.6)', border: '#00ffff', text: '#fff', grid: '#555' }
+                : { bg: 'rgba(100,100,255,0.6)', border: '#4466ff', text: '#000', grid: '#ddd' };
+
+            // Chart colors
+            userChart.data.datasets[0].backgroundColor = colors.bg;
+            userChart.data.datasets[0].borderColor = colors.border;
+            userChart.options.plugins.legend.labels.color = colors.text;
+            userChart.options.scales.x.ticks.color = colors.text;
+            userChart.options.scales.y.ticks.color = colors.text;
+            userChart.options.scales.x.grid.color = colors.grid;
+            userChart.options.scales.y.grid.color = colors.grid;
+            userChart.update();
+
+            // Update all card/modal text
+            document.querySelectorAll('.card-text').forEach(el => el.style.color = colors.text);
+        });
+
+        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
     });
 
     // Approve user
@@ -138,19 +164,13 @@
             if (data.success) {
                 const userDiv = document.getElementById('user-' + id);
                 if(userDiv) userDiv.remove();
-
-                // Update counters
                 const pendingCounter = document.getElementById('pendingUsers');
                 pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
-
                 const approvedCounter = document.getElementById('approvedUsers');
                 approvedCounter.textContent = parseInt(approvedCounter.textContent) + 1;
-
                 const totalCounter = document.getElementById('totalUsers');
                 totalCounter.textContent = parseInt(totalCounter.textContent) + 1;
-            } else {
-                alert('Failed to approve user.');
-            }
+            } else alert('Failed to approve user.');
         });
     }
 
@@ -170,13 +190,9 @@
             if (data.success) {
                 const userDiv = document.getElementById('user-' + id);
                 if(userDiv) userDiv.remove();
-
-                // Update pending counter
                 const pendingCounter = document.getElementById('pendingUsers');
                 pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
-            } else {
-                alert('Failed to reject user.');
-            }
+            } else alert('Failed to reject user.');
         });
     }
 </script>

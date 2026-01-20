@@ -10,43 +10,10 @@
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/css/Profile.css" />
+    <link rel="stylesheet" href="~/css/darkmode.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
     @RenderSection("Styles", required: false)
-
-    <style>
-        /* ===================== DARK MODE ===================== */
-        body.dark-mode {
-            background-color: #121212;
-            color: #eaeaea;
-        }
-
-        body.dark-mode .admin-topbar,
-        body.dark-mode .admin-sidebar {
-            background-color: #0f0f0f;
-        }
-
-        body.dark-mode .admin-content {
-            background-color: #121212;
-        }
-
-        body.dark-mode .card {
-            background-color: #1c1c1c;
-            color: #ffffff;
-        }
-
-        body.dark-mode .dropdown-menu {
-            background-color: #1c1c1c;
-        }
-
-        body.dark-mode .dropdown-item {
-            color: #ffffff;
-        }
-
-        body.dark-mode .dropdown-item:hover {
-            background-color: #2a2a2a;
-        }
-    </style>
 </head>
 <body>
 <div class="sidebar-overlay"></div>
@@ -138,7 +105,6 @@
                 </div>
             </div>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                <!-- SPA-style View Profile -->
                 <li>
                     <a class="dropdown-item" href="javascript:void(0);" id="viewProfileBtn">
                         View Profile

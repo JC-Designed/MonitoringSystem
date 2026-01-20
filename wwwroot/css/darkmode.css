@@ -1,0 +1,178 @@
+﻿/* ===================== DARK MODE BASE ===================== */
+body.dark-mode {
+    background-color: #121212;
+    color: #eaeaea;
+}
+
+body.dark-mode a {
+    color: #ff6b6b;
+}
+
+body.dark-mode a:hover {
+    color: #ff4b4b;
+}
+
+/* ===================== ADMIN SIDEBAR ===================== */
+body.dark-mode .admin-sidebar {
+    background-color: #0f0f0f;
+    border-right: 1px solid #1a1a1a;
+}
+
+body.dark-mode .admin-sidebar .admin-logo-text {
+    color: #eaeaea;
+}
+
+body.dark-mode .admin-sidebar .menu-link {
+    background-color: transparent !important;
+    color: #eaeaea !important;
+    border-radius: 0 !important;
+    border: none !important;
+}
+
+body.dark-mode .admin-sidebar .menu-link i {
+    color: #eaeaea !important;
+}
+
+body.dark-mode .admin-sidebar .menu-link:hover {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .admin-sidebar .menu-link.active {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .admin-sidebar .btn-logout {
+    background-color: #1f1f1f;
+    color: #eaeaea;
+    border: none;
+}
+
+body.dark-mode .admin-sidebar .btn-logout:hover {
+    background-color: #2a2a2a;
+}
+
+/* ===================== ADMIN TOPBAR ===================== */
+body.dark-mode .admin-topbar {
+    background-color: #1f1f1f;
+    color: #eaeaea;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+body.dark-mode .admin-topbar i,
+body.dark-mode .admin-topbar .btn,
+body.dark-mode .admin-topbar .dropdown-toggle {
+    color: #eaeaea !important;
+}
+
+body.dark-mode .admin-topbar .topbar-title {
+    color: #eaeaea;
+}
+
+/* ===================== MAIN CONTENT ===================== */
+body.dark-mode .admin-content {
+    background-color: #121212;
+    color: #eaeaea;
+}
+
+body.dark-mode .card,
+body.dark-mode .attendance-panel,
+body.dark-mode #usersTable tbody tr,
+body.dark-mode .users-page .card,
+body.dark-mode .filter-box {
+    background-color: #1c1c1c !important;
+    color: #eaeaea !important;
+    border: 1px solid #2a2a2a !important;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+}
+
+body.dark-mode .card:hover,
+body.dark-mode .attendance-panel:hover,
+body.dark-mode #usersTable tbody tr:hover,
+body.dark-mode .users-page .card:hover,
+body.dark-mode .filter-box:hover {
+    box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+}
+
+/* ===================== DROPDOWNS ===================== */
+body.dark-mode .dropdown-menu {
+    background-color: #1c1c1c !important;
+    color: #ffffff !important;
+    border: 1px solid #2a2a2a !important;
+}
+
+body.dark-mode .dropdown-item {
+    color: #eaeaea !important;
+}
+
+body.dark-mode .dropdown-item:hover {
+    background-color: #2a2a2a !important;
+    color: #ffffff !important;
+}
+
+/* ===================== TABLES ===================== */
+body.dark-mode .attendance-table thead,
+body.dark-mode #usersTable thead {
+    background-color: #1a1a1a !important;
+    color: #eaeaea;
+}
+
+body.dark-mode .attendance-table td,
+body.dark-mode #usersTable td,
+body.dark-mode .attendance-table th,
+body.dark-mode #usersTable th {
+    border-bottom: 1px solid #2a2a2a !important;
+    color: #eaeaea;
+}
+
+body.dark-mode #usersTable tbody tr:hover {
+    background-color: #2a2a2a !important;
+}
+
+/* ===================== MODALS ===================== */
+body.dark-mode .modal-content {
+    background-color: #1c1c1c !important;
+    color: #eaeaea;
+    border: 1px solid #2a2a2a;
+}
+
+body.dark-mode .modal-header,
+body.dark-mode .modal-footer {
+    border-color: #2a2a2a;
+}
+
+/* ===================== FORM ELEMENTS ===================== */
+body.dark-mode .form-control,
+body.dark-mode .form-select {
+    background-color: #1c1c1c;
+    color: #eaeaea;
+    border: 1px solid #2a2a2a;
+}
+
+body.dark-mode .form-control:focus,
+body.dark-mode .form-select:focus {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 0 0.25rem rgba(255,107,107,0.25);
+}
+
+/* ===================== PROFILE TEMPLATE ===================== */
+body.dark-mode .profile-page .profile-banner {
+    background-color: #1c1c1c !important;
+}
+
+body.dark-mode .profile-page h3,
+body.dark-mode .profile-page p,
+body.dark-mode .profile-page .text-muted {
+    color: #eaeaea !important;
+}
+
+/* ===================== RESPONSIVE ADJUSTMENTS ===================== */
+@media (max-width: 992px) {
+    body.dark-mode .admin-content {
+        padding: 1rem !important;
+    }
+}
