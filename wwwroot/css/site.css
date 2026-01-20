@@ -111,24 +111,37 @@ a {
 
 /* ================================ ⭐ ADMIN SIDEBAR ================================ */
 .admin-sidebar {
-    width: 80px;
-    height: 100vh;
-    background: #ffffff;
+    width: 80px; /* collapsed width */
+    height: 100vh; /* full viewport height */
+    background: #ffffff; /* sidebar background */
     border-right: 1px solid #dcdcdc;
     position: fixed;
     top: 0;
     left: 0;
     z-index: 1030;
-    overflow-y: auto;
-    transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
+    transition: all 0.3s ease;
 }
 
+    /* Expanded width */
     .admin-sidebar.expanded {
         width: 250px;
     }
 
+    /* Scrollable wrapper inside sidebar */
+    .admin-sidebar .scroll-wrapper {
+        flex: 1; /* fills remaining space */
+        overflow-y: auto; /* allows scroll if content overflows */
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE 10+ */
+    }
+
+        .admin-sidebar .scroll-wrapper::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+/* Logo Header */
 .admin-logo-header {
     text-align: center;
     padding: 24px 10px;
@@ -157,11 +170,13 @@ a {
     transition: opacity 0.3s ease;
 }
 
+/* Menu */
 .admin-menu {
-    flex: 1;
-    overflow-y: auto;
     margin-top: 14px;
     padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
 .menu-link {
@@ -199,34 +214,51 @@ a {
     box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
+/* Logout Button */
 .sidebar-logout {
-    margin-top: auto;
-    padding: 0 16px 20px 16px;
+    padding: 16px;
+    margin-top: auto; /* push to bottom */
 }
 
 .btn-logout {
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 15px 12px;
+    justify-content: center; /* center icon + text */
+    gap: 10px;
+    padding: 14px;
     font-weight: 600;
-    font-size: 1rem;
-    background: #ffffff;
-    border-radius: 12px;
-    color: #333;
-    border: 1px solid transparent;
-    transition: all 0.25s ease;
-    white-space: nowrap;
-    overflow: hidden;
+    font-size: 1.05rem;
+    background-color: #8B0000; /* main red */
+    color: white;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    text-align: center;
 }
 
     .btn-logout i {
-        font-size: 1.35rem;
-        color: #B22222;
+        font-size: 1.25rem;
+        color: white;
+    }
+
+    .btn-logout span {
+        display: inline-block;
+    }
+
+    .btn-logout:hover {
+        background-color: #a40000; /* darker red */
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     }
 
 .admin-sidebar:not(.expanded) .btn-logout span {
-    display: none;
+    display: none; /* hide text when collapsed */
+}
+
+.admin-sidebar:not(.expanded) .btn-logout {
+    justify-content: center; /* center icon when collapsed */
 }
 
 .btn-logout:hover {

@@ -275,38 +275,6 @@
             themeIcon.classList.toggle("bi-moon-fill", !isDark);
             themeIcon.classList.toggle("bi-sun-fill", isDark);
         });
-
-        // Image Preview Function
-        function previewImage(input, targetId){
-            const file = input.files[0];
-            if(file){
-                const reader = new FileReader();
-                reader.onload = e => document.getElementById(targetId).src = e.target.result;
-                reader.readAsDataURL(file);
-            }
-        }
-
-        document.getElementById('editProfilePicBtnModal')?.addEventListener('click', ()=> document.getElementById('profilePicInputModal').click());
-        document.getElementById('editBannerBtnModal')?.addEventListener('click', ()=> document.getElementById('bannerInputModal').click());
-
-        const editInfoBtn = document.getElementById('editAdminInfoBtn');
-        const adminInfoTable = document.getElementById('adminInfoTable');
-        let isEditing = false;
-
-        editInfoBtn?.addEventListener('click', ()=>{
-            isEditing = !isEditing;
-            adminInfoTable.querySelectorAll('tbody tr').forEach(row=>{
-                const valueCell = row.cells[1];
-                if(isEditing){
-                    const val = valueCell.textContent.trim();
-                    valueCell.innerHTML = `<input type="text" class="form-control form-control-sm" value="${val}">`;
-                } else {
-                    const input = valueCell.querySelector('input');
-                    if(input) valueCell.textContent = input.value;
-                }
-            });
-            editInfoBtn.innerHTML = isEditing ? '<i class="bi bi-x-circle"></i> Cancel' : '<i class="bi bi-pencil"></i> EDIT';
-        });
     </script>
 
     @RenderSection("Scripts", required: false)
