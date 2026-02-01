@@ -16,16 +16,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
     <style>
-        /* ------------------------------
-                   Profile Divider
-                ------------------------------ */
-        .profile-page .profile-divider {
-            width: 100%;
-            height: 1px;
-            background-color: #dee2e6;
-            margin: 1.5rem 0;
-        }
-
         /* Profile picture wrapper hover overlay */
         .profile-pic-wrapper {
             position: relative;
@@ -55,6 +45,16 @@
         .profile-pic-overlay i {
             color: white;
             font-size: 1.25rem;
+        }
+
+        /* Topbar small profile picture */
+        #topbarProfilePic {
+            width: 35px;
+            height: 35px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: default; /* 🔹 Not clickable */
         }
     </style>
 
@@ -121,7 +121,7 @@
             <span class="topbar-title">@ViewData["Title"]</span>
         </div>
 
-        <div class="d-flex align-items-center gap-3">
+        <div class="d-flex align-items-center gap-2">
             <!-- Dark Mode Toggle -->
             <div id="themeToggle" style="cursor:pointer;">
                 <i class="bi bi-moon-fill fs-5" id="themeIcon"></i>
@@ -139,6 +139,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Small Topbar Profile Picture -->
+            <img src="/images/ctu-logo.png" id="topbarProfilePic" title="Profile Picture" />
 
             <!-- Profile Dropdown -->
             <div class="dropdown">
@@ -163,26 +166,19 @@
 
     <!-- PROFILE TEMPLATE -->
     <script type="text/template" id="profileTemplate">
-        <div class="profile-page">
-            <div class="container-fluid px-4 py-4">
-                <!-- Profile Picture & Info -->
-                <div class="d-flex align-items-center gap-4">
-                    <div class="profile-pic-wrapper" style="width:140px; height:140px;">
-                        <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
-
-                        <div class="profile-pic-overlay">
-                            <i class="bi bi-camera-fill"></i>
-                        </div>
-
-                        <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
-                    </div>
-                    <
-                        <h3 class="fw-bold mb-1 text-dark">Palm Grove Park</h3>
-                        <div class="small text-dark">377 Barangay 8 St., Alcantara, Cebu</div>
-                    </div>div>
+        <div class="profile-page d-flex" style="height:100%; align-items:flex-start; gap:2rem; padding:2rem;">
+            <!-- Profile Picture on Left -->
+            <div class="profile-pic-wrapper" style="width:140px; height:140px; flex-shrink:0;">
+                <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
+                <div class="profile-pic-overlay">
+                    <i class="bi bi-camera-fill"></i>
                 </div>
-                <!-- Profile content area -->
-                <div class="mt-4 profile-content"></div>
+                <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+            </div>
+
+            <!-- Profile Content Area -->
+            <div class="profile-content" style="flex-grow:1;">
+                <!-- Add your profile info here -->
             </div>
         </div>
     </script>
@@ -217,31 +213,19 @@
         // Profile SPA
         const mainContent = document.getElementById("adminMainContent");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
+        const topbarProfilePic = document.getElementById("topbarProfilePic");
         const originalDashboardHTML = mainContent.innerHTML;
 
-        viewProfileBtn?.addEventListener("click", ()=>{
+        function openProfileSPA(){
             mainContent.style.opacity = 0;
             setTimeout(()=>{
                 const template = document.getElementById("profileTemplate").innerHTML;
                 mainContent.innerHTML = template;
                 document.querySelector(".topbar-title").textContent = "Profile";
 
-                const profileTabs = document.querySelectorAll('.profile-page .nav-link');
-                const profileContent = document.querySelector('.profile-page .profile-content');
-
-                // Tab click logic
-                profileTabs.forEach(tab=>{
-                    tab.addEventListener('click', (e)=>{
-                        e.preventDefault();
-                        profileTabs.forEach(t=>t.classList.remove('active'));
-                        tab.classList.add('active');
-                    });
-                });
-
-                // Profile picture change logic
                 const profileImage = document.getElementById("profileImage");
-                const profilePicInput = document.getElementById("profilePicInput");
                 const profileOverlay = document.querySelector(".profile-pic-overlay");
+                const profilePicInput = document.getElementById("profilePicInput");
 
                 profileOverlay.addEventListener("click", ()=> profilePicInput.click());
 
@@ -250,15 +234,20 @@
                         const reader = new FileReader();
                         reader.onload = function(evt){
                             profileImage.src = evt.target.result;
+                            topbarProfilePic.src = evt.target.result; // update topbar pic in real time
                         }
                         reader.readAsDataURL(e.target.files[0]);
-                        // TODO: send file to backend
                     }
                 });
 
                 mainContent.style.opacity = 1;
             },200);
-        });
+        }
+
+        viewProfileBtn?.addEventListener("click", openProfileSPA);
+
+        // 🔹 topbarProfilePic is no longer clickable
+        // topbarProfilePic?.addEventListener("click", openProfileSPA);
 
         // Back to Dashboard
         document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
@@ -289,3 +278,4 @@
     @RenderSection("Scripts", required: false)
 </body>
 </html>
+    

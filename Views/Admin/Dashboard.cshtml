@@ -9,7 +9,6 @@
     <div class="row mb-4">
         <div class="col-12 d-flex align-items-center">
             <label for="yearSelector" class="me-3 fw-bold">Select Year:</label>
-            <!-- Wider select box -->
             <select id="yearSelector" class="form-select" style="width:150px;">
                 <option value="2026" selected>2026</option>
                 <option value="2025">2025</option>
@@ -19,83 +18,52 @@
         </div>
     </div>
 
-    <!-- Charts -->
-    <div class="row g-4 mb-4">
+    <div class="row g-4">
+
         <!-- Pending vs Approved -->
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="card shadow-sm p-4">
-                <h6 class="fw-bold" id="pendingApprovedTitle">2026</h6>
-                <div style="overflow-x:auto;">
-                    <canvas id="pendingApprovedChart" style="width:1200px; height:250px;"></canvas>
+                <h5 class="fw-bold mb-3" id="pendingApprovedTitle">2026 Pending vs Approved Users</h5>
+                <div style="height:380px;">
+                    <canvas id="pendingApprovedChart"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Total Users vs Companies -->
-        <div class="col-md-6">
-            <div class="card shadow-sm p-4">
-                <h6 class="fw-bold" id="totalUsersCompaniesTitle">2026</h6>
-                <div style="overflow-x:auto;">
-                    <canvas id="totalUsersCompaniesChart" style="width:1200px; height:250px;"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- New Registration -->
-    <div class="row g-4">
         <div class="col-12">
             <div class="card shadow-sm p-4">
-                <h6 class="fw-bold" id="newRegistrationTitle">2026</h6>
-                <div>
-                    <canvas id="newRegistrationChart" style="width:100%; height:300px;"></canvas>
+                <h5 class="fw-bold mb-3" id="totalUsersCompaniesTitle">2026 Total Users vs Companies</h5>
+                <div style="height:380px;">
+                    <canvas id="totalUsersCompaniesChart"></canvas>
                 </div>
             </div>
         </div>
-    </div>
 
+    </div>
 </div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // GLOBAL STYLE (applies to all charts)
         Chart.defaults.font.family = 'Segoe UI';
         Chart.defaults.color = '#666';
 
+        // ⭐ BIGGER BARS STYLE
         const premiumBarStyle = {
             borderRadius: 8,
-            barPercentage: 0.9,
-            categoryPercentage: 0.85
+            barPercentage: 0.9,        // was 0.6
+            categoryPercentage: 0.9,   // was 0.6
+            maxBarThickness: 60        // prevents over-stretching
         };
 
-        const premiumOptionsScrollable = {
-            responsive: false,
-            plugins: {
-                legend: { position: 'top' },
-                tooltip: {
-                    backgroundColor: '#222',
-                    padding: 10,
-                    titleFont: { size: 14 },
-                    bodyFont: { size: 13 }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: "rgba(0,0,0,0.05)" }
-                },
-                x: {
-                    ticks: { autoSkip: false },
-                    grid: { display: false }
-                }
-            }
-        };
-
-        const premiumOptionsStatic = {
+        const premiumOptions = {
             responsive: true,
-            plugins: { legend: { position: 'top' } },
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'top' }
+            },
             scales: {
                 y: {
                     beginAtZero: true,
@@ -105,7 +73,6 @@
             }
         };
 
-        // ================== Pending vs Approved ==================
         const pendingApprovedChart = new Chart(document.getElementById('pendingApprovedChart'), {
             type: 'bar',
             data: {
@@ -115,10 +82,9 @@
                     { label:'Approved User', data:[3,4,5,6,5,4,6,3,5,6,4,7], backgroundColor:'#55D2FF', ...premiumBarStyle }
                 ]
             },
-            options: premiumOptionsScrollable
+            options: premiumOptions
         });
 
-        // ================== Total Users vs Companies ==================
         const totalUsersCompaniesChart = new Chart(document.getElementById('totalUsersCompaniesChart'), {
             type: 'bar',
             data: {
@@ -128,34 +94,13 @@
                     { label:'Total Companies', data:[3,4,5,6,5,4,5,7,6,4,5,7], backgroundColor:'#FFC355', ...premiumBarStyle }
                 ]
             },
-            options: premiumOptionsScrollable
+            options: premiumOptions
         });
 
-        // ================== New Registration ==================
-        const newRegistrationChart = new Chart(document.getElementById('newRegistrationChart'), {
-            type:'bar',
-            data:{
-                labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets:[{
-                    label:'New Registration',
-                    data:[4,5,6,2,2,3,1,4,5,6,4,6],
-                    backgroundColor:'#E590FA',
-                    ...premiumBarStyle
-                }]
-            },
-            options: premiumOptionsStatic
-        });
-
-        // ================== Year Dropdown Logic ==================
         document.getElementById('yearSelector').addEventListener('change', function() {
-            const selectedYear = this.value;
-
-            // Update titles
-            document.getElementById('pendingApprovedTitle').textContent = selectedYear;
-            document.getElementById('totalUsersCompaniesTitle').textContent = selectedYear;
-            document.getElementById('newRegistrationTitle').textContent = selectedYear;
-
-            // TODO: update chart data dynamically if needed
+            const year = this.value;
+            document.getElementById('pendingApprovedTitle').textContent = year + " Pending vs Approved Users";
+            document.getElementById('totalUsersCompaniesTitle').textContent = year + " Total Users vs Companies";
         });
     </script>
 }

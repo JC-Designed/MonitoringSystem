@@ -28,13 +28,44 @@
         border: 2px solid #dee2e6;
     }
 
-    .banner-wrapper img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-        border-radius: 0.25rem;
-        border: 1px solid #dee2e6;
-    }
+/* Profile picture hover overlay */
+.profile-pic-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.profile-pic-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.profile-pic-wrapper:hover .profile-pic-overlay {
+    opacity: 1;
+}
+
+.profile-pic-overlay i {
+    color: white;
+    font-size: 1.25rem;
+}
+
+.banner-wrapper img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+}
 
 /* -------------------------
    Buttons
@@ -193,9 +224,38 @@
     margin-top: 60px;
 }
 
+/* ==========================
+   Updated for Left-aligned Profile Picture
+=========================== */
+.profile-page {
+    display: flex;
+    justify-content: flex-start; /* align items to the left */
+    align-items: flex-start; /* align to top */
+    padding: 2rem;
+    gap: 2rem; /* space between profile pic and content */
+}
+
+.profile-pic-wrapper {
+    margin-bottom: 0; /* remove bottom margin */
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0; /* prevent shrinking */
+}
+
+.profile-page .profile-content {
+    flex-grow: 1; /* content takes remaining space */
+}
+
 @media (max-width: 767px) {
     .top-banner {
         width: 100%;
         margin-left: 0;
+    }
+
+    /* Stack profile picture on top on small screens */
+    .profile-page {
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
     }
 }
