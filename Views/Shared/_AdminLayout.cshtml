@@ -1,4 +1,6 @@
 ﻿@* _AdminLayout.cshtml *@
+@using Microsoft.AspNetCore.Http
+@inject IHttpContextAccessor HttpContextAccessor
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,6 +15,49 @@
     <link rel="stylesheet" href="~/css/darkmode.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
+    <style>
+        /* ------------------------------
+                   Profile Divider
+                ------------------------------ */
+        .profile-page .profile-divider {
+            width: 100%;
+            height: 1px;
+            background-color: #dee2e6;
+            margin: 1.5rem 0;
+        }
+
+        /* Profile picture wrapper hover overlay */
+        .profile-pic-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-pic-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .profile-pic-wrapper:hover .profile-pic-overlay {
+            opacity: 1;
+        }
+
+        .profile-pic-overlay i {
+            color: white;
+            font-size: 1.25rem;
+        }
+    </style>
+
     @RenderSection("Styles", required: false)
 </head>
 <body>
@@ -21,37 +66,17 @@
 
     <!-- LEFT SIDEBAR -->
     <aside class="admin-sidebar">
-        <!-- Scroll wrapper for hidden scrollbars -->
         <div class="scroll-wrapper" style="flex:1; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;">
             <style>
-                .scroll-wrapper::-webkit-scrollbar { display:none; }
+                .scroll-wrapper::-webkit-scrollbar {
+                    display: none;
+                }
             </style>
 
             <!-- Logo -->
             <div class="admin-logo-header">
                 <img src="~/images/ctu-logo.png" class="admin-logo" />
                 <div class="admin-logo-text">BALAMBAN CAMPUS</div>
-            </div>
-
-            <!-- School Year Dropdown -->
-            <div class="sidebar-schoolyear-wrapper">
-                <div class="sidebar-schoolyear mb-3 px-3">
-                    <label class="text-muted small mb-1">School Year</label>
-                    <select id="schoolYearDropdown" class="form-select form-select-sm">
-                        @{
-                            int systemStartYear = 2025;
-                            int currentYear = DateTime.Now.Year;
-                            int selectedYear = ViewBag.SchoolYear ?? currentYear;
-                            if (Context.Request.Cookies.ContainsKey("SelectedSchoolYear"))
-                                int.TryParse(Context.Request.Cookies["SelectedSchoolYear"], out selectedYear);
-                            for (int y = currentYear; y >= systemStartYear; y--)
-                            {
-                                var selectedAttr = (y == selectedYear) ? " selected" : "";
-                                @: <option value="@y"@selectedAttr>@y</option>
-                            }
-                        }
-                    </select>
-                </div>
             </div>
 
             <!-- Menu -->
@@ -62,11 +87,8 @@
                 <a asp-action="Users" asp-controller="Admin" class="menu-link">
                     <i class="bi bi-person-fill"></i> <span>Users</span>
                 </a>
-                <a asp-action="Company" asp-controller="Admin" class="menu-link">
-                    <i class="bi bi-building"></i> <span>Company</span>
-                </a>
-                <a asp-action="Messages" asp-controller="Admin" class="menu-link">
-                    <i class="bi bi-envelope-fill"></i> <span>Messages</span>
+                <a asp-action="Registration" asp-controller="Admin" class="menu-link">
+                    <i class="bi bi-building"></i> <span>Registration</span>
                 </a>
                 <a asp-action="Reports" asp-controller="Admin" class="menu-link">
                     <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
@@ -76,12 +98,12 @@
 
             <!-- Logout -->
             <div class="sidebar-logout">
-                <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
-                    <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-                </a>
                 <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
                     @Html.AntiForgeryToken()
                 </form>
+                <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
+                    <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+                </a>
             </div>
         </div>
     </aside>
@@ -109,8 +131,7 @@
             <div class="position-relative" id="notifBell" style="cursor:pointer;">
                 <i class="bi bi-bell-fill fs-5"></i>
                 <span class="notif-dot"></span>
-                <div class="notif-popup shadow-sm bg-white rounded p-2" 
-                     style="position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
+                <div class="notif-popup shadow-sm bg-white rounded p-2" style="position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
                     <h6 class="fw-bold mb-2">Notifications</h6>
                     <ul id="notifList" class="list-unstyled mb-0"></ul>
                     <div class="text-center mt-2">
@@ -122,14 +143,14 @@
             <!-- Profile Dropdown -->
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
-                    <div class="d-flex flex-column" style="font-size: 0.75rem;" id="sidebarAdminName">
-                        <strong id="sidebarAdminFullName">Administrator</strong>
+                    <div class="d-flex flex-column" style="font-size:0.75rem;">
+                        <strong>Administrator</strong>
                         <span>Admin</span>
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                    <li><a class="dropdown-item" href="javascript:void(0);" id="viewProfileBtn"> View Profile </a></li>
-                    <li><a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="dropdown-item">Logout</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0);" id="viewProfileBtn">View Profile</a></li>
+                    <li><a class="dropdown-item" href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();">Logout</a></li>
                 </ul>
             </div>
         </div>
@@ -142,41 +163,26 @@
 
     <!-- PROFILE TEMPLATE -->
     <script type="text/template" id="profileTemplate">
-        <div class="profile-page text-white">
-            <!-- BANNER -->
-            <div class="profile-banner position-relative" style="height:260px;background:#e5e5e5 url('/images/banner-placeholder.jpg') center/cover;">
-                <button class="btn btn-warning btn-sm position-absolute end-0 bottom-0 m-3">
-                    <i class="bi bi-camera"></i>
-                </button>
-            </div>
-            <!-- PROFILE HEADER -->
-            <div class="container-fluid px-4">
-                <div class="d-flex align-items-end gap-4" style="margin-top:-70px;">
-                    <div class="position-relative">
-                        <img src="/images/ctu-logo.png" class="rounded-circle border border-3 border-dark" style="width:140px;height:140px;object-fit:cover;">
-                        <span class="position-absolute bottom-0 end-0 bg-warning rounded-circle p-1">
-                            <i class="bi bi-camera"></i>
-                        </span>
-                    </div>
-                    <div>
-                        <h3 class="fw-bold mb-1">Palm Grove Park</h3>
-                        <div class="text-muted small"> 377 Barangay 8 St., Alcantara, Cebu </div>
-                    </div>
-                </div>
-                <!-- TABS -->
-                <ul class="nav nav-tabs mt-4">
-                    <li class="nav-item"><a class="nav-link active" href="#">Overview</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">Inventory</a></li>
-                </ul>
-                <!-- CONTENT -->
-                <div class="mt-4">
-                    <div class="card bg-dark text-white border-0 shadow-sm">
-                        <div class="card-body">
-                            <h6 class="fw-bold">Overview</h6>
-                            <p class="text-muted mb-0"> This is the profile overview section. </p>
+        <div class="profile-page">
+            <div class="container-fluid px-4 py-4">
+                <!-- Profile Picture & Info -->
+                <div class="d-flex align-items-center gap-4">
+                    <div class="profile-pic-wrapper" style="width:140px; height:140px;">
+                        <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
+
+                        <div class="profile-pic-overlay">
+                            <i class="bi bi-camera-fill"></i>
                         </div>
+
+                        <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
                     </div>
+                    <
+                        <h3 class="fw-bold mb-1 text-dark">Palm Grove Park</h3>
+                        <div class="small text-dark">377 Barangay 8 St., Alcantara, Cebu</div>
+                    </div>div>
                 </div>
+                <!-- Profile content area -->
+                <div class="mt-4 profile-content"></div>
             </div>
         </div>
     </script>
@@ -189,111 +195,94 @@
         const mobileToggle = document.getElementById('sidebarToggle');
         const overlay = document.querySelector('.sidebar-overlay');
 
-        // Expand sidebar on desktop by default
         if(window.innerWidth >= 768) sidebar.classList.add('expanded');
 
-        // Toggle sidebar
-        desktopToggle?.addEventListener('click', () => sidebar.classList.toggle('expanded'));
-        mobileToggle?.addEventListener('click', () => {
+        desktopToggle?.addEventListener('click', ()=>sidebar.classList.toggle('expanded'));
+        mobileToggle?.addEventListener('click', ()=>{
             sidebar.classList.toggle('expanded');
             overlay.classList.toggle('active');
         });
-        overlay?.addEventListener('click', () => {
+        overlay?.addEventListener('click', ()=>{
             sidebar.classList.remove('expanded');
             overlay.classList.remove('active');
         });
 
-        // Notifications popup
+        // Notifications
         const notifBell = document.getElementById('notifBell');
         const notifPopup = notifBell?.querySelector('.notif-popup');
-        notifBell?.addEventListener('click', () => {
+        notifBell?.addEventListener('click', ()=>{
             notifPopup.style.display = (notifPopup.style.display==='block')?'none':'block';
         });
 
-        // School Year dropdown
-        const schoolYearDropdown = document.getElementById("schoolYearDropdown");
-        if(schoolYearDropdown){
-            schoolYearDropdown.addEventListener("change", function(){
-                const year = this.value;
-                document.cookie = "SelectedSchoolYear="+year+"; path=/";
-                const url = new URL(window.location.href);
-                url.searchParams.set("schoolYear", year);
-                window.location.href = url.toString();
-            });
-        }
-
-        // SPA Profile
+        // Profile SPA
         const mainContent = document.getElementById("adminMainContent");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
         const originalDashboardHTML = mainContent.innerHTML;
 
-        viewProfileBtn?.addEventListener("click", () => {
+        viewProfileBtn?.addEventListener("click", ()=>{
             mainContent.style.opacity = 0;
-            setTimeout(() => {
+            setTimeout(()=>{
                 const template = document.getElementById("profileTemplate").innerHTML;
                 mainContent.innerHTML = template;
                 document.querySelector(".topbar-title").textContent = "Profile";
 
                 const profileTabs = document.querySelectorAll('.profile-page .nav-link');
-                const profileContent = document.querySelector('.profile-page .mt-4');
+                const profileContent = document.querySelector('.profile-page .profile-content');
 
-                profileTabs.forEach(tab => {
-                    tab.addEventListener('click', (e) => {
+                // Tab click logic
+                profileTabs.forEach(tab=>{
+                    tab.addEventListener('click', (e)=>{
                         e.preventDefault();
-                        profileTabs.forEach(t => t.classList.remove('active'));
+                        profileTabs.forEach(t=>t.classList.remove('active'));
                         tab.classList.add('active');
-
-                        if(tab.textContent === 'Overview'){
-                            profileContent.innerHTML = `<div class="card bg-dark text-white border-0 shadow-sm">
-                                <div class="card-body">
-                                    <h6 class="fw-bold">Overview</h6>
-                                    <p class="text-muted mb-0"> This is the profile overview section. </p>
-                                </div>
-                            </div>`;
-                        } else if(tab.textContent === 'Inventory'){
-                            profileContent.innerHTML = `<div class="card bg-dark text-white border-0 shadow-sm">
-                                <div class="card-body">
-                                    <h6 class="fw-bold">Inventory</h6>
-                                    <p class="text-muted mb-0"> Inventory items will appear here. </p>
-                                </div>
-                            </div>`;
-                        }
                     });
                 });
+
+                // Profile picture change logic
+                const profileImage = document.getElementById("profileImage");
+                const profilePicInput = document.getElementById("profilePicInput");
+                const profileOverlay = document.querySelector(".profile-pic-overlay");
+
+                profileOverlay.addEventListener("click", ()=> profilePicInput.click());
+
+                profilePicInput.addEventListener("change", (e)=>{
+                    if(e.target.files && e.target.files[0]){
+                        const reader = new FileReader();
+                        reader.onload = function(evt){
+                            profileImage.src = evt.target.result;
+                        }
+                        reader.readAsDataURL(e.target.files[0]);
+                        // TODO: send file to backend
+                    }
+                });
+
                 mainContent.style.opacity = 1;
-            }, 200);
+            },200);
         });
 
         // Back to Dashboard
-        document.getElementById("dashboardBtn")?.addEventListener("click", () => {
+        document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
             mainContent.style.opacity = 0;
-            setTimeout(() => {
+            setTimeout(()=>{
                 mainContent.innerHTML = originalDashboardHTML;
                 document.querySelector(".topbar-title").textContent = "Dashboard";
                 mainContent.style.opacity = 1;
-            }, 200);
+            },200);
         });
 
-        // ===================== DARK MODE PERSISTENT =====================
+        // Dark Mode
         const themeToggle = document.getElementById("themeToggle");
         const themeIcon = document.getElementById("themeIcon");
-
-        // Apply saved preference on load
-        if(localStorage.getItem("darkMode") === "true"){
+        if(localStorage.getItem("darkMode")==="true"){
             document.body.classList.add("dark-mode");
-            themeIcon.classList.remove("bi-moon-fill");
-            themeIcon.classList.add("bi-sun-fill");
+            themeIcon.classList.replace("bi-moon-fill","bi-sun-fill");
         }
-
-        // Toggle dark mode
-        themeToggle?.addEventListener("click", () => {
+        themeToggle?.addEventListener("click", ()=>{
             document.body.classList.toggle("dark-mode");
             const isDark = document.body.classList.contains("dark-mode");
-            themeIcon.classList.toggle("bi-moon-fill", !isDark);
-            themeIcon.classList.toggle("bi-sun-fill", isDark);
-
-            // Save state
-            localStorage.setItem("darkMode", isDark);
+            themeIcon.classList.toggle("bi-moon-fill",!isDark);
+            themeIcon.classList.toggle("bi-sun-fill",isDark);
+            localStorage.setItem("darkMode",isDark);
         });
     </script>
 

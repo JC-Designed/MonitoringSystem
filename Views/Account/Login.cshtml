@@ -12,42 +12,47 @@
 
     <div class="form-side">
         <h4>Login to your account</h4>
+
         <form asp-action="Login" method="post">
-            <div class="mb-3">
-                <label for="role" class="form-label">Select Role</label>
-                <select asp-for="RoleString" class="form-select" id="role" required>
-                    <option value="">Select Role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Student">Student</option>
-                    <option value="Company">Company</option>
-                </select>
-            </div>
 
+            <!-- EMAIL -->
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
+                <label class="form-label">Email</label>
                 <input asp-for="Email" class="form-control" placeholder="Email" required />
+                <span asp-validation-for="Email" class="text-danger"></span>
             </div>
 
+            <!-- PASSWORD -->
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
+                <label class="form-label">Password</label>
                 <input asp-for="Password" type="password" class="form-control" placeholder="Password" required />
+                <span asp-validation-for="Password" class="text-danger"></span>
             </div>
 
+            <!-- REMEMBER ME -->
             <div class="form-check mb-3">
                 <input asp-for="RememberMe" class="form-check-input" id="remember" />
                 <label for="remember" class="form-check-label">Remember me</label>
             </div>
 
+            <!-- BUTTON -->
             <button type="submit" class="btn-ctu mb-3 w-100">Sign In</button>
 
+            <!-- REGISTER LINK -->
             <div class="text-center">
                 <small>Don’t have an account? <a asp-action="Register">Sign Up</a></small>
             </div>
 
+            <!-- ERROR MESSAGE -->
             @if (ViewBag.Error != null)
             {
                 <div class="alert alert-danger mt-3 text-center">@ViewBag.Error</div>
             }
+
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

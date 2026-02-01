@@ -1,204 +1,161 @@
-﻿@model List<MonitoringSystem.Models.ApplicationUser>
-@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
-
-@{
+﻿@{
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Dashboard";
-
-    var currentYear = ViewBag.SchoolYear ?? DateTime.Now.Year;
-    var pendingUsers = ViewBag.PendingUsersList as List<MonitoringSystem.Controllers.AdminController.PendingUserDto>;
-    var csrfToken = Antiforgery.GetAndStoreTokens(Context).RequestToken;
-
-    var totalUsers = ViewBag.ApprovedUsers ?? 0;
 }
 
-<!-- ===================== STAT CARDS ===================== -->
-<div class="row g-4 mb-5" id="statsSection">
-    <div class="col-md-3">
-        <div class="card shadow-sm p-4 text-center" id="pendingCard" style="cursor:pointer;">
-            <h6 class="card-text">Pending Users</h6>
-            <h2 class="fw-bold card-text" id="pendingUsers">@ViewBag.PendingUsers</h2>
+<div class="container-fluid my-4">
+
+    <!-- Year Dropdown -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex align-items-center">
+            <label for="yearSelector" class="me-3 fw-bold">Select Year:</label>
+            <!-- Wider select box -->
+            <select id="yearSelector" class="form-select" style="width:150px;">
+                <option value="2026" selected>2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+            </select>
         </div>
     </div>
 
-    <div class="col-md-3">
-        <div class="card shadow-sm p-4 text-center">
-            <h6 class="card-text">Approved Users</h6>
-            <h2 class="fw-bold card-text" id="approvedUsers">@ViewBag.ApprovedUsers</h2>
+    <!-- Charts -->
+    <div class="row g-4 mb-4">
+        <!-- Pending vs Approved -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4">
+                <h6 class="fw-bold" id="pendingApprovedTitle">2026</h6>
+                <div style="overflow-x:auto;">
+                    <canvas id="pendingApprovedChart" style="width:1200px; height:250px;"></canvas>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div class="col-md-3">
-        <div class="card shadow-sm p-4 text-center">
-            <h6 class="card-text">Total Users</h6>
-            <h2 class="fw-bold card-text" id="totalUsers">@totalUsers</h2>
-        </div>
-    </div>
-
-    <div class="col-md-3">
-        <div class="card shadow-sm p-4 text-center">
-            <h6 class="card-text">Total Companies</h6>
-            <h2 class="fw-bold card-text" id="totalCompanies">@ViewBag.TotalCompanies</h2>
-        </div>
-    </div>
-</div>
-
-<!-- ===================== CHART ===================== -->
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow-sm p-4">
-            <h5 class="fw-bold mb-4 card-text">User Growth Overview - @currentYear</h5>
-            <div style="height:420px;">
-                <canvas id="userChart"></canvas>
+        <!-- Total Users vs Companies -->
+        <div class="col-md-6">
+            <div class="card shadow-sm p-4">
+                <h6 class="fw-bold" id="totalUsersCompaniesTitle">2026</h6>
+                <div style="overflow-x:auto;">
+                    <canvas id="totalUsersCompaniesChart" style="width:1200px; height:250px;"></canvas>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- New Registration -->
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h6 class="fw-bold" id="newRegistrationTitle">2026</h6>
+                <div>
+                    <canvas id="newRegistrationChart" style="width:100%; height:300px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
-<!-- ===================== PENDING MODAL ===================== -->
-<div class="modal fade" id="pendingUserModal">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title card-text">Pending Users</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body card-text" id="pendingUserList">
-                @if (pendingUsers != null && pendingUsers.Count > 0)
-                {
-                    foreach (var user in pendingUsers)
-                    {
-                        <div class="d-flex justify-content-between mb-2 align-items-center" id="user-@user.Id">
-                            <span class="card-text">@user.Email (@user.Role)</span>
-                            <div class="d-flex gap-1">
-                                <button class="btn btn-success btn-sm" onclick="approveUser('@user.Id')">✔</button>
-                                <button class="btn btn-danger btn-sm" onclick="rejectUser('@user.Id')">✖</button>
-                            </div>
-                        </div>
-                    }
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // GLOBAL STYLE (applies to all charts)
+        Chart.defaults.font.family = 'Segoe UI';
+        Chart.defaults.color = '#666';
+
+        const premiumBarStyle = {
+            borderRadius: 8,
+            barPercentage: 0.9,
+            categoryPercentage: 0.85
+        };
+
+        const premiumOptionsScrollable = {
+            responsive: false,
+            plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                    backgroundColor: '#222',
+                    padding: 10,
+                    titleFont: { size: 14 },
+                    bodyFont: { size: 13 }
                 }
-                else
-                {
-                    <p class="card-text">No pending users.</p>
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "rgba(0,0,0,0.05)" }
+                },
+                x: {
+                    ticks: { autoSkip: false },
+                    grid: { display: false }
                 }
-            </div>
-        </div>
-    </div>
-</div>
+            }
+        };
 
-<!-- ===================== DARK MODE CSS ===================== -->
-<link rel="stylesheet" href="~/css/darkmode.css" />
+        const premiumOptionsStatic = {
+            responsive: true,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: "rgba(0,0,0,0.05)" }
+                },
+                x: { grid: { display: false } }
+            }
+        };
 
-<!-- ===================== SCRIPTS ===================== -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        // Pending modal
-        const pendingCard = document.getElementById('pendingCard');
-        const pendingUserModal = new bootstrap.Modal(document.getElementById('pendingUserModal'));
-        pendingCard.onclick = () => pendingUserModal.show();
-
-        // Chart.js setup
-        const ctx = document.getElementById('userChart').getContext('2d');
-        const userChart = new Chart(ctx, {
+        // ================== Pending vs Approved ==================
+        const pendingApprovedChart = new Chart(document.getElementById('pendingApprovedChart'), {
             type: 'bar',
             data: {
                 labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets: [{
-                    label: 'New Registrations',
-                    data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.MonthlyRegistrations)),
-                    backgroundColor: 'rgba(100,100,255,0.6)',
-                    borderRadius: 6
+                datasets: [
+                    { label:'Pending User', data:[2,2,6,7,3,4,2,5,6,4,3,5], backgroundColor:'#FA90D3', ...premiumBarStyle },
+                    { label:'Approved User', data:[3,4,5,6,5,4,6,3,5,6,4,7], backgroundColor:'#55D2FF', ...premiumBarStyle }
+                ]
+            },
+            options: premiumOptionsScrollable
+        });
+
+        // ================== Total Users vs Companies ==================
+        const totalUsersCompaniesChart = new Chart(document.getElementById('totalUsersCompaniesChart'), {
+            type: 'bar',
+            data: {
+                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets: [
+                    { label:'Total User', data:[2,2,6,7,4,5,3,6,7,5,4,6], backgroundColor:'#90FAD5', ...premiumBarStyle },
+                    { label:'Total Companies', data:[3,4,5,6,5,4,5,7,6,4,5,7], backgroundColor:'#FFC355', ...premiumBarStyle }
+                ]
+            },
+            options: premiumOptionsScrollable
+        });
+
+        // ================== New Registration ==================
+        const newRegistrationChart = new Chart(document.getElementById('newRegistrationChart'), {
+            type:'bar',
+            data:{
+                labels:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                datasets:[{
+                    label:'New Registration',
+                    data:[4,5,6,2,2,3,1,4,5,6,4,6],
+                    backgroundColor:'#E590FA',
+                    ...premiumBarStyle
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top', labels: { color: '#333' } }
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { color: '#333', font: { weight: 'bold' } }, grid: { color: '#ddd' } },
-                    x: { ticks: { color: '#333', font: { weight: 'bold' } }, grid: { color: '#ddd' } }
-                }
-            }
+            options: premiumOptionsStatic
         });
 
-        // Function to update chart for dark mode
-        function updateChartColors(isDark) {
-            const colors = isDark
-                ? { bg: 'rgba(100,255,255,0.6)', border: '#00ffff', text: '#fff', grid: '#555' }
-                : { bg: 'rgba(100,100,255,0.6)', border: '#4466ff', text: '#000', grid: '#ddd' };
+        // ================== Year Dropdown Logic ==================
+        document.getElementById('yearSelector').addEventListener('change', function() {
+            const selectedYear = this.value;
 
-            userChart.data.datasets[0].backgroundColor = colors.bg;
-            userChart.data.datasets[0].borderColor = colors.border;
-            userChart.options.plugins.legend.labels.color = colors.text;
-            userChart.options.scales.x.ticks.color = colors.text;
-            userChart.options.scales.y.ticks.color = colors.text;
-            userChart.options.scales.x.grid.color = colors.grid;
-            userChart.options.scales.y.grid.color = colors.grid;
-            userChart.update();
+            // Update titles
+            document.getElementById('pendingApprovedTitle').textContent = selectedYear;
+            document.getElementById('totalUsersCompaniesTitle').textContent = selectedYear;
+            document.getElementById('newRegistrationTitle').textContent = selectedYear;
 
-            // Update all card text color
-            document.querySelectorAll('.card-text').forEach(el => el.style.color = colors.text);
-        }
-
-        // Initial dark mode check
-        updateChartColors(document.body.classList.contains('dark-mode'));
-
-        // Observe body class changes for dark mode toggle
-        const observer = new MutationObserver(() => {
-            updateChartColors(document.body.classList.contains('dark-mode'));
+            // TODO: update chart data dynamically if needed
         });
-        observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-
-    });
-
-    // ===================== Approve / Reject Users =====================
-    function approveUser(id) {
-        if (!id) return;
-        fetch('@Url.Action("Approve", "Admin")', {
-            method: 'POST',
-            headers: {
-                'RequestVerificationToken': '@csrfToken',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id: id })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const userDiv = document.getElementById('user-' + id);
-                if(userDiv) userDiv.remove();
-                const pendingCounter = document.getElementById('pendingUsers');
-                pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
-                const approvedCounter = document.getElementById('approvedUsers');
-                approvedCounter.textContent = parseInt(approvedCounter.textContent) + 1;
-                const totalCounter = document.getElementById('totalUsers');
-                totalCounter.textContent = parseInt(totalCounter.textContent) + 1;
-            } else alert('Failed to approve user.');
-        });
-    }
-
-    function rejectUser(id) {
-        if (!id) return;
-        fetch('@Url.Action("Reject", "Admin")', {
-            method: 'POST',
-            headers: {
-                'RequestVerificationToken': '@csrfToken',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ id: id })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                const userDiv = document.getElementById('user-' + id);
-                if(userDiv) userDiv.remove();
-                const pendingCounter = document.getElementById('pendingUsers');
-                pendingCounter.textContent = parseInt(pendingCounter.textContent) - 1;
-            } else alert('Failed to reject user.');
-        });
-    }
-</script>
+    </script>
+}

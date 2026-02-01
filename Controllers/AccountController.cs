@@ -29,41 +29,51 @@ namespace MonitoringSystem.Controllers
         public IActionResult Login() => View();
 
         [HttpPost]
-        public async Task<IActionResult> Login(string email, string password, string roleString)
+        public async Task<IActionResult> Login(string email, string password)
         {
-            var user = await _userManager.FindByEmailAsync(email);
-            if (user != null)
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
             {
-                // Check approval
-                if (!user.IsApproved)
-                {
-                    ViewBag.Error = "Account not approved.";
-                    return View();
-                }
-
-                var roles = await _userManager.GetRolesAsync(user);
-                if (!roles.Contains(roleString))
-                {
-                    ViewBag.Error = "Invalid role selected.";
-                    return View();
-                }
-
-                var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
-                if (result.Succeeded)
-                {
-                    if (await _userManager.IsInRoleAsync(user, "Admin"))
-                        return RedirectToAction("Dashboard", "Admin");
-                    else if (await _userManager.IsInRoleAsync(user, "Company"))
-                        return RedirectToAction("Dashboard", "CompanyPanel");
-                    else if (await _userManager.IsInRoleAsync(user, "Student"))
-                        return RedirectToAction("Dashboard", "StudentPanel");
-
-                    return RedirectToAction("Login");
-                }
+                ViewBag.Error = "Please enter email and password.";
+                return View();
             }
 
-            ViewBag.Error = "Invalid login attempt.";
-            return View();
+            var user = await _userManager.FindByEmailAsync(email);
+
+            if (user == null)
+            {
+                ViewBag.Error = "Invalid login attempt.";
+                return View();
+            }
+
+            // Check approval
+            if (!user.IsApproved)
+            {
+                ViewBag.Error = "Account not approved.";
+                return View();
+            }
+
+            var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
+
+            if (!result.Succeeded)
+            {
+                ViewBag.Error = "Invalid login attempt.";
+                return View();
+            }
+
+            // 🔥 AUTO ROLE DETECTION
+            var roles = await _userManager.GetRolesAsync(user);
+
+            if (roles.Contains("Admin"))
+                return RedirectToAction("Dashboard", "Admin");
+
+            if (roles.Contains("Company"))
+                return RedirectToAction("Dashboard", "CompanyPanel");
+
+            if (roles.Contains("Student"))
+                return RedirectToAction("Dashboard", "StudentPanel");
+
+            // fallback
+            return RedirectToAction("Login");
         }
 
         // ======================= REGISTER =======================
@@ -89,7 +99,6 @@ namespace MonitoringSystem.Controllers
                 return View();
             }
 
-            // Build the birthdate
             DateTime birthDate;
             try
             {
@@ -101,13 +110,12 @@ namespace MonitoringSystem.Controllers
                 return View();
             }
 
-            // Create the user
             var user = new ApplicationUser
             {
                 UserName = email,
                 Email = email,
                 CreatedAt = DateTime.Now,
-                IsApproved = false, // <-- ALL users require admin approval
+                IsApproved = false,
                 FirstName = firstName,
                 LastName = lastName,
                 Gender = gender,
@@ -118,10 +126,8 @@ namespace MonitoringSystem.Controllers
 
             if (result.Succeeded)
             {
-                // Assign role
                 await _userManager.AddToRoleAsync(user, roleString);
 
-                // Auto-create company record if Company
                 if (roleString == "Company")
                 {
                     if (string.IsNullOrEmpty(companyName))
@@ -151,10 +157,7 @@ namespace MonitoringSystem.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            // Sign out the user
             await _signInManager.SignOutAsync();
-
-            // Redirect to Login page
             return RedirectToAction("Login");
         }
     }

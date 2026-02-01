@@ -1,4 +1,4 @@
-﻿@* _StudentLayout.cshtml *@
+﻿@* @*  _StudentLayout.cshtml
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -358,7 +358,7 @@
                 const data = await res.json();
                 if(data.success){
                     alert('Profile updated successfully!');
-                    bootstrap.Modal.getInstance(document.getElementById('studentProfileModal'))?.hide();
+                    bootstrap.Modal.getInstance(document.getElementById('studentProfileModal'))?.hide();x
 
                     // Update sidebar name
                     const firstName = studentInfoTable.querySelector('tbody tr:nth-child(1) td:nth-child(2)').textContent.trim();
@@ -374,4 +374,4 @@
 
     @RenderSection("Scripts", required: false)
 </body>
-</html>
+</html>  *@
