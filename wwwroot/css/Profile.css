@@ -15,7 +15,8 @@
 /* -------------------------
    Profile and Banner Wrappers
 --------------------------- */
-.profile-pic-wrapper, .banner-wrapper {
+.profile-pic-wrapper,
+.banner-wrapper {
     text-align: center;
     margin-bottom: 1rem;
 }
@@ -28,10 +29,22 @@
         border: 2px solid #dee2e6;
     }
 
+    .banner-wrapper img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 0.25rem;
+        border: 1px solid #dee2e6;
+    }
+
 /* Profile picture hover overlay */
 .profile-pic-wrapper {
     position: relative;
     display: inline-block;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+    margin-bottom: 0;
 }
 
 .profile-pic-overlay {
@@ -41,7 +54,7 @@
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: rgba(0,0,0,0.3);
+    background: rgba(0, 0, 0, 0.3);
     display: flex;
     justify-content: center;
     align-items: center;
@@ -57,14 +70,6 @@
 .profile-pic-overlay i {
     color: white;
     font-size: 1.25rem;
-}
-
-.banner-wrapper img {
-    width: 100%;
-    height: 200px;
-    object-fit: cover;
-    border-radius: 0.25rem;
-    border: 1px solid #dee2e6;
 }
 
 /* -------------------------
@@ -168,14 +173,11 @@
     border-bottom-right-radius: 1rem;
 }
 
-/* -------------------------
-   Full-width Profile Divider
-   (stretches from sidebar to right)
---------------------------- */
+/* Full-width Profile Divider */
 .profile-page .profile-divider {
     position: relative;
     left: 0;
-    width: 100vw; /* full viewport width */
+    width: 100vw;
     max-width: none;
     height: 1px;
     background-color: #dee2e6;
@@ -185,16 +187,14 @@
 
 /* Profile Content Area */
 .profile-page .profile-content {
-    background-color: #fff; /* white background */
+    background-color: #fff;
     color: black;
     padding: 1.5rem;
     border-radius: 0.25rem;
+    flex-grow: 1;
 }
 
-/* -------------------------
-   Tabs: White background / black text
-   Remove underline
---------------------------- */
+/* Tabs: White background / black text */
 .profile-page .nav-tabs {
     background-color: #fff;
     border-bottom: none;
@@ -212,9 +212,7 @@
             border: none !important;
         }
 
-/* -------------------------
-   Banner Below Topbar & Sidebar
---------------------------- */
+/* Banner Below Topbar & Sidebar */
 .top-banner {
     width: calc(100% - 250px);
     margin-left: 250px;
@@ -224,26 +222,13 @@
     margin-top: 60px;
 }
 
-/* ==========================
-   Updated for Left-aligned Profile Picture
-=========================== */
+/* Updated for Left-aligned Profile Picture */
 .profile-page {
     display: flex;
-    justify-content: flex-start; /* align items to the left */
-    align-items: flex-start; /* align to top */
+    justify-content: flex-start;
+    align-items: flex-start;
     padding: 2rem;
-    gap: 2rem; /* space between profile pic and content */
-}
-
-.profile-pic-wrapper {
-    margin-bottom: 0; /* remove bottom margin */
-    width: 140px;
-    height: 140px;
-    flex-shrink: 0; /* prevent shrinking */
-}
-
-.profile-page .profile-content {
-    flex-grow: 1; /* content takes remaining space */
+    gap: 2rem;
 }
 
 @media (max-width: 767px) {
@@ -252,10 +237,56 @@
         margin-left: 0;
     }
 
-    /* Stack profile picture on top on small screens */
     .profile-page {
         flex-direction: column;
         align-items: center;
         padding: 1rem;
     }
+}
+
+/* Profile Info Table / Card */
+.profile-info-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 0.75rem;
+    margin-top: 1rem;
+}
+
+    .profile-info-table td {
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+
+        .profile-info-table td:first-child {
+            font-weight: 600;
+            width: 150px;
+        }
+
+    .profile-info-table input,
+    .profile-info-table textarea {
+        width: 100%;
+    }
+
+.profile-info-card {
+    margin-top: 1rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+}
+
+@media (max-width: 576px) {
+    .profile-info-table td:first-child {
+        width: 100px;
+    }
+}
+
+/* Topbar small profile picture */
+#topbarProfilePic {
+    width: 35px;
+    height: 35px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid white;
+    cursor: default;
 }

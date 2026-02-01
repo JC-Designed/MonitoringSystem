@@ -11,33 +11,31 @@
 <div class="users-page container-fluid py-4">
     <div class="card shadow-sm rounded-4 p-4">
 
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h5 class="fw-bold mb-0">USERS LIST</h5>
-        </div>
-
         <!-- ================= FILTERS ================= -->
         <div class="row g-3 mb-4 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Year</label>
+                <select id="yearFilter" class="form-select filter-box">
+                    <option value="">All</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                </select>
+            </div>
+
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Search by Name</label>
                 <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
             </div>
 
             <div class="col-md-4">
-                <label class="form-label fw-semibold">User Type</label>
-                <select id="userTypeFilter" class="form-select filter-box">
+                <label class="form-label fw-semibold">Role</label>
+                <select id="roleFilter" class="form-select filter-box">
                     <option value="">All</option>
                     <option value="Student">Student</option>
                     <option value="Company">Company</option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Status</label>
-                <select id="statusFilter" class="form-select filter-box">
-                    <option value="">All</option>
-                    <option value="Approved">Approved</option>
-                    <option value="Pending">Pending</option>
+                    <option value="Admin">Admin</option>
                 </select>
             </div>
         </div>
@@ -47,11 +45,9 @@
             <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
                 <thead class="table-light">
                     <tr>
-                        <th>ID</th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Role</th>
-                        <th>Status</th>
                         <th class="text-end">Action</th>
                     </tr>
                 </thead>
@@ -59,21 +55,18 @@
                     @foreach (var user in Model)
                     {
                         var role = user.Roles.FirstOrDefault() ?? "No Role";
-                        var status = user.IsApproved ? "Approved" : "Pending";
                         var fullName = $"{user.FirstName} {user.LastName}";
 
                         <tr data-id="@user.Id"
                             data-firstname="@user.FirstName"
                             data-lastname="@user.LastName"
                             data-email="@user.Email"
-                            data-type="@role"
-                            data-status="@status">
+                            data-role="@role"
+                            data-year="@user.Year">
 
-                            <td>@user.Id</td>
                             <td>@fullName</td>
                             <td>@user.Email</td>
                             <td>@role</td>
-                            <td>@status</td>
                             <td class="text-end">
                                 <div class="dropdown dropend d-inline-block">
                                     <button class="btn btn-sm btn-light dropdown-toggle"
@@ -148,27 +141,27 @@
     const tbody = document.querySelector("#usersTable tbody");
     let rowToEdit = null;
 
+    const yearFilter = document.getElementById("yearFilter");
     const searchName = document.getElementById("searchName");
-    const userTypeFilter = document.getElementById("userTypeFilter");
-    const statusFilter = document.getElementById("statusFilter");
+    const roleFilter = document.getElementById("roleFilter");
     const token = document.getElementById("__RequestVerificationToken").value;
 
     function filterTable() {
+        const yearVal = yearFilter.value;
         const nameVal = searchName.value.toLowerCase();
-        const typeVal = userTypeFilter.value;
-        const statusVal = statusFilter.value;
+        const roleVal = roleFilter.value;
 
         [...tbody.rows].forEach(row => {
             let show = true;
             const fullName = (row.dataset.firstname + " " + row.dataset.lastname).toLowerCase();
+            if (yearVal && row.dataset.year !== yearVal) show = false;
             if (nameVal && !fullName.includes(nameVal)) show = false;
-            if (typeVal && row.dataset.type !== typeVal) show = false;
-            if (statusVal && row.dataset.status !== statusVal) show = false;
+            if (roleVal && row.dataset.role !== roleVal) show = false;
             row.style.display = show ? "" : "none";
         });
     }
 
-    [searchName, userTypeFilter, statusFilter].forEach(el => el.addEventListener("input", filterTable));
+    [yearFilter, searchName, roleFilter].forEach(el => el.addEventListener("input", filterTable));
 
     // ===== EDIT =====
     document.querySelectorAll(".edit-btn").forEach(btn => {
@@ -179,12 +172,55 @@
             editFirstName.value = rowToEdit.dataset.firstname;
             editLastName.value = rowToEdit.dataset.lastname;
             editEmail.value = rowToEdit.dataset.email;
-            editRole.value = rowToEdit.dataset.type;
+            editRole.value = rowToEdit.dataset.role;
             editPassword.value = "";
             editConfirmPassword.value = "";
 
             bootstrap.Modal.getOrCreateInstance(editModal).show();
         });
+    });
+
+    document.getElementById("editForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        if (!rowToEdit) return;
+
+        const id = rowToEdit.dataset.id;
+        const firstName = editFirstName.value;
+        const lastName = editLastName.value;
+        const email = editEmail.value;
+        const role = editRole.value;
+        const password = editPassword.value;
+        const confirmPassword = editConfirmPassword.value;
+
+        if (password && password !== confirmPassword) {
+            alert("Passwords do not match");
+            return;
+        }
+
+        const res = await fetch("/Admin/EditUser", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "RequestVerificationToken": token
+            },
+            body: JSON.stringify({ Id: id, FirstName: firstName, LastName: lastName, Email: email, Role: role, Password: password })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+            rowToEdit.dataset.firstname = firstName;
+            rowToEdit.dataset.lastname = lastName;
+            rowToEdit.dataset.email = email;
+            rowToEdit.dataset.role = role;
+
+            rowToEdit.cells[0].textContent = firstName + " " + lastName;
+            rowToEdit.cells[1].textContent = email;
+            rowToEdit.cells[2].textContent = role;
+
+            bootstrap.Modal.getInstance(editModal).hide();
+        } else {
+            alert(data.message || "Update failed");
+        }
     });
 
     // ===== DELETE =====

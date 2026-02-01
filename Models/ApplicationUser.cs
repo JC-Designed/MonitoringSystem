@@ -46,5 +46,8 @@ namespace MonitoringSystem.Models
         public ICollection<Conversation> ConversationsAsUser1 { get; set; } = new List<Conversation>();
         public ICollection<Conversation> ConversationsAsUser2 { get; set; } = new List<Conversation>();
         public ICollection<Message> MessagesSent { get; set; } = new List<Message>();
+
+        // ===================== NEW: YEAR =====================
+        public string Year { get; set; } = string.Empty; // e.g., "2023", "2024", etc.
     }
 }

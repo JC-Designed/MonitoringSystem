@@ -1,281 +1,313 @@
-﻿@* _AdminLayout.cshtml *@
-@using Microsoft.AspNetCore.Http
-@inject IHttpContextAccessor HttpContextAccessor
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] | Admin Panel</title>
+﻿    @* _AdminLayout.cshtml *@
+    @using Microsoft.AspNetCore.Http
+    @inject IHttpContextAccessor HttpContextAccessor
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>@ViewData["Title"] | Admin Panel</title>
 
-    <!-- CSS -->
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" />
-    <link rel="stylesheet" href="~/css/Profile.css" />
-    <link rel="stylesheet" href="~/css/darkmode.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+        <!-- CSS -->
+        <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="~/css/site.css" />
+        <link rel="stylesheet" href="~/css/Profile.css" />
+        <link rel="stylesheet" href="~/css/darkmode.css" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
-    <style>
-        /* Profile picture wrapper hover overlay */
-        .profile-pic-wrapper {
-            position: relative;
-            display: inline-block;
-        }
+        <style>
+            /* Profile picture wrapper hover overlay */
+            .profile-pic-wrapper {
+                position: relative;
+                display: inline-block;
+            }
 
-        .profile-pic-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(0,0,0,0.3);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
+            .profile-pic-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                background: rgba(0,0,0,0.3);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
 
-        .profile-pic-wrapper:hover .profile-pic-overlay {
-            opacity: 1;
-        }
+            .profile-pic-wrapper:hover .profile-pic-overlay {
+                opacity: 1;
+            }
 
-        .profile-pic-overlay i {
-            color: white;
-            font-size: 1.25rem;
-        }
+            .profile-pic-overlay i {
+                color: white;
+                font-size: 1.25rem;
+            }
 
-        /* Topbar small profile picture */
-        #topbarProfilePic {
-            width: 35px;
-            height: 35px;
-            object-fit: cover;
-            border-radius: 50%;
-            border: 2px solid white;
-            cursor: default; /* 🔹 Not clickable */
-        }
-    </style>
+            /* Topbar small profile picture */
+            #topbarProfilePic {
+                width: 35px;
+                height: 35px;
+                object-fit: cover;
+                border-radius: 50%;
+                border: 2px solid white;
+                cursor: default; /* 🔹 Not clickable */
+            }
+        </style>
 
-    @RenderSection("Styles", required: false)
-</head>
-<body>
-    <!-- Overlay -->
-    <div class="sidebar-overlay"></div>
+        @RenderSection("Styles", required: false)
+    </head>
+    <body>
+        <!-- Overlay -->
+        <div class="sidebar-overlay"></div>
 
-    <!-- LEFT SIDEBAR -->
-    <aside class="admin-sidebar">
-        <div class="scroll-wrapper" style="flex:1; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;">
-            <style>
-                .scroll-wrapper::-webkit-scrollbar {
-                    display: none;
-                }
-            </style>
-
-            <!-- Logo -->
-            <div class="admin-logo-header">
-                <img src="~/images/ctu-logo.png" class="admin-logo" />
-                <div class="admin-logo-text">BALAMBAN CAMPUS</div>
-            </div>
-
-            <!-- Menu -->
-            <nav class="admin-menu">
-                <a asp-action="Dashboard" asp-controller="Admin" class="menu-link" id="dashboardBtn">
-                    <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
-                </a>
-                <a asp-action="Users" asp-controller="Admin" class="menu-link">
-                    <i class="bi bi-person-fill"></i> <span>Users</span>
-                </a>
-                <a asp-action="Registration" asp-controller="Admin" class="menu-link">
-                    <i class="bi bi-building"></i> <span>Registration</span>
-                </a>
-                <a asp-action="Reports" asp-controller="Admin" class="menu-link">
-                    <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
-                </a>
-                <hr />
-            </nav>
-
-            <!-- Logout -->
-            <div class="sidebar-logout">
-                <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
-                    @Html.AntiForgeryToken()
-                </form>
-                <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
-                    <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <!-- TOP BAR -->
-    <header class="admin-topbar d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
-            <button class="btn btn-sm btn-light d-none d-md-inline-flex me-2" id="desktopSidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <button class="btn btn-sm btn-light d-md-none me-2" id="sidebarToggle">
-                <i class="bi bi-list"></i>
-            </button>
-            <i class="bi bi-house-fill me-2"></i>
-            <span class="topbar-title">@ViewData["Title"]</span>
-        </div>
-
-        <div class="d-flex align-items-center gap-2">
-            <!-- Dark Mode Toggle -->
-            <div id="themeToggle" style="cursor:pointer;">
-                <i class="bi bi-moon-fill fs-5" id="themeIcon"></i>
-            </div>
-
-            <!-- Notifications -->
-            <div class="position-relative" id="notifBell" style="cursor:pointer;">
-                <i class="bi bi-bell-fill fs-5"></i>
-                <span class="notif-dot"></span>
-                <div class="notif-popup shadow-sm bg-white rounded p-2" style="position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
-                    <h6 class="fw-bold mb-2">Notifications</h6>
-                    <ul id="notifList" class="list-unstyled mb-0"></ul>
-                    <div class="text-center mt-2">
-                        <button class="btn btn-sm btn-outline-secondary w-100" id="clearNotifsBtn">Mark all as read</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Small Topbar Profile Picture -->
-            <img src="/images/ctu-logo.png" id="topbarProfilePic" title="Profile Picture" />
-
-            <!-- Profile Dropdown -->
-            <div class="dropdown">
-                <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
-                    <div class="d-flex flex-column" style="font-size:0.75rem;">
-                        <strong>Administrator</strong>
-                        <span>Admin</span>
-                    </div>
-                </div>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
-                    <li><a class="dropdown-item" href="javascript:void(0);" id="viewProfileBtn">View Profile</a></li>
-                    <li><a class="dropdown-item" href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();">Logout</a></li>
-                </ul>
-            </div>
-        </div>
-    </header>
-
-    <!-- MAIN CONTENT -->
-    <main class="admin-content" id="adminMainContent">
-        @RenderBody()
-    </main>
-
-    <!-- PROFILE TEMPLATE -->
-    <script type="text/template" id="profileTemplate">
-        <div class="profile-page d-flex" style="height:100%; align-items:flex-start; gap:2rem; padding:2rem;">
-            <!-- Profile Picture on Left -->
-            <div class="profile-pic-wrapper" style="width:140px; height:140px; flex-shrink:0;">
-                <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
-                <div class="profile-pic-overlay">
-                    <i class="bi bi-camera-fill"></i>
-                </div>
-                <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
-            </div>
-
-            <!-- Profile Content Area -->
-            <div class="profile-content" style="flex-grow:1;">
-                <!-- Add your profile info here -->
-            </div>
-        </div>
-    </script>
-
-    <!-- JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const sidebar = document.querySelector('.admin-sidebar');
-        const desktopToggle = document.getElementById('desktopSidebarToggle');
-        const mobileToggle = document.getElementById('sidebarToggle');
-        const overlay = document.querySelector('.sidebar-overlay');
-
-        if(window.innerWidth >= 768) sidebar.classList.add('expanded');
-
-        desktopToggle?.addEventListener('click', ()=>sidebar.classList.toggle('expanded'));
-        mobileToggle?.addEventListener('click', ()=>{
-            sidebar.classList.toggle('expanded');
-            overlay.classList.toggle('active');
-        });
-        overlay?.addEventListener('click', ()=>{
-            sidebar.classList.remove('expanded');
-            overlay.classList.remove('active');
-        });
-
-        // Notifications
-        const notifBell = document.getElementById('notifBell');
-        const notifPopup = notifBell?.querySelector('.notif-popup');
-        notifBell?.addEventListener('click', ()=>{
-            notifPopup.style.display = (notifPopup.style.display==='block')?'none':'block';
-        });
-
-        // Profile SPA
-        const mainContent = document.getElementById("adminMainContent");
-        const viewProfileBtn = document.getElementById("viewProfileBtn");
-        const topbarProfilePic = document.getElementById("topbarProfilePic");
-        const originalDashboardHTML = mainContent.innerHTML;
-
-        function openProfileSPA(){
-            mainContent.style.opacity = 0;
-            setTimeout(()=>{
-                const template = document.getElementById("profileTemplate").innerHTML;
-                mainContent.innerHTML = template;
-                document.querySelector(".topbar-title").textContent = "Profile";
-
-                const profileImage = document.getElementById("profileImage");
-                const profileOverlay = document.querySelector(".profile-pic-overlay");
-                const profilePicInput = document.getElementById("profilePicInput");
-
-                profileOverlay.addEventListener("click", ()=> profilePicInput.click());
-
-                profilePicInput.addEventListener("change", (e)=>{
-                    if(e.target.files && e.target.files[0]){
-                        const reader = new FileReader();
-                        reader.onload = function(evt){
-                            profileImage.src = evt.target.result;
-                            topbarProfilePic.src = evt.target.result; // update topbar pic in real time
-                        }
-                        reader.readAsDataURL(e.target.files[0]);
+        <!-- LEFT SIDEBAR -->
+        <aside class="admin-sidebar">
+            <div class="scroll-wrapper" style="flex:1; overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;">
+                <style>
+                    .scroll-wrapper::-webkit-scrollbar {
+                        display: none;
                     }
-                });
+                </style>
 
-                mainContent.style.opacity = 1;
-            },200);
-        }
+                <!-- Logo -->
+                <div class="admin-logo-header">
+                    <img src="~/images/ctu-logo.png" class="admin-logo" />
+                    <div class="admin-logo-text">BALAMBAN CAMPUS</div>
+                </div>
 
-        viewProfileBtn?.addEventListener("click", openProfileSPA);
+                <!-- Menu -->
+                <nav class="admin-menu">
+                    <a asp-action="Dashboard" asp-controller="Admin" class="menu-link" id="dashboardBtn">
+                        <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
+                    </a>
+                    <a asp-action="Users" asp-controller="Admin" class="menu-link">
+                        <i class="bi bi-person-fill"></i> <span>Users</span>
+                    </a>
+                    <a asp-action="Registration" asp-controller="Admin" class="menu-link">
+                        <i class="bi bi-building"></i> <span>Registration</span>
+                    </a>
+                    <a asp-action="Reports" asp-controller="Admin" class="menu-link">
+                        <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
+                    </a>
+                    <hr />
+                </nav>
 
-        // 🔹 topbarProfilePic is no longer clickable
-        // topbarProfilePic?.addEventListener("click", openProfileSPA);
+                <!-- Logout -->
+                <div class="sidebar-logout">
+                    <form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" class="d-none">
+                        @Html.AntiForgeryToken()
+                    </form>
+                    <a href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();" class="btn-logout">
+                        <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
 
-        // Back to Dashboard
-        document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
-            mainContent.style.opacity = 0;
-            setTimeout(()=>{
-                mainContent.innerHTML = originalDashboardHTML;
-                document.querySelector(".topbar-title").textContent = "Dashboard";
-                mainContent.style.opacity = 1;
-            },200);
-        });
+        <!-- TOP BAR -->
+        <header class="admin-topbar d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <button class="btn btn-sm btn-light d-none d-md-inline-flex me-2" id="desktopSidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <button class="btn btn-sm btn-light d-md-none me-2" id="sidebarToggle">
+                    <i class="bi bi-list"></i>
+                </button>
+                <i class="bi bi-house-fill me-2"></i>
+                <span class="topbar-title">@ViewData["Title"]</span>
+            </div>
 
-        // Dark Mode
-        const themeToggle = document.getElementById("themeToggle");
-        const themeIcon = document.getElementById("themeIcon");
-        if(localStorage.getItem("darkMode")==="true"){
-            document.body.classList.add("dark-mode");
-            themeIcon.classList.replace("bi-moon-fill","bi-sun-fill");
-        }
-        themeToggle?.addEventListener("click", ()=>{
-            document.body.classList.toggle("dark-mode");
-            const isDark = document.body.classList.contains("dark-mode");
-            themeIcon.classList.toggle("bi-moon-fill",!isDark);
-            themeIcon.classList.toggle("bi-sun-fill",isDark);
-            localStorage.setItem("darkMode",isDark);
-        });
+            <div class="d-flex align-items-center gap-2">
+                <!-- Dark Mode Toggle -->
+                <div id="themeToggle" style="cursor:pointer;">
+                    <i class="bi bi-moon-fill fs-5" id="themeIcon"></i>
+                </div>
+
+                <!-- Notifications -->
+                <div class="position-relative" id="notifBell" style="cursor:pointer;">
+                    <i class="bi bi-bell-fill fs-5"></i>
+                    <span class="notif-dot"></span>
+                    <div class="notif-popup shadow-sm bg-white rounded p-2" style="position:absolute; right:0; top:30px; width:300px; max-height:400px; overflow-y:auto; z-index:1050;">
+                        <h6 class="fw-bold mb-2">Notifications</h6>
+                        <ul id="notifList" class="list-unstyled mb-0"></ul>
+                        <div class="text-center mt-2">
+                            <button class="btn btn-sm btn-outline-secondary w-100" id="clearNotifsBtn">Mark all as read</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Small Topbar Profile Picture -->
+                <img src="/images/ctu-logo.png" id="topbarProfilePic" title="Profile Picture" />
+
+                <!-- Profile Dropdown -->
+                <div class="dropdown">
+                    <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
+                        <div class="d-flex flex-column" style="font-size:0.75rem;">
+                            <strong>Administrator</strong>
+                            <span>Admin</span>
+                        </div>
+                    </div>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
+                        <li><a class="dropdown-item" href="javascript:void(0);" id="viewProfileBtn">View Profile</a></li>
+                        <li><a class="dropdown-item" href="javascript:void(0);" onclick="document.getElementById('logoutForm').submit();">Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT -->
+        <main class="admin-content" id="adminMainContent">
+            @RenderBody()
+        </main>
+
+        <!-- PROFILE TEMPLATE -->
+        <script type="text/template" id="profileTemplate">
+            <div class="profile-page d-flex" style="height:100%; align-items:flex-start; gap:2rem; padding:2rem;">
+                <!-- Profile Picture on Left -->
+                <div class="profile-pic-wrapper" style="width:140px; height:140px; flex-shrink:0;">
+                    <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
+                    <div class="profile-pic-overlay">
+                        <i class="bi bi-camera-fill"></i>
+                    </div>
+                    <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+                </div>
+                <!-- Profile Content Area -->
+                <div class="profile-content" style="flex-grow:1;">
+                    <h4>Admin Information</h4>
+                    <div class="profile-info mt-3">
+                        <div class="mb-3">
+                         <!-- Row 1: Full Name & Position -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="fullName" class="form-label fw-bold">Full Name</label>
+                            <input type="text" id="fullName" class="form-control" placeholder="Enter Full Name" value="John Doe">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="position" class="form-label fw-bold">Position</label>
+                            <input type="text" id="position" class="form-control" placeholder="Enter Position" value="Administrator">
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Username & Email -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="username" class="form-label fw-bold">Username</label>
+                            <input type="text" id="username" class="form-control" placeholder="Enter Username" value="adminuser">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label fw-bold">Email</label>
+                            <input type="email" id="email" class="form-control" placeholder="Enter Email" value="admin@ctu.edu.ph">
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Address full width -->
+                    <div class="mb-3">
+                        <label for="address" class="form-label fw-bold">Address</label>
+                        <textarea id="address" class="form-control" placeholder="Enter Address">123 Main St, Balamban</textarea>
+                    </div>
+
+                    <button class="btn btn-primary mt-2" id="saveProfileBtn">Save Changes</button>
+                </div>
+            </div>
+        </div>
     </script>
 
-    @RenderSection("Scripts", required: false)
-</body>
-</html>
-    
+        <!-- JS -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            const sidebar = document.querySelector('.admin-sidebar');
+            const desktopToggle = document.getElementById('desktopSidebarToggle');
+            const mobileToggle = document.getElementById('sidebarToggle');
+            const overlay = document.querySelector('.sidebar-overlay');
+
+            if(window.innerWidth >= 768) sidebar.classList.add('expanded');
+
+            desktopToggle?.addEventListener('click', ()=>sidebar.classList.toggle('expanded'));
+            mobileToggle?.addEventListener('click', ()=>{
+                sidebar.classList.toggle('expanded');
+                overlay.classList.toggle('active');
+            });
+            overlay?.addEventListener('click', ()=>{
+                sidebar.classList.remove('expanded');
+                overlay.classList.remove('active');
+            });
+
+            // Notifications
+            const notifBell = document.getElementById('notifBell');
+            const notifPopup = notifBell?.querySelector('.notif-popup');
+            notifBell?.addEventListener('click', ()=>{
+                notifPopup.style.display = (notifPopup.style.display==='block')?'none':'block';
+            });
+
+            // Profile SPA
+            const mainContent = document.getElementById("adminMainContent");
+            const viewProfileBtn = document.getElementById("viewProfileBtn");
+            const topbarProfilePic = document.getElementById("topbarProfilePic");
+            const originalDashboardHTML = mainContent.innerHTML;
+
+            function openProfileSPA(){
+                mainContent.style.opacity = 0;
+                setTimeout(()=>{
+                    const template = document.getElementById("profileTemplate").innerHTML;
+                    mainContent.innerHTML = template;
+                    document.querySelector(".topbar-title").textContent = "Profile";
+
+                    const profileImage = document.getElementById("profileImage");
+                    const profileOverlay = document.querySelector(".profile-pic-overlay");
+                    const profilePicInput = document.getElementById("profilePicInput");
+
+                    profileOverlay.addEventListener("click", ()=> profilePicInput.click());
+
+                    profilePicInput.addEventListener("change", (e)=>{
+                        if(e.target.files && e.target.files[0]){
+                            const reader = new FileReader();
+                            reader.onload = function(evt){
+                                profileImage.src = evt.target.result;
+                                topbarProfilePic.src = evt.target.result; // update topbar pic in real time
+                            }
+                            reader.readAsDataURL(e.target.files[0]);
+                        }
+                    });
+
+                    mainContent.style.opacity = 1;
+                },200);
+            }
+
+            viewProfileBtn?.addEventListener("click", openProfileSPA);
+
+            // 🔹 topbarProfilePic is no longer clickable
+            // topbarProfilePic?.addEventListener("click", openProfileSPA);
+
+            // Back to Dashboard
+            document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
+                mainContent.style.opacity = 0;
+                setTimeout(()=>{
+                    mainContent.innerHTML = originalDashboardHTML;
+                    document.querySelector(".topbar-title").textContent = "Dashboard";
+                    mainContent.style.opacity = 1;
+                },200);
+            });
+
+            // Dark Mode
+            const themeToggle = document.getElementById("themeToggle");
+            const themeIcon = document.getElementById("themeIcon");
+            if(localStorage.getItem("darkMode")==="true"){
+                document.body.classList.add("dark-mode");
+                themeIcon.classList.replace("bi-moon-fill","bi-sun-fill");
+            }
+            themeToggle?.addEventListener("click", ()=>{
+                document.body.classList.toggle("dark-mode");
+                const isDark = document.body.classList.contains("dark-mode");
+                themeIcon.classList.toggle("bi-moon-fill",!isDark);
+                themeIcon.classList.toggle("bi-sun-fill",isDark);
+                localStorage.setItem("darkMode",isDark);
+            });
+        </script>
+
+        @RenderSection("Scripts", required: false)
+    </body>
+    </html>
