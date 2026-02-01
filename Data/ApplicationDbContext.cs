@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MonitoringSystem.Models;
+using MonitoringSystem.Models.ParamModel;
 
 namespace MonitoringSystem.Data
 {
@@ -17,6 +18,8 @@ namespace MonitoringSystem.Data
         // ===================== MESSAGES =====================
         public DbSet<Conversation> Conversations { get; set; } = null!;
         public DbSet<Message> Messages { get; set; } = null!;
+
+        public DbSet<UserAccountModel> Users { get; set; } = null!;
 
         // ===================== CONFIGURE RELATIONS =====================
         protected override void OnModelCreating(ModelBuilder builder)

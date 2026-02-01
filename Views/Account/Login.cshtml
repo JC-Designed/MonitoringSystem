@@ -13,30 +13,29 @@
     <div class="form-side">
         <h4>Login to your account</h4>
 
-        <form asp-action="Login" method="post">
-
-            <!-- EMAIL -->
+        <form>
+            <!-- USERNAME -->
             <div class="mb-3">
-                <label class="form-label">Email</label>
-                <input asp-for="Email" class="form-control" placeholder="Email" required />
+                <label class="form-label">Username</label>
+                <input class="form-control" id="textUsername" placeholder="Email" required />
                 <span asp-validation-for="Email" class="text-danger"></span>
             </div>
 
             <!-- PASSWORD -->
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <input asp-for="Password" type="password" class="form-control" placeholder="Password" required />
+                <input type="password" id="textPassword" class="form-control" placeholder="Password" required />
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
 
             <!-- REMEMBER ME -->
             <div class="form-check mb-3">
-                <input asp-for="RememberMe" class="form-check-input" id="remember" />
+                <input type="checkbox" id="remember" class="form-check-input" />
                 <label for="remember" class="form-check-label">Remember me</label>
             </div>
 
             <!-- BUTTON -->
-            <button type="submit" class="btn-ctu mb-3 w-100">Sign In</button>
+            <button type="submit" id="btnSubmit" class="btn-ctu mb-3 w-100">Sign In</button>
 
             <!-- REGISTER LINK -->
             <div class="text-center">
@@ -48,10 +47,36 @@
             {
                 <div class="alert alert-danger mt-3 text-center">@ViewBag.Error</div>
             }
-
         </form>
     </div>
 </div>
+
+<script>
+    document.getElementById("btnSubmit").addEventListener("click", function(event) {
+        event.preventDefault();
+
+        var model = {
+            Username: document.getElementById('textUsername').value,
+            Password: document.getElementById('textPassword').value,
+            RememberMe: document.getElementById('remember').checked
+        };
+
+        fetch('/Account/LoginCredentials', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(model)
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to the correct dashboard based on role
+                window.location.href = data.redirect;
+            } else {
+                alert('Login failed: ' + data.message);
+            }
+        });
+    });
+</script>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
