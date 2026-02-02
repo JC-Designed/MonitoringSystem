@@ -17,7 +17,7 @@
 
                 <!-- ===== FILTERS ROW ===== -->
                 <div class="row g-3 align-items-end mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Year</label>
                         <select id="yearFilter" class="form-select filter-box">
                             <option value="">All</option>
@@ -28,28 +28,18 @@
                         </select>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Search by Name</label>
                         <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-4">
                         <label class="form-label fw-semibold">Status</label>
                         <select id="statusFilter" class="form-select filter-box">
                             <option value="">All</option>
                             <option value="Approved">Approved</option>
                             <option value="Pending">Pending</option>
                             <option value="Declined">Declined</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label fw-semibold">Role</label>
-                        <select id="roleFilter" class="form-select filter-box">
-                            <option value="">All</option>
-                            <option value="Student">Student</option>
-                            <option value="Company">Company</option>
-                            <option value="Admin">Admin</option>
                         </select>
                     </div>
                 </div>
@@ -59,24 +49,17 @@
                     <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
                         <thead class="table-light">
                             <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Status</th>
-                                <th class="text-end">Action</th>
+                                <th style="width:35%;">Name</th>
+                                <th style="width:35%;">Email</th>
+                                <th style="width:15%;">Status</th>
+                                <th class="text-end" style="width:15%;">Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Rows will be dynamically added via JS or backend -->
                         </tbody>
                     </table>
                 </div>
 
-            </div>
-        </div>
-
-    </div>
-</div>
 
 <script>
     const tbody = document.querySelector("#usersTable tbody");
@@ -86,26 +69,23 @@
         const yearVal = document.getElementById("yearFilter").value;
         const nameVal = document.getElementById("searchName").value.toLowerCase();
         const statusVal = document.getElementById("statusFilter").value;
-        const roleVal = document.getElementById("roleFilter").value;
 
         [...tbody.rows].forEach(row => {
             let show = true;
 
             const fullName = (row.dataset.firstname + " " + row.dataset.lastname).toLowerCase();
             const rowYear = row.dataset.year;
-            const rowRole = row.dataset.role;
             const rowStatus = row.dataset.status;
 
             if (yearVal && rowYear !== yearVal) show = false;
             if (nameVal && !fullName.includes(nameVal)) show = false;
             if (statusVal && rowStatus !== statusVal) show = false;
-            if (roleVal && rowRole !== roleVal) show = false;
 
             row.style.display = show ? "" : "none";
         });
     }
 
-    ["yearFilter","searchName","statusFilter","roleFilter"].forEach(id => {
+    ["yearFilter","searchName","statusFilter"].forEach(id => {
         document.getElementById(id).addEventListener("input", filterTable);
     });
 </script>
