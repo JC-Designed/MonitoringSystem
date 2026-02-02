@@ -5,6 +5,7 @@ using MonitoringSystem.Data;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using MonitoringSystem.Models.ParamModel;
 
 namespace MonitoringSystem.Controllers
 {
@@ -26,54 +27,34 @@ namespace MonitoringSystem.Controllers
 
         // ======================= LOGIN =======================
         [HttpGet]
-        public IActionResult Login() => View();
+        public IActionResult Login()
+        {
+            return View();
+        }
 
         [HttpPost]
-        public async Task<IActionResult> Login(string email, string password)
+        public async Task<IActionResult> LoginCredentials([FromBody] UserAccountParamModel userModel)
         {
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
-            {
-                ViewBag.Error = "Please enter email and password.";
-                return View();
-            }
+            if (userModel == null || string.IsNullOrEmpty(userModel.Username))
+                return Json(new { success = false, message = "Invalid request format." });
 
-            var user = await _userManager.FindByEmailAsync(email);
-
+            var user = await _userManager.FindByNameAsync(userModel.Username);
             if (user == null)
-            {
-                ViewBag.Error = "Invalid login attempt.";
-                return View();
-            }
+                return Json(new { success = false, message = "User not found." });
 
-            // Check approval
-            if (!user.IsApproved)
-            {
-                ViewBag.Error = "Account not approved.";
-                return View();
-            }
+            var passwordValid = await _userManager.CheckPasswordAsync(user, userModel.Password);
+            if (!passwordValid)
+                return Json(new { success = false, message = "Invalid password." });
 
-            var result = await _signInManager.PasswordSignInAsync(user, password, false, false);
+            await _signInManager.SignInAsync(user, isPersistent: userModel.RememberMe);
 
-            if (!result.Succeeded)
-            {
-                ViewBag.Error = "Invalid login attempt.";
-                return View();
-            }
-
-            // 🔥 AUTO ROLE DETECTION
             var roles = await _userManager.GetRolesAsync(user);
+            string redirectUrl = "/";
+            if (roles.Contains("Admin")) redirectUrl = "/Admin/Dashboard";
+            else if (roles.Contains("Company")) redirectUrl = "/CompanyPanel/Dashboard";
+            else if (roles.Contains("Student")) redirectUrl = "/StudentPanel/Dashboard";
 
-            if (roles.Contains("Admin"))
-                return RedirectToAction("Dashboard", "Admin");
-
-            if (roles.Contains("Company"))
-                return RedirectToAction("Dashboard", "CompanyPanel");
-
-            if (roles.Contains("Student"))
-                return RedirectToAction("Dashboard", "StudentPanel");
-
-            // fallback
-            return RedirectToAction("Login");
+            return Json(new { success = true, message = "Login successful", redirect = redirectUrl });
         }
 
         // ======================= REGISTER =======================

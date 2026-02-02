@@ -17,7 +17,7 @@
 
         <form asp-action="Register" method="post">
 
-            <!-- ROLE -->
+            @* <!-- ROLE -->
             <div class="mb-3">
                 <label class="form-label">Select Role</label>
                 <select name="roleString" id="role" class="form-select" required>
@@ -25,35 +25,60 @@
                     <option value="Student">Student</option>
                     <option value="Company">Company</option>
                 </select>
+            </div> *@
+
+            <!-- FULL NAME -->
+            <div class="mb-3">
+                <input name="fullName" class="form-control" placeholder="Full Name" required />
             </div>
 
-            <!-- FIRST & LAST NAME -->
-            <div class="row mb-3">
-                <div class="col-md-6 mb-2 mb-md-0">
-                    <input name="firstName" class="form-control" placeholder="First name" required />
-                </div>
-                <div class="col-md-6">
-                    <input name="lastName" class="form-control" placeholder="Last name" required />
-                </div>
+            <!-- STUDENT ID (Students only but safe to include) -->
+            <div class="mb-3">
+                <input name="studentId" class="form-control" placeholder="Student ID " />
+            </div>
+
+            <!-- MOBILE -->
+            <div class="mb-3">
+                <input name="mobileNumber" class="form-control" placeholder="Mobile Number" required />
+            </div>   
+            <!-- Facebook -->
+            <div class="mb-3">
+                <input name="Facebook" class="form-control" placeholder="Facebook" required />
+            </div>
+
+
+            <!-- EMERGENCY CONTACT -->
+            <div class="mb-3">
+                <input name="emergencyContact" class="form-control" placeholder="Emergency Contact" required />
+            </div>
+
+            <!-- ADDRESS -->
+            <div class="mb-3">
+                <input name="address" class="form-control" placeholder="Address" required />
+            </div>
+
+            <!-- PROGRAM -->
+            <div class="mb-3">
+                <select name="program" class="form-select" required>
+                    <option disabled selected>Select Program</option>
+                    <option>Bachelor of Industrial Technology</option>
+                </select>
             </div>
 
             <!-- BIRTHDAY -->
-            <label class="form-label small">Birthday</label>
+            <label class="form-label small">Birthdate</label>
             <div class="row mb-3">
                 <div class="col-4">
                     <select name="birthMonth" class="form-select" required>
                         <option value="">Month</option>
                         @for (int m = 1; m <= 12; m++)
                         {
-                            <option value="@m">
-                                @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)
-                            </option>
+                            <option value="@m">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(m)</option>
                         }
                     </select>
                 </div>
                 <div class="col-4">
                     <select name="birthDay" class="form-select" required>
-                        <option value="">Day</option>
                         @for (int d = 1; d <= 31; d++)
                         {
                             <option value="@d">@d</option>
@@ -62,7 +87,6 @@
                 </div>
                 <div class="col-4">
                     <select name="birthYear" class="form-select" required>
-                        <option value="">Year</option>
                         @for (int y = DateTime.Now.Year; y >= 1950; y--)
                         {
                             <option value="@y">@y</option>
@@ -103,7 +127,7 @@
             <!-- EMAIL -->
             <div class="mb-3">
                 <input name="email" type="email" class="form-control"
-                       placeholder="Mobile number or email" required />
+                       placeholder="Email" required />
             </div>
 
             <!-- PASSWORD -->
@@ -128,22 +152,26 @@
             {
                 <div class="alert alert-success mt-3 text-center">@TempData["Success"]</div>
             }
+
         </form>
     </div>
 </div>
+
 <script>
     const roleSelect = document.getElementById('role');
     const companyDiv = document.getElementById('companyNameDiv');
     const companyInput = document.getElementById('companyName');
 
-    roleSelect.addEventListener('change', function () {
-        if (this.value === 'Company') {
-            companyDiv.style.display = 'block';
-            companyInput.required = true;
-        } else {
-            companyDiv.style.display = 'none';
-            companyInput.required = false;
-            companyInput.value = '';
-        }
-    });
+    if (roleSelect) {
+        roleSelect.addEventListener('change', function () {
+            if (this.value === 'Company') {
+                companyDiv.style.display = 'block';
+                companyInput.required = true;
+            } else {
+                companyDiv.style.display = 'none';
+                companyInput.required = false;
+                companyInput.value = '';
+            }
+        });
+    }
 </script>
