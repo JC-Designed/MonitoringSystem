@@ -11,28 +11,30 @@ namespace MonitoringSystem.Models
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
 
-        // Computed full name (optional helper)
         [NotMapped]
-        public string DisplayName => $"{FirstName} {LastName}".Trim();
+        public string FullName => $"{FirstName} {LastName}".Trim();
+
+        [NotMapped]
+        public string DisplayName => FullName;
 
         // ===================== ROLE & PERSONAL INFO =====================
         public string Role { get; set; } = string.Empty;   // Student, Company, Admin
-        public string Gender { get; set; } = string.Empty; // Female, Male, Custom
+        public string Gender { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
 
         // ===================== PROFILE (ALL ROLES) =====================
-        // Used by Admin, Company, and Student
         public string Contact { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
-
-        // NEW: Profile images
-        public string ProfileImage { get; set; } = "/images/ctu-logo.png"; // default
-        public string BannerImage { get; set; } = "/images/banner-placeholder.jpg"; // default
+        public string ProfileImage { get; set; } = "/images/ctu-logo.png";
+        public string BannerImage { get; set; } = "/images/banner-placeholder.jpg";
 
         // ===================== ADMIN / COMPANY EXTRA INFO =====================
-        // Optional – only filled if role needs it
         public string CompanyName { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;
+
+        // ✅ NEW PROPERTIES FOR COMPANY EDIT
+        public string MobileNumber { get; set; } = string.Empty;
+        public string CompanyID { get; set; } = string.Empty;
 
         // ===================== SYSTEM FIELDS =====================
         public bool IsApproved { get; set; } = false;
@@ -48,6 +50,6 @@ namespace MonitoringSystem.Models
         public ICollection<Message> MessagesSent { get; set; } = new List<Message>();
 
         // ===================== NEW: YEAR =====================
-        public string Year { get; set; } = string.Empty; // e.g., "2023", "2024", etc.
+        public string Year { get; set; } = string.Empty;
     }
 }

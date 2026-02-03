@@ -26,64 +26,70 @@ builder.Services.AddSession();
 
 var app = builder.Build();
 
-// ===================== SEED ROLES & ADMIN =====================
-//using (var scope = app.Services.CreateScope())
-//{
-//    var services = scope.ServiceProvider;
-//    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-//    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-//    string[] roles = new[] { "Admin", "Company", "Student" };
+// ===================== DEMO ACCOUNT SEEDING =====================
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-//    // 1️⃣ Ensure all roles exist
-//    foreach (var role in roles)
-//    {
-//        if (!await roleManager.RoleExistsAsync(role))
-//            await roleManager.CreateAsync(new IdentityRole(role));
-//    }
+    // Ensure roles exist
+    string[] roles = { "Student", "Company" };
 
-//    // 2️⃣ Ensure Admin user exists
-//    string adminEmail = "jonardcarmelotes09@gmail.com";
-//    string adminPassword = "admin123";
+    foreach (var role in roles)
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+    }
 
-//    var admin = await userManager.FindByEmailAsync(adminEmail);
-//    if (admin == null)
-//    {
-//        admin = new ApplicationUser
-//        {
-//            UserName = adminEmail,
-//            Email = adminEmail,
+    // ===== STUDENT DEMO =====
+    var studentEmail = "jonarcarmelotes123@gmail.com";
+    if (await userManager.FindByEmailAsync(studentEmail) == null)
+    {
+        var student = new ApplicationUser
+        {
+            UserName = studentEmail,
+            Email = studentEmail,
+            EmailConfirmed = true
+        };
 
-//            // ✅ FIXED: use FirstName & LastName instead of FullName
-//            FirstName = "Leo",
-//            LastName = "Soza",
+        await userManager.CreateAsync(student, "paolo123!");
+        await userManager.AddToRoleAsync(student, "Student");
+    }
 
-//            IsApproved = true,
-//            CreatedAt = DateTime.Now
-//        };
+    // ===== COMPANY DEMO =====
+    var companyEmail = "proyanfromyt@gmail.com";
+    if (await userManager.FindByEmailAsync(companyEmail) == null)
+    {
+        var company = new ApplicationUser
+        {
+            UserName = companyEmail,
+            Email = companyEmail,
+            EmailConfirmed = true
+        };
 
-//        var result = await userManager.CreateAsync(admin, adminPassword);
-//        if (result.Succeeded)
-//        {
-//            await userManager.AddToRoleAsync(admin, "Admin");
-//        }
-//    }
+        await userManager.CreateAsync(company, "company123!");
+        await userManager.AddToRoleAsync(company, "Company");
+    }
+}
 
-//    // 3️⃣ Ensure Admin role is assigned
-//    if (!await userManager.IsInRoleAsync(admin, "Admin"))
-//        await userManager.AddToRoleAsync(admin, "Admin");
-
-//    // 4️⃣ Reset password to be sure
-//    var token = await userManager.GeneratePasswordResetTokenAsync(admin);
-//    await userManager.ResetPasswordAsync(admin, token, adminPassword);
-//}
 
 // ===================== MIDDLEWARE =====================
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.UseSession();
 
 app.MapControllerRoute(
