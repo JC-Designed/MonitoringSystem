@@ -17,9 +17,7 @@
             <!-- HEADER + CREATE COMPANY BUTTON -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Users</h5>
-                <button id="showCreateCompanyForm" class="btn btn-primary">
-                    Create Company
-                </button>
+                <button id="showCreateCompanyForm" class="btn btn-primary">Create Company</button>
             </div>
 
             <!-- FILTERS -->
@@ -68,7 +66,12 @@
                                 data-fullname="@fullName"
                                 data-email="@user.Email"
                                 data-role="@role"
-                                data-year="@user.Year">
+                                data-year="@user.Year"
+                                data-mobile="@user.MobileNumber"
+                                data-address="@user.Address"
+                                data-companyid="@user.CompanyID"
+                                data-task="Complete the monthly report and submit to manager."
+                                data-learning="Learned how to summarize data and meet deadlines.">
                                 <td>@fullName</td>
                                 <td>@user.Email</td>
                                 <td>@role</td>
@@ -90,10 +93,8 @@
         </div>
     </div>
 
-    <!-- ================= CREATE COMPANY + CONTACT PERSON WRAPPER ================= -->
+    <!-- ================= CREATE COMPANY WRAPPER ================= -->
     <div id="createCompanyWrapper" style="display: none;">
-
-        <!-- ================= CREATE COMPANY SECTION ================= -->
         <div class="card shadow-sm rounded-4 p-4 mb-4">
             <h5>Create Company</h5>
             <form id="createCompanyFormPage">
@@ -156,88 +157,390 @@
             </form>
         </div>
 
-        <!-- ================= CONTACT PERSON SECTION ================= -->
-        <div class="card shadow-sm rounded-4 p-4 mb-4">
-            <h5>Contact Person</h5>
-            <form id="contactPersonForm">
+        <div class="d-flex justify-content-end gap-2 mb-4">
+            <button id="submitCreateCompany" class="btn" style="background-color: #02B508; color: #fff;">Create</button>
+            <button id="cancelCreateCompany" class="btn" style="background-color: #FD0606; color: #fff;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- ================= EDIT STUDENT WRAPPER ================= -->
+    <div id="editStudentWrapper" style="display: none; margin-top:20px;">
+        <!-- KEEP STUDENT SECTION EXACTLY AS-IS -->
+        <div class="d-flex align-items-start mb-3">
+            <div class="position-relative" style="width:140px; height:140px;">
+                <img id="editStudentProfilePic" src="/images/defaultpicture.jpg" alt="Profile"
+                     class="rounded-circle border border-3" style="width:100%; height:100%; object-fit:cover;">
+                <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
+                     style="position:absolute;top:0;left:0;width:100%;height:100%;border-radius:50%;background:rgba(0,0,0,0.3);opacity:0;cursor:pointer;transition:opacity 0.2s;">
+                    <i class="bi bi-camera-fill text-white fs-4"></i>
+                </div>
+                <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
+                     style="width:36px; height:36px; bottom:5px; right:5px; background:rgba(0,0,0,0.6); border-radius:50%; border:2px solid white; cursor:pointer;">
+                    <i class="bi bi-camera-fill text-white"></i>
+                </div>
+                <input type="file" id="editStudentPicInput" accept="image/*" style="display:none;">
+            </div>
+        </div>
+
+        <div class="card shadow-sm rounded-4 p-4 position-relative">
+            <h5 class="mb-3">Student Information</h5>
+            <button id="topRightEditBtn" class="btn btn-primary position-absolute"
+                    style="top:20px; right:20px; height:38px;">
+                Edit
+            </button>
+            <form id="editStudentForm">
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Full Name</label>
-                        <input type="text" class="form-control" id="contactFullName" required>
+                        <input type="text" class="form-control" id="editStudentFullName" required>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Facebook</label>
+                        <input type="text" class="form-control" id="editStudentFacebook">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Company</label>
+                        <input type="text" class="form-control" id="editStudentCompany">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-2">
                     <div class="col-md-4">
                         <label class="form-label">Mobile Number</label>
-                        <input type="text" class="form-control" id="contactMobile">
+                        <input type="text" class="form-control" id="editStudentMobile">
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Position</label>
-                        <input type="text" class="form-control" id="contactPosition">
-                    </div>
-                </div>
-
-                <div class="row g-3 mt-2">
                     <div class="col-md-4">
                         <label class="form-label">Address</label>
-                        <input type="text" class="form-control" id="contactAddress">
+                        <input type="text" class="form-control" id="editStudentAddress">
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" id="contactEmail">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Department</label>
-                        <input type="text" class="form-control" id="contactDepartment">
+                        <label class="form-label">Program</label>
+                        <input type="text" class="form-control" id="editStudentProgram">
                     </div>
                 </div>
 
                 <div class="row g-3 mt-2">
                     <div class="col-md-4">
-                        <label class="form-label">TIN Number</label>
-                        <input type="text" class="form-control" id="contactTIN">
+                        <label class="form-label">Emergency Contact</label>
+                        <input type="text" class="form-control" id="editStudentEmergencyContact">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Student ID</label>
+                        <input type="text" class="form-control" id="editStudentID">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Birthdate</label>
+                        <input type="date" class="form-control" id="editStudentBirthdate">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" id="editStudentEmail" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Role</label>
+                        <input type="text" class="form-control" id="editStudentRole" readonly>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" id="editStudentPassword">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- FULL-WIDTH COMPANY BANNER -->
+    <div id="editCompanyWrapper" style="display:none; margin:0; padding:0;">
+
+        <div style="position:relative; width:100%; height:240px; margin:0; padding:0; overflow:hidden;">
+            <img id="editCompanyBanner"
+                 src="/images/banner-placeholder.jpg"
+                 style="width:100%; height:100%; object-fit:cover; display:block; margin:0; padding:0; border-radius:0;">
+
+            <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0 m-3"
+                    onclick="document.getElementById('companyBannerInput').click()">
+                <i class="bi bi-camera-fill"></i> Edit Cover Photo
+            </button>
+            <input type="file" id="companyBannerInput" hidden accept="image/*">
+        </div>
+
+        <!-- PROFILE IMAGE OVERLAP -->
+        <div class="position-relative" style="margin-top:-90px; margin-left:40px; width:170px;">
+            <img id="editCompanyProfilePic"
+                 src="/images/defaultpicture.jpg"
+                 class="rounded-circle border border-4 border-white shadow"
+                 style="width:170px; height:170px; object-fit:cover;">
+
+            <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0"
+                    onclick="document.getElementById('companyPicInput').click()">
+                <i class="bi bi-camera-fill"></i>
+            </button>
+            <input type="file" id="companyPicInput" hidden accept="image/*">
+        </div>
+
+        <!-- COMPANY INFO CARD -->
+        <div class="card shadow-sm rounded-4 p-4 mt-3" style="margin:0;">
+            <h5 class="mb-3">Company Information</h5>
+            <form id="editCompanyForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Company Name</label>
+                        <input type="text" class="form-control" id="editCompanyName" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mobile Number</label>
+                        <input type="text" class="form-control" id="editCompanyMobile">
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-control" id="editCompanyAddress">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Company ID</label>
+                        <input type="text" class="form-control" id="editCompanyID">
                     </div>
                 </div>
             </form>
         </div>
 
-        <!-- ================= CREATE + CANCEL BUTTONS (OUTSIDE CARDS) ================= -->
-        <div class="d-flex justify-content-end gap-2 mb-4">
-            <button id="submitCreateCompany" class="btn" style="background-color: #02B508; color: #fff;">Create</button>
-            <button id="cancelCreateCompany" class="btn" style="background-color: #FD0606; color: #fff;">Cancel</button>
+
+    <style>
+        /* REMOVE ALL BODY & HTML MARGIN/PADDING */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+        }
+
+        /* REMOVE PADDING FROM PARENT CONTAINER */
+        .users-page.container-fluid {
+            padding: 0 !important;
+            margin: 0;
+        }
+
+        /* REMOVE CARD TOP SPACING */
+        .company-banner-wrapper img {
+            border-radius: 0 !important;
+        }
+    </style>
+        <!-- ================= CONTACT PERSON CARD ================= -->
+        <div class="card shadow-sm rounded-4 p-4 mt-3" style="margin:0;">
+            <h5 class="mb-3">Contact Person</h5>
+            <form id="editCompanyContactForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" id="contactPersonName" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Department</label>
+                        <input type="text" class="form-control" id="contactPersonDepartment" required>
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
+                        <label class="form-label">Facebook</label>
+                        <input type="text" class="form-control" id="contactPersonFacebook">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mobile Number</label>
+                        <input type="text" class="form-control" id="contactPersonMobile">
+                    </div>
+                </div>
+            </form>
         </div>
 
+        <!-- ================= ADD TRAINEE BUTTON ================= -->
+        <div class="d-flex justify-content-start mt-3 mb-4" style="margin-left: 10px;">
+            <button id="addTraineeBtn" class="btn" style="background-color: #2A91FF; color: #fff;">
+                + Add Trainee
+            </button>
+        </div>
+        <!-- ================= ADD TRAINEE MODAL ================= -->
+        <div class="modal fade" id="addTraineeModal" tabindex="-1">
+            <div class="modal-dialog modal-xl modal-dialog-centered">
+                <div class="modal-content rounded-4">
+                    <div class="modal-header">
+                        <h5 class="modal-title fw-bold">Select Trainees</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-borderless align-middle mb-0" id="modalStudentsTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center px-3">Select</th>
+                                        <th class="px-3">Student Code</th> <!-- Updated label -->
+                                        <th class="px-3">Name</th>
+                                        <th class="px-3">Email</th>
+                                        <th class="px-3">Program</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Rows will be populated dynamically via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" id="addSelectedTrainees" class="btn btn-success px-4">Add Selected</button>
 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            /* Increase row height and padding */
+            #modalStudentsTable tbody tr {
+                height: 55px; /* taller rows */
+            }
+
+            #modalStudentsTable th,
+            #modalStudentsTable td {
+                padding: 12px 15px; /* more space inside cells */
+                vertical-align: middle;
+            }
+
+            /* Add hover effect */
+            #modalStudentsTable tbody tr:hover {
+                background-color: #f5f5f5;
+            }
+
+            /* Center the checkbox column */
+            #modalStudentsTable tbody tr td:first-child,
+            #modalStudentsTable thead th:first-child {
+                text-align: center;
+            }
+
+            /* Make table more compact horizontally */
+            #modalStudentsTable {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0 6px; /* small spacing between rows */
+            }
+        </style>
+        <!-- ================= TRAINEES TABLE ================= -->
+        <div class="card shadow-sm rounded-4 p-4 mt-3">
+            <h5 class="mb-3">Trainees</h5>
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless align-middle mb-0" id="traineesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Program</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Example row -->
+                        <tr>
+                            <td>STU001</td>
+                            <td>Juan Dela Cruz</td>
+                            <td>juan@example.com</td>
+                            <td>IT Program</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">
+                                    Remove
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- BUTTONS BELOW THE TABLE -->
+        <div class="d-flex justify-content-end gap-2 mt-3">
+            <button id="saveTraineesChanges" class="btn btn-success">Save Changes</button>
+            <button id="resetTraineesPassword" class="btn btn-warning">Reset Password</button>
+        </div>
     </div>
-
+    <!-- ================= TASKS TABLE WRAPPER ================= -->
+    <div id="tasksWrapper" style="display: none; margin-top:20px;">
+        <div class="card shadow-sm rounded-4 p-4">
+            <h5 class="mb-3">Tasks</h5>
+            <div class="table-responsive">
+                <table class="table table-hover table-borderless align-middle mb-0" id="tasksTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Task Title</th>
+                            <th>Date From</th>
+                            <th>Date To</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr data-task="Complete the monthly report and submit to manager."
+                            data-learning="Learned how to summarize data and meet deadlines."
+                            data-status="Ongoing">
+                            <td>Complete Report</td>
+                            <td>2026-02-01</td>
+                            <td>2026-02-05</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-light view-task-btn" data-bs-toggle="modal" data-bs-target="#viewTaskModal">
+                                    <i class="bi bi-eye-fill"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- ================= EDIT MODAL ================= -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content">
+<!-- ================= VIEW TASK MODAL ================= -->
+<div class="modal fade" id="viewTaskModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4">
             <div class="modal-header">
-                <h5 class="modal-title">Edit User</h5>
+                <h5 class="modal-title fw-bold">Task Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <form id="editForm">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="editFullName">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Task Title</label>
+                        <input type="text" id="modalTaskTitle" class="form-control" readonly>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" id="editEmail">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select id="modalTaskStatus" class="form-select">
+                            <option value="Ongoing">Ongoing</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Aborted">Aborted</option>
+                        </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Role</label>
-                        <input type="text" class="form-control" id="editRole">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Date From</label>
+                        <input type="date" id="modalTaskFrom" class="form-control" readonly>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">New Password</label>
-                        <input type="password" class="form-control" id="editPassword">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Date To</label>
+                        <input type="date" id="modalTaskTo" class="form-control" readonly>
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Save Changes</button>
-                </form>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Task</label>
+                        <textarea id="modalTaskTask" class="form-control" rows="3" readonly></textarea>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Learning</label>
+                        <textarea id="modalTaskLearning" class="form-control" rows="3" readonly></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -245,157 +548,197 @@
 
 <!-- ================= SCRIPT ================= -->
 <script>
-    const tbody = document.querySelector("#usersTable tbody");
-    let rowToEdit = null;
-    const yearFilter = document.getElementById("yearFilter");
-    const searchName = document.getElementById("searchName");
-    const roleFilter = document.getElementById("roleFilter");
-    const token = document.getElementById("__RequestVerificationToken").value;
+const tbody = document.querySelector("#usersTable tbody");
+let rowToEdit = null;
+const yearFilter = document.getElementById("yearFilter");
+const searchName = document.getElementById("searchName");
+const roleFilter = document.getElementById("roleFilter");
 
-    const usersSection = document.getElementById("usersSection");
-    const createCompanyWrapper = document.getElementById("createCompanyWrapper");
-    const showCreateBtn = document.getElementById("showCreateCompanyForm");
+const usersSection = document.getElementById("usersSection");
+const createCompanyWrapper = document.getElementById("createCompanyWrapper");
+const editStudentWrapper = document.getElementById("editStudentWrapper");
+const editCompanyWrapper = document.getElementById("editCompanyWrapper");
+const tasksWrapper = document.getElementById("tasksWrapper");
+const showCreateBtn = document.getElementById("showCreateCompanyForm");
+const profilePic = document.getElementById("editStudentProfilePic");
+const profileOverlay = document.querySelector(".profile-pic-overlay");
+const miniCamera = document.querySelector(".change-pic-icon");
+const profileInput = document.getElementById("editStudentPicInput");
 
-    // ===== FILTER TABLE =====
-    function filterTable() {
-        const yearVal = yearFilter.value;
-        const nameVal = searchName.value.toLowerCase();
-        const roleVal = roleFilter.value;
-        [...tbody.rows].forEach(row => {
-            let show = true;
-            const fullName = row.dataset.fullname.toLowerCase();
-            if (yearVal && row.dataset.year !== yearVal) show = false;
-            if (nameVal && !fullName.includes(nameVal)) show = false;
-            if (roleVal && row.dataset.role !== roleVal) show = false;
-            row.style.display = show ? "" : "none";
-        });
-    }
-    [yearFilter, searchName, roleFilter].forEach(el => el.addEventListener("input", filterTable));
-
-    // ===== EDIT USER =====
-    document.querySelectorAll(".edit-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-            e.preventDefault();
-            rowToEdit = btn.closest("tr");
-            editFullName.value = rowToEdit.dataset.fullname;
-            editEmail.value = rowToEdit.dataset.email;
-            editRole.value = rowToEdit.dataset.role;
-            editPassword.value = "";
-            bootstrap.Modal.getOrCreateInstance(editModal).show();
-        });
+// ===== FILTER TABLE =====
+function filterTable() {
+    const yearVal = yearFilter.value;
+    const nameVal = searchName.value.toLowerCase();
+    const roleVal = roleFilter.value;
+    [...tbody.rows].forEach(row => {
+        let show = true;
+        const fullName = row.dataset.fullname.toLowerCase();
+        if (yearVal && row.dataset.year !== yearVal) show = false;
+        if (nameVal && !fullName.includes(nameVal)) show = false;
+        if (roleVal && row.dataset.role !== roleVal) show = false;
+        row.style.display = show ? "" : "none";
     });
+}
+[yearFilter, searchName, roleFilter].forEach(el => el.addEventListener("input", filterTable));
 
-    document.getElementById("editForm").addEventListener("submit", async function(e) {
+// ===== SHOW CREATE COMPANY =====
+showCreateBtn.addEventListener("click", () => {
+    usersSection.style.display = "none";
+    createCompanyWrapper.style.display = "block";
+    editStudentWrapper.style.display = "none";
+    editCompanyWrapper.style.display = "none";
+    tasksWrapper.style.display = "none";
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+document.getElementById("cancelCreateCompany").addEventListener("click", () => {
+    createCompanyWrapper.style.display = "none";
+    usersSection.style.display = "block";
+});
+
+// ===== EDIT USER =====
+document.querySelectorAll(".edit-btn").forEach(btn => {
+    btn.addEventListener("click", e => {
         e.preventDefault();
-        if (!rowToEdit) return;
-        const id = rowToEdit.dataset.id;
-        const fullName = editFullName.value;
-        const email = editEmail.value;
-        const role = editRole.value;
-        const password = editPassword.value;
-        const res = await fetch("/Admin/EditUser", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "RequestVerificationToken": token
-            },
-            body: JSON.stringify({ Id: id, FullName: fullName, Email: email, Role: role, Password: password })
-        });
-        const data = await res.json();
-        if (data.success) {
-            rowToEdit.dataset.fullname = fullName;
-            rowToEdit.dataset.email = email;
-            rowToEdit.dataset.role = role;
-            rowToEdit.cells[0].textContent = fullName;
-            rowToEdit.cells[1].textContent = email;
-            rowToEdit.cells[2].textContent = role;
-            bootstrap.Modal.getInstance(editModal).hide();
-        } else alert(data.message || "Update failed");
-    });
+        rowToEdit = btn.closest("tr");
+        const role = rowToEdit.dataset.role;
 
-    // ===== DELETE USER =====
-    document.querySelectorAll(".delete-btn").forEach(btn => {
-        btn.addEventListener("click", async e => {
-            e.preventDefault();
-            const row = btn.closest("tr");
-            if (!confirm("Delete this user?")) return;
-            const res = await fetch("/Admin/DeleteUser", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "RequestVerificationToken": token
-                },
-                body: JSON.stringify({ Id: row.dataset.id })
-            });
-            const data = await res.json();
-            if (data.success) row.remove();
-            else alert("Delete failed");
-        });
-    });
-
-    // ===== SHOW CREATE COMPANY + CONTACT PERSON WRAPPER =====
-    showCreateBtn.addEventListener("click", () => {
+        // Hide all
         usersSection.style.display = "none";
-        createCompanyWrapper.style.display = "block";
+        createCompanyWrapper.style.display = "none";
+        editStudentWrapper.style.display = "none";
+        editCompanyWrapper.style.display = "none";
+        tasksWrapper.style.display = "none";
+
+        if(role === "Student"){
+            // Show student edit
+            document.getElementById("editStudentFullName").value = rowToEdit.dataset.fullname;
+            document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
+            document.getElementById("editStudentRole").value = role;
+            document.getElementById("editStudentPassword").value = "";
+            profilePic.src = "/images/defaultpicture.jpg";
+            editStudentWrapper.style.display = "block";
+            tasksWrapper.style.display = "block";
+        } else if(role === "Company"){
+            // Show company edit
+            document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
+            document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
+            document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
+            document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+            editCompanyWrapper.style.display = "block";
+        }
+
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+});
 
-    // ===== CANCEL CREATE =====
-    document.getElementById("cancelCreateCompany").addEventListener("click", () => {
-        createCompanyWrapper.style.display = "none";
-        usersSection.style.display = "block";
+document.getElementById("topRightEditBtn").addEventListener("click", () => {
+    const form = document.getElementById("editStudentForm");
+    [...form.elements].forEach(el => {
+        if(el.id !== "editStudentRole") el.removeAttribute("readonly");
     });
+});
 
-    // ===== CREATE COMPANY + CONTACT PERSON =====
-    document.getElementById("submitCreateCompany").addEventListener("click", () => {
-        document.getElementById("createCompanyFormPage").dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+// ===== PROFILE PICTURE CHANGE =====
+profileOverlay.addEventListener("click", ()=> profileInput.click());
+miniCamera.addEventListener("click", ()=> profileInput.click());
+profileInput.addEventListener("change", (e)=>{
+    if(e.target.files && e.target.files[0]){
+        const reader = new FileReader();
+        reader.onload = function(evt){ profilePic.src = evt.target.result; }
+        reader.readAsDataURL(e.target.files[0]);
+    }
+});
+
+// ===== VIEW TASK MODAL =====
+document.querySelectorAll(".view-task-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const row = btn.closest("tr");
+        document.getElementById("modalTaskTitle").value = row.cells[0].textContent;
+        document.getElementById("modalTaskFrom").value = row.cells[1].textContent;
+        document.getElementById("modalTaskTo").value = row.cells[2].textContent;
+        document.getElementById("modalTaskTask").value = row.dataset.task || "No task provided.";
+        document.getElementById("modalTaskLearning").value = row.dataset.learning || "No learning provided.";
+        document.getElementById("modalTaskStatus").value = row.dataset.status || "Ongoing";
     });
+});
 
-    // Existing create company form submit
-    document.getElementById("createCompanyFormPage").addEventListener("submit", async function(e){
-        e.preventDefault();
-
-        // Collect company fields
-        const companyData = {
-            Name: document.getElementById("companyNamePage").value.trim(),
-            Type: document.getElementById("companyTypePage").value,
-            SecId: document.getElementById("companySecIdPage").value.trim(),
-            Mobile: document.getElementById("companyMobilePage").value.trim(),
-            Website: document.getElementById("companyWebsitePage").value.trim(),
-            Tin: document.getElementById("companyTinPage").value.trim(),
-            Address: document.getElementById("companyAddressPage").value.trim(),
-            Email: document.getElementById("companyEmailPage").value.trim(),
-            Description: document.getElementById("companyDescriptionPage").value.trim(),
-            Password: document.getElementById("companyPasswordPage").value
-        };
-
-        // Collect contact person fields
-        const contactData = {
-            FullName: document.getElementById("contactFullName").value.trim(),
-            Mobile: document.getElementById("contactMobile").value.trim(),
-            Position: document.getElementById("contactPosition").value.trim(),
-            Address: document.getElementById("contactAddress").value.trim(),
-            Email: document.getElementById("contactEmail").value.trim(),
-            Department: document.getElementById("contactDepartment").value.trim(),
-            TIN: document.getElementById("contactTIN").value.trim()
-        };
-
-        // Combine both data
-        const payload = { Company: companyData, Contact: contactData };
-
-        const res = await fetch("/Admin/CreateCompany", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "RequestVerificationToken": token
-            },
-            body: JSON.stringify(payload)
+// ===== COMPANY IMAGE PREVIEW =====
+document.getElementById("companyPicInput").addEventListener("change", e => {
+    if (e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = ev => document.getElementById("editCompanyProfilePic").src = ev.target.result;
+        reader.readAsDataURL(e.target.files[0]);
+    }
+});
+        // Remove trainee row when clicking "Remove"
+        document.getElementById("traineesTable").addEventListener("click", function(e) {
+            if(e.target && e.target.classList.contains("remove-trainee-btn")) {
+                const row = e.target.closest("tr");
+                row.remove();
+            }
         });
 
-        const data = await res.json();
-        if(data.success){
-            alert("Company and Contact Person created successfully!");
-            location.reload();
-        } else alert(data.message || "Failed to create company");
+document.getElementById("companyBannerInput").addEventListener("change", e => {
+    if (e.target.files[0]) {
+        const reader = new FileReader();
+        reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
+        reader.readAsDataURL(e.target.files[0]);
+    }
+});
+    const addTraineeBtn = document.getElementById("addTraineeBtn");
+    const modalStudentsTbody = document.querySelector("#modalStudentsTable tbody");
+
+    // Open modal and populate with student users
+    addTraineeBtn.addEventListener("click", () => {
+        // Clear previous rows
+        modalStudentsTbody.innerHTML = "";
+
+        // Loop through users table and find students
+        [...tbody.rows].forEach(row => {
+            if(row.dataset.role === "Student") {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td><input type="checkbox" class="select-trainee-checkbox" data-id="${row.dataset.id}" data-fullname="${row.dataset.fullname}" data-email="${row.dataset.email}" data-program="${row.dataset.program || ''}"></td>
+                    <td>${row.dataset.id || ''}</td>
+                    <td>${row.dataset.fullname}</td>
+                    <td>${row.dataset.email}</td>
+                    <td>${row.dataset.program || ''}</td>
+                `;
+                modalStudentsTbody.appendChild(tr);
+            }
+        });
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('addTraineeModal'));
+        modal.show();
     });
+
+    // ===== Add Selected Trainees to Trainees Table =====
+    document.getElementById("addSelectedTrainees").addEventListener("click", () => {
+        const checkboxes = document.querySelectorAll(".select-trainee-checkbox:checked");
+        const traineesTableBody = document.querySelector("#traineesTable tbody");
+
+        checkboxes.forEach(cb => {
+            // Prevent duplicates
+            if(![...traineesTableBody.rows].some(r => r.cells[1].textContent === cb.dataset.fullname)) {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${cb.dataset.id || ''}</td>
+                    <td>${cb.dataset.fullname}</td>
+                    <td>${cb.dataset.email}</td>
+                    <td>${cb.dataset.program || ''}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">Remove</button>
+                    </td>
+                `;
+                traineesTableBody.appendChild(tr);
+            }
+        });
+
+        // Close modal
+        const modalEl = document.getElementById('addTraineeModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        modalInstance.hide();
+    });
+
 </script>
