@@ -1,6 +1,278 @@
-﻿namespace MonitoringSystem.Views.CompanyPanel
-{
-    public class ManageOJT
-    {
+﻿    @{
+        Layout = "_CompanyLayout";
+        ViewData["Title"] = "Manage Interns";
     }
-}
+
+    <div class="container-fluid my-4" id="manageInternContainer">
+
+        <!-- Filters and Search Row -->
+        <div class="row mb-3 align-items-center">
+            <div class="col-md-3">
+                <label for="yearFilter" class="form-label">Academic Year</label>
+                <select id="yearFilter" class="form-select">
+                    <option value="All" selected>All Years</option>
+                    <option value="2026">2026</option>
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label for="searchName" class="form-label">Search by Name</label>
+                <input type="text" id="searchName" class="form-control">
+            </div>
+        </div>
+
+        <!-- Intern Table -->
+        <div class="card shadow-sm p-4">
+            <table class="table table-striped" id="internTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Program</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Sample Students -->
+                    <tr data-year="2026" data-studentid="2026001" data-facebook="https://facebook.com/john.doe" data-mobile="09171234567" data-address="123 Main St, Manila" data-contact="Mr. Smith" data-birthdate="2003-05-12" data-company="Tech Solutions Inc">
+                        <td>John Doe</td>
+                        <td>johndoe@example.com</td>
+                        <td>Computer Science</td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item viewBtn" href="#">View</a></li>
+                                    <li><a class="dropdown-item reportBtn" href="#">Report</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#">Terminate</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr data-year="2025" data-studentid="2025002" data-facebook="https://facebook.com/jane.smith" data-mobile="09179876543" data-address="456 Rizal St, Quezon City" data-contact="Mrs. Johnson" data-birthdate="2002-11-25" data-company="Innovatech Corp">
+                        <td>Jane Smith</td>
+                        <td>janesmith@example.com</td>
+                        <td>Information Technology</td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item viewBtn" href="#">View</a></li>
+                                    <li><a class="dropdown-item reportBtn" href="#">Report</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#">Terminate</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr data-year="2024" data-studentid="2024003" data-facebook="https://facebook.com/alex.rodriguez" data-mobile="09177654321" data-address="789 Mabini St, Cebu City" data-contact="Ms. Garcia" data-birthdate="2001-02-18" data-company="GlobalTech">
+                        <td>Alex Rodriguez</td>
+                        <td>alexrodriguez@example.com</td>
+                        <td>Software Engineering</td>
+                        <td>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item viewBtn" href="#">View</a></li>
+                                    <li><a class="dropdown-item reportBtn" href="#">Report</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#">Terminate</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Student Profile Container -->
+    <div class="container-fluid my-4 position-relative" id="studentProfileContainer" style="display:none;">
+        <img id="previewProfilePic" src="/images/defaultpicture.jpg" class="rounded-circle shadow position-absolute" style="width:150px;height:150px;object-fit:cover;border:4px solid white; top:20px; left:20px; z-index:10;" onerror="this.src='/images/defaultpicture.jpg';">
+        <div style="height:190px;"></div>
+        <div class="card shadow-sm p-4" style="max-width:1700px; width:97%; margin:auto; overflow:hidden;">
+            <h5 class="fw-bold border-bottom pb-2 mb-3">Student Information</h5>
+            <div class="row g-3">
+                <div class="col-md-6"><strong>Name:</strong> <span id="pName"></span></div>
+                <div class="col-md-6"><strong>Student ID:</strong> <span id="pStudentID"></span></div>
+                <div class="col-md-6"><strong>Course:</strong> <span id="pCourse"></span></div>
+                <div class="col-md-6"><strong>Year:</strong> <span id="pYear"></span></div>
+                <div class="col-md-6"><strong>Facebook:</strong> <a id="pFacebook" href="#" target="_blank"></a></div>
+                <div class="col-md-6"><strong>Mobile Number:</strong> <span id="pMobileNumber"></span></div>
+                <div class="col-md-6"><strong>Address:</strong> <span id="pAddress"></span></div>
+                <div class="col-md-6"><strong>Contact Person:</strong> <span id="pContactPerson"></span></div>
+                <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
+                <div class="col-md-6"><strong>Email:</strong> <span id="pEmail"></span></div>
+                <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
+            </div>
+            <button id="backBtn" class="position-absolute bottom-0 end-0 m-4" style="background-color:#0787FF; color:white; border:none;">Back to List</button>
+        </div>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reportModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Complainee:</strong></label>
+                        <span id="complaineeName"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label for="incidentText" class="form-label"><strong>Incident:</strong></label>
+                        <textarea id="incidentText" class="form-control" rows="8" placeholder="Describe the incident here..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="createReportBtn" class="btn" style="background-color:#02B508; color:white;">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- TERMINATE MODAL -->
+<div class="modal fade" id="terminateModal" tabindex="-1" aria-labelledby="terminateModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <!-- Wider modal -->
+        <div class="modal-content" style="background-color:#8B0000; color:white;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="terminateModalLabel">Terminate Student</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Centered terminate message -->
+                <p id="terminateMessage" class="fs-4 fw-bold text-center"></p>
+
+                <!-- Remarks input aligned normally -->
+                <div class="mb-3">
+                    <label for="terminateRemarks" class="form-label"><strong>Remarks:</strong></label>
+                    <textarea id="terminateRemarks" class="form-control" rows="5" placeholder="Reason for termination..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" id="confirmTerminateBtn" class="btn" style="background-color:#02B508; color:white;">Yes</button>
+                <button type="button" class="btn" style="background-color:#FD0606; color:white;" data-bs-dismiss="modal">No</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+    @section Scripts {
+        <script>
+            // ===== FILTER AND SEARCH =====
+            const yearFilter = document.getElementById('yearFilter');
+            const searchInput = document.getElementById('searchName');
+            const tableRows = document.querySelectorAll('#internTable tbody tr');
+
+            function filterTable() {
+                const selectedYear = yearFilter.value;
+                const searchText = searchInput.value.toLowerCase();
+
+                tableRows.forEach(row => {
+                    const name = row.children[0].textContent.toLowerCase();
+                    const rowYear = row.dataset.year;
+                    row.style.display = ((selectedYear === 'All' || rowYear === selectedYear) && name.includes(searchText)) ? '' : 'none';
+                });
+            }
+
+            yearFilter.addEventListener('change', filterTable);
+            searchInput.addEventListener('input', filterTable);
+
+            // ===== VIEW PROFILE =====
+            const manageContainer = document.getElementById('manageInternContainer');
+            const profileContainer = document.getElementById('studentProfileContainer');
+            const previewProfilePic = document.getElementById('previewProfilePic');
+            const pName = document.getElementById('pName');
+            const pStudentID = document.getElementById('pStudentID');
+            const pCourse = document.getElementById('pCourse');
+            const pYear = document.getElementById('pYear');
+            const pFacebook = document.getElementById('pFacebook');
+            const pMobileNumber = document.getElementById('pMobileNumber');
+            const pAddress = document.getElementById('pAddress');
+            const pContactPerson = document.getElementById('pContactPerson');
+            const pBirthdate = document.getElementById('pBirthdate');
+            const pEmail = document.getElementById('pEmail');
+            const pCompany = document.getElementById('pCompany');
+            const backBtn = document.getElementById('backBtn');
+
+            document.querySelectorAll('.viewBtn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    const row = e.target.closest('tr');
+                    pName.textContent = row.children[0].textContent;
+                    pStudentID.textContent = row.dataset.studentid;
+                    pCourse.textContent = row.children[2].textContent;
+                    pYear.textContent = row.dataset.year;
+                    pFacebook.textContent = row.dataset.facebook;
+                    pFacebook.href = row.dataset.facebook;
+                    pMobileNumber.textContent = row.dataset.mobile;
+                    pAddress.textContent = row.dataset.address;
+                    pContactPerson.textContent = row.dataset.contact;
+                    pBirthdate.textContent = row.dataset.birthdate;
+                    pEmail.textContent = row.children[1].textContent;
+                    pCompany.textContent = row.dataset.company;
+                    previewProfilePic.src = '/images/defaultpicture.jpg';
+                    manageContainer.style.display = 'none';
+                    profileContainer.style.display = 'block';
+                });
+            });
+
+            backBtn.addEventListener('click', () => {
+                profileContainer.style.display = 'none';
+                manageContainer.style.display = 'block';
+            });
+
+            // ===== REPORT MODAL =====
+            const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+            const complaineeName = document.getElementById('complaineeName');
+            const incidentText = document.getElementById('incidentText');
+            const createReportBtn = document.getElementById('createReportBtn');
+
+            document.querySelectorAll('.reportBtn').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    const row = e.target.closest('tr');
+                    complaineeName.textContent = row.children[0].textContent;
+                    incidentText.value = '';
+                    reportModal.show();
+                });
+            });
+
+            createReportBtn.addEventListener('click', () => {
+                const reportData = { complainee: complaineeName.textContent, incident: incidentText.value };
+                console.log('Report Created:', reportData);
+                reportModal.hide();
+                alert('Report has been created!');
+            });
+
+            // ===== TERMINATE MODAL =====
+            const terminateModal = new bootstrap.Modal(document.getElementById('terminateModal'));
+            const terminateMessage = document.getElementById('terminateMessage');
+            const terminateRemarks = document.getElementById('terminateRemarks');
+            const confirmTerminateBtn = document.getElementById('confirmTerminateBtn');
+
+            document.querySelectorAll('.text-danger').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    const row = e.target.closest('tr');
+                    terminateMessage.textContent = `Are you sure you want to terminate ${row.children[0].textContent}?`;
+                    terminateRemarks.value = '';
+                    terminateModal.show();
+
+                    // Clear previous click listeners
+                    confirmTerminateBtn.onclick = null;
+                    confirmTerminateBtn.onclick = () => {
+                        const terminateData = { student: row.children[0].textContent, remarks: terminateRemarks.value };
+                        console.log('Student Terminated:', terminateData);
+                        terminateModal.hide();
+                        alert(`${row.children[0].textContent} has been terminated!`);
+                    };
+                });
+            });
+        </script>
+    }

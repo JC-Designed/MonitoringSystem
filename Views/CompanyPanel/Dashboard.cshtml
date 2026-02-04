@@ -1,7 +1,150 @@
 ﻿@{
     Layout = "_CompanyLayout";
-    ViewData["Title"] = "Dashboard"; // Change for each view
+    ViewData["Title"] = "Dashboard";
 }
 
-<h1>Company Dashboard</h1> <!-- Change title for each page -->
-<p>Welcome to your Company Panel!</p>
+<div class="container-fluid my-4">
+
+    <!-- Academic Year Dropdown -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex align-items-center">
+            <label for="yearSelector" class="me-3 fw-bold">Academic Year:</label>
+            <select id="yearSelector" class="form-select" style="width:150px;">
+                <option value="2026" selected>2026</option>
+                <option value="2025">2025</option>
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- Total Interns Chart (Full Width) -->
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h5 class="fw-bold mb-3" id="totalInternsTitle"></h5>
+                <div style="height:380px;">
+                    <canvas id="totalInternsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student Tasks Chart (Full Width) -->
+        <div class="col-12">
+            <div class="card shadow-sm p-4">
+                <h5 class="fw-bold mb-3" id="studentTasksTitle"></h5>
+                <div style="height:380px;">
+                    <canvas id="studentTasksChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        Chart.defaults.font.family = 'Segoe UI';
+        Chart.defaults.color = '#666';
+
+        const premiumBarStyle = {
+            borderRadius: 8,
+            barPercentage: 0.9,
+            categoryPercentage: 0.9,
+            maxBarThickness: 60
+        };
+
+        const premiumOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                x: { grid: { display: false } }
+            }
+        };
+
+        // Sample chart data per academic year
+        const chartData = {
+            "2026": {
+                interns: [10,12,15,9,7,11,13,14,8,9,12,10],
+                tasks: [50,60,55,45,70,65,60,75,80,50,60,55],
+                months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            },
+            "2025": {
+                interns: [8,10,12,7,6,9,11,12,7,8,10,9],
+                tasks: [40,55,50,35,60,55,50,65,70,45,50,50],
+                months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            },
+            "2024": {
+                interns: [7,9,10,6,5,8,9,10,6,7,8,7],
+                tasks: [35,45,40,30,50,45,40,55,60,35,40,38],
+                months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            },
+            "2023": {
+                interns: [5,6,8,4,3,5,6,7,4,5,6,5],
+                tasks: [25,35,30,20,40,35,30,45,50,25,30,28],
+                months: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            }
+        };
+
+        // Charts
+        const ctxInterns = document.getElementById('totalInternsChart').getContext('2d');
+        const ctxTasks = document.getElementById('studentTasksChart').getContext('2d');
+
+        // Total Interns chart (bar)
+        let totalInternsChart = new Chart(ctxInterns, {
+            type: 'bar',
+            data: {
+                labels: chartData["2026"].months,
+                datasets: [{
+                    label: 'Total Interns',
+                    data: chartData["2026"].interns,
+                    backgroundColor: '#FFC355',
+                    borderColor: '#FFC355',
+                    ...premiumBarStyle
+                }]
+            },
+            options: premiumOptions
+        });
+
+        // Student Tasks chart (also bar)
+        let studentTasksChart = new Chart(ctxTasks, {
+            type: 'bar',
+            data: {
+                labels: chartData["2026"].months,
+                datasets: [{
+                    label: 'Student Tasks',
+                    data: chartData["2026"].tasks,
+                    backgroundColor: '#48FFBF',
+                    borderColor: '#48FFBF',
+                    ...premiumBarStyle
+                }]
+            },
+            options: premiumOptions
+        });
+
+        // Set initial chart titles
+        document.getElementById('totalInternsTitle').textContent = "2026 Total Interns";
+        document.getElementById('studentTasksTitle').textContent = "2026 Student Tasks";
+
+        // Update charts when year changes
+        document.getElementById('yearSelector').addEventListener('change', function() {
+            const year = this.value;
+
+            totalInternsChart.data.labels = chartData[year].months;
+            totalInternsChart.data.datasets[0].data = chartData[year].interns;
+            totalInternsChart.update();
+
+            studentTasksChart.data.labels = chartData[year].months;
+            studentTasksChart.data.datasets[0].data = chartData[year].tasks;
+            studentTasksChart.update();
+
+            document.getElementById('totalInternsTitle').textContent = year + " Total Interns";
+            document.getElementById('studentTasksTitle').textContent = year + " Student Tasks";
+        });
+    </script>
+}
