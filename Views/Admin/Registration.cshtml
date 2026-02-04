@@ -9,60 +9,115 @@
 <input type="hidden" id="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
 <div class="container-fluid py-4">
-    <div class="row g-4">
 
-        <!-- ================= FILTERS + USERS TABLE IN ONE CARD ================= -->
-        <div class="col-md-12">
-            <div class="card shadow-sm rounded-4 p-4 mb-4">
+    <!-- ================= USERS SECTION (Filters + Table) ================= -->
+    <div id="usersSection">
+        <div class="row g-4">
+            <div class="col-md-12">
+                <div class="card shadow-sm rounded-4 p-4 mb-4">
 
-                <!-- ===== FILTERS ROW ===== -->
-                <div class="row g-3 align-items-end mb-3">
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Year</label>
-                        <select id="yearFilter" class="form-select filter-box">
-                            <option value="">All</option>
-                            <option value="2023">2023</option>
-                            <option value="2024">2024</option>
-                            <option value="2025">2025</option>
-                            <option value="2026">2026</option>
-                        </select>
+                    <!-- ===== FILTERS ROW ===== -->
+                    <div class="row g-3 align-items-end mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Year</label>
+                            <select id="yearFilter" class="form-select filter-box">
+                                <option value="">All</option>
+                                <option value="2023">2023</option>
+                                <option value="2024">2024</option>
+                                <option value="2025">2025</option>
+                                <option value="2026">2026</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Search by Name</label>
+                            <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select id="statusFilter" class="form-select filter-box">
+                                <option value="">All</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Declined">Declined</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Search by Name</label>
-                        <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
+                    <!-- ================= USERS TABLE ================= -->
+                    <div class="table-responsive">
+                        <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width:35%;">Name</th>
+                                    <th style="width:35%;">Email</th>
+                                    <th style="width:15%;">Status</th>
+                                    <th class="text-end" style="width:15%;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr data-firstname="Juan" data-lastname="Dela Cruz" data-year="2026" data-status="Pending" data-email="student@example.com" data-company="ABC Corp" data-mobile="09123456789" data-address="123 Street" data-program="Computer Science" data-emergency="09112223333" data-studentid="S12345" data-birthdate="2000-01-01" data-profile="@Url.Content("~/images/defaultpicture.jpg")">
+                                    <td>Juan Dela Cruz</td>
+                                    <td>student@example.com</td>
+                                    <td>Pending</td>
+                                    <td class="text-end">
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                                <li><a class="dropdown-item viewUserBtn" href="#">View</a></li>
+                                            </ul>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- Add other students similarly -->
+                            </tbody>
+                        </table>
                     </div>
 
-                    <div class="col-md-4">
-                        <label class="form-label fw-semibold">Status</label>
-                        <select id="statusFilter" class="form-select filter-box">
-                            <option value="">All</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Declined">Declined</option>
-                        </select>
-                    </div>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- ================= USERS TABLE ================= -->
-                <div class="table-responsive">
-                    <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:35%;">Name</th>
-                                <th style="width:35%;">Email</th>
-                                <th style="width:15%;">Status</th>
-                                <th class="text-end" style="width:15%;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        </tbody>
-                    </table>
-                </div>
+    <!-- ================= STUDENT DETAILS + BUTTONS (Hidden by default) ================= -->
+    <div id="studentDetailsWrapper" style="display:none; position:relative;">
 
+        <!-- Profile Picture -->
+        <div class="mb-3 text-start">
+            <img id="detailProfile" src="@Url.Content("~/images/defaultpicture.jpg")" alt="Profile"
+                 class="rounded-circle shadow"
+                 style="width:150px; height:150px; object-fit:cover; border:4px solid white;">
+        </div>
+
+        <!-- Student Info Card -->
+        <div class="card shadow-sm rounded-4 p-4 mb-4">
+            <div class="row g-3">
+                <div class="col-md-6"><strong>Name:</strong> <span id="detailName"></span></div>
+                <div class="col-md-6"><strong>Email:</strong> <span id="detailEmail"></span></div>
+                <div class="col-md-6"><strong>Status:</strong> <span id="detailStatus"></span></div>
+                <div class="col-md-6"><strong>Company:</strong> <span id="detailCompany"></span></div>
+                <div class="col-md-6"><strong>Mobile Number:</strong> <span id="detailMobile"></span></div>
+                <div class="col-md-6"><strong>Address:</strong> <span id="detailAddress"></span></div>
+                <div class="col-md-6"><strong>Program:</strong> <span id="detailProgram"></span></div>
+                <div class="col-md-6"><strong>Emergency Contact:</strong> <span id="detailEmergency"></span></div>
+                <div class="col-md-6"><strong>Student ID:</strong> <span id="detailStudentID"></span></div>
+                <div class="col-md-6"><strong>Birthdate:</strong> <span id="detailBirthdate"></span></div>
+            </div>
+        </div>
+
+        <!-- Buttons outside the card -->
+        <div id="actionButtons" style="text-align:right; margin-bottom:20px;">
+            <button id="approveBtn" class="btn" style="background-color:#07B618; color:white; margin-right:10px;">Approved</button>
+            <button id="declineBtn" class="btn" style="background-color:#FA0D0D; color:white;">Declined</button>
+        </div>
+
+    </div>
+</div>
 
 <script>
     const tbody = document.querySelector("#usersTable tbody");
+    const usersSection = document.getElementById("usersSection");
+    const studentDetailsWrapper = document.getElementById("studentDetailsWrapper");
 
     // ===== FILTER FUNCTION =====
     function filterTable() {
@@ -72,7 +127,6 @@
 
         [...tbody.rows].forEach(row => {
             let show = true;
-
             const fullName = (row.dataset.firstname + " " + row.dataset.lastname).toLowerCase();
             const rowYear = row.dataset.year;
             const rowStatus = row.dataset.status;
@@ -87,5 +141,38 @@
 
     ["yearFilter","searchName","statusFilter"].forEach(id => {
         document.getElementById(id).addEventListener("input", filterTable);
+    });
+
+    // ===== VIEW BUTTON CLICK =====
+    document.querySelectorAll(".viewUserBtn").forEach(btn => {
+        btn.addEventListener("click", function(e){
+            e.preventDefault();
+            e.stopPropagation();
+
+            const row = this.closest("tr");
+            usersSection.style.display = "none";
+            studentDetailsWrapper.style.display = "block";
+
+            document.getElementById("detailProfile").src = row.dataset.profile;
+            document.getElementById("detailName").textContent = row.dataset.firstname + " " + row.dataset.lastname;
+            document.getElementById("detailEmail").textContent = row.dataset.email;
+            document.getElementById("detailStatus").textContent = row.dataset.status;
+            document.getElementById("detailCompany").textContent = row.dataset.company;
+            document.getElementById("detailMobile").textContent = row.dataset.mobile;
+            document.getElementById("detailAddress").textContent = row.dataset.address;
+            document.getElementById("detailProgram").textContent = row.dataset.program;
+            document.getElementById("detailEmergency").textContent = row.dataset.emergency;
+            document.getElementById("detailStudentID").textContent = row.dataset.studentid;
+            document.getElementById("detailBirthdate").textContent = row.dataset.birthdate;
+        });
+    });
+
+    // ===== APPROVE / DECLINE BUTTONS =====
+    document.getElementById("approveBtn").addEventListener("click", () => {
+        alert("Student Approved!");
+    });
+
+    document.getElementById("declineBtn").addEventListener("click", () => {
+        alert("Student Declined!");
     });
 </script>
