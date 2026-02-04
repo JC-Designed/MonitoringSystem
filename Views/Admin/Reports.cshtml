@@ -1,83 +1,105 @@
-﻿@model List<MonitoringSystem.Models.Report>
-
-@{
+﻿@{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Reports";
+
+    var demoReports = new List<dynamic>
+    {
+        new { Name = "Alice Smith", Facebook="alice.smith", MobileNumber="09171234567", Address="123 Main St", ContactPerson="John Smith", Birthdate="01/15/2005", Email="alice@example.com", ReportType = "MOA", Company="Acme Inc.", Year="2026", Status = "Unread", Details = "Report about late submission.", DateCreated = DateTime.Now.AddHours(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1001", Course="BSIT" },
+        new { Name = "John Doe", Facebook="john.doe", MobileNumber="09172345678", Address="456 Elm St", ContactPerson="Jane Doe", Birthdate="03/22/2004", Email="john@example.com", ReportType = "Complaint", Company="Beta Corp", Year="2026", Status = "Read", Details = "Report on project progress.", DateCreated = DateTime.Now.AddDays(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1002", Course="BSCS" },
+        new { Name = "Beta Corp", Facebook="", MobileNumber="", Address="", ContactPerson="", Birthdate="", Email="", ReportType = "Compliance", Company="Beta Corp", Year="2026", Status = "Read", Details = "Company report for compliance.", DateCreated = DateTime.Now.AddDays(-1), ProfilePic = "", StudentId="", Course="" }
+    };
 }
 
-<div class="reports-page container-fluid py-4">
+<style>
+    /* ===== Make dropdown arrow smaller ===== */
+    .dropdown .btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        width: 30px;
+        height: 30px;
+        line-height: 1;
+    }
+
+    /* ===== Tasks Table Styling ===== */
+    #tasksTable table {
+        margin-top: 20px;
+        font-size: 1.05rem;
+    }
+
+        #tasksTable table th,
+        #tasksTable table td {
+            border: none !important;
+            text-align: center;
+            padding: 0.75rem 1rem;
+        }
+
+        #tasksTable table thead th {
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+</style>
+
+<div id="mainReports" class="reports-page container-fluid py-4">
     <div class="card shadow-sm rounded-4 p-4">
 
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h4 class="fw-bold mb-0">Reports</h4>
-        </div>
+        <h4 class="fw-bold mb-4">Reports</h4>
 
-        <!-- ================= FILTERS ================= -->
+        <!-- FILTERS -->
         <div class="row g-3 mb-4 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Search by Reporter</label>
-                <input type="text"
-                       id="searchReporter"
-                       class="form-control filter-box"
-                       placeholder="Type name..." />
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Search by Name</label>
+                <input type="text" id="searchName" class="form-control" placeholder="Type name..." />
             </div>
-
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Reporter Type</label>
-                <select id="reporterTypeFilter" class="form-select filter-box">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Academic Year</label>
+                <select id="yearFilter" class="form-select">
                     <option value="">All</option>
-                    <option value="Student">Student</option>
-                    <option value="Company">Company</option>
-                </select>
-            </div>
-
-            <div class="col-md-4">
-                <label class="form-label fw-semibold">Status</label>
-                <select id="statusFilter" class="form-select filter-box">
-                    <option value="">All</option>
-                    <option value="Read">Read</option>
-                    <option value="Unread">Unread</option>
+                    <option value="2026">2026</option>
                 </select>
             </div>
         </div>
 
-        <!-- ================= REPORTS TABLE ================= -->
+        <!-- REPORTS TABLE -->
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" id="reportsTable">
                 <thead class="table-light text-center">
                     <tr>
-                        <th style="width:10%;">ID</th>
-                        <th style="width:20%;" class="text-center">Reporter Name</th>
-                        <th style="width:15%;">Type</th>
-                        <th style="width:15%;">Status</th>
-                        <th style="width:20%;">Date Submitted</th>
-                        <th style="width:10%;">Action</th>
+                        <th>Student Name</th>
+                        <th>Report Type</th>
+                        <th>Company</th>
+                        <th>Date Created</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var report in Model)
+                    @foreach (var report in demoReports)
                     {
-                        <tr data-id="@report.Id.ToString("D7")"
-                            data-name="@report.ReporterName"
-                            data-type="@report.ReporterType"
+                        <tr data-name="@report.Name"
+                            data-facebook="@report.Facebook"
+                            data-mobilenumber="@report.MobileNumber"
+                            data-address="@report.Address"
+                            data-contactperson="@report.ContactPerson"
+                            data-birthdate="@report.Birthdate"
+                            data-email="@report.Email"
+                            data-year="@report.Year"
                             data-status="@report.Status"
                             data-details="@report.Details"
-                            data-date="@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")"
-                            style="height:55px;">
-                            <td class="text-center">@report.Id.ToString("D7")</td>
-                            <td class="text-center">@report.ReporterName</td>
-                            <td class="text-center">@report.ReporterType</td>
-                            <td class="text-center">@report.Status</td>
-                            <td class="text-center">@report.DateSubmitted.ToString("yyyy-MM-dd HH:mm")</td>
+                            data-profile="@report.ProfilePic"
+                            data-studentid="@report.StudentId"
+                            data-course="@report.Course"
+                            data-company="@report.Company"
+                            data-reporttype="@report.ReportType">
+
+                            <td class="text-center">@report.Name</td>
+                            <td class="text-center">@report.ReportType</td>
+                            <td class="text-center">@report.Company</td>
+                            <td class="text-center">@report.DateCreated.ToString("MM/dd/yy")</td>
                             <td class="text-center">
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        &#9662;
-                                    </button>
+                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">▼</button>
                                     <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item view-btn" href="#">View</a></li>
-                                        <li><a class="dropdown-item download-btn" href="#">Export</a></li>
+                                        <li><a class="dropdown-item preview-btn" href="#">Preview</a></li>
+                                        <li><a class="dropdown-item download-btn" href="#">Download</a></li>
                                     </ul>
                                 </div>
                             </td>
@@ -89,111 +111,170 @@
     </div>
 </div>
 
-<!-- ================= VIEW REPORT MODAL ================= -->
-<div class="modal fade" id="viewReportModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Report Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Reporter Name</label>
-                    <p id="modalReporterName" class="form-control-plaintext"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Reporter Type</label>
-                    <p id="modalReporterType" class="form-control-plaintext"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Status</label>
-                    <p id="modalStatus" class="form-control-plaintext"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Date Submitted</label>
-                    <p id="modalDate" class="form-control-plaintext"></p>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">Details</label>
-                    <p id="modalDetails" class="form-control-plaintext"></p>
-                </div>
-            </div>
+<!-- PREVIEW SECTION -->
+<div id="previewSection" style="display:none;" class="container py-4">
+
+    <button class="btn mb-3" id="backBtn" style="background-color:#0787FF; color:white;">&laquo; Back to Reports</button>
+
+    <!-- Profile Picture -->
+    <div class="mb-3">
+        <img id="previewProfilePic" src="/images/defaultpicture.jpg"
+             class="rounded-circle shadow"
+             style="width:150px;height:150px;object-fit:cover;border:4px solid white;"
+             onerror="this.src='/images/defaultpicture.jpg';">
+    </div>
+
+    <!-- Student Info Card -->
+    <div class="card shadow-sm rounded-4 p-4" style="overflow:hidden;">
+        <h5 class="fw-bold border-bottom pb-2 mb-3">Student Information</h5>
+        <div class="row g-3">
+            <div class="col-md-6"><strong>Name:</strong> <span id="pName"></span></div>
+            <div class="col-md-6"><strong>Student ID:</strong> <span id="pStudentID"></span></div>
+            <div class="col-md-6"><strong>Course:</strong> <span id="pCourse"></span></div>
+            <div class="col-md-6"><strong>Year:</strong> <span id="pYear"></span></div>
+            <div class="col-md-6"><strong>Facebook:</strong> <span id="pFacebook"></span></div>
+            <div class="col-md-6"><strong>Mobile Number:</strong> <span id="pMobileNumber"></span></div>
+            <div class="col-md-6"><strong>Address:</strong> <span id="pAddress"></span></div>
+            <div class="col-md-6"><strong>Contact Person:</strong> <span id="pContactPerson"></span></div>
+            <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
+            <div class="col-md-6"><strong>Email:</strong> <span id="pEmail"></span></div>
+            <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
         </div>
     </div>
-</div>
 
-<!-- ================= EXPORT FORMAT MODAL ================= -->
-<div class="modal fade" id="exportFormatModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Select Export Format</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body d-flex justify-content-around">
-                <button type="button" class="btn btn-primary" id="exportPdfBtn">PDF</button>
-                <button type="button" class="btn btn-success" id="exportDocxBtn">DOCX</button>
-            </div>
+    <!-- Download Template Button -->
+    <div class="d-flex justify-content-end mt-3">
+        <a href="#" id="downloadTemplateBtn" class="btn"
+           style="background-color:#FE5252; color:white;">
+            Download Template
+        </a>
+    </div>
+
+    <!-- Tasks Table with checkboxes -->
+    <div id="tasksTable" class="mt-4 p-3 rounded-4 shadow-sm" style="border: 1px solid #dee2e6;">
+        <h5 class="fw-bold mb-3">Tasks</h5>
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead class="text-center">
+                    <tr>
+                        <th>Select</th>
+                        <th>Task Title</th>
+                        <th>Date From</th>
+                        <th>Date To</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 1"></td>
+                        <td class="text-center">Task 1</td>
+                        <td class="text-center">02/01/2026</td>
+                        <td class="text-center">02/05/2026</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 2"></td>
+                        <td class="text-center">Task 2</td>
+                        <td class="text-center">02/06/2026</td>
+                        <td class="text-center">02/10/2026</td>
+                    </tr>
+                    <tr>
+                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 3"></td>
+                        <td class="text-center">Task 3</td>
+                        <td class="text-center">02/11/2026</td>
+                        <td class="text-center">02/15/2026</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
+
 </div>
 
-<!-- ================= SCRIPT ================= -->
 <script>
-    const tbody = document.querySelector("#reportsTable tbody");
-    let selectedReportId = null;
+    document.addEventListener("DOMContentLoaded", function () {
 
-    // ===== FILTER TABLE =====
-    function filterTable() {
-        const nameVal = document.getElementById("searchReporter").value.toLowerCase();
-        const typeVal = document.getElementById("reporterTypeFilter").value;
-        const statusVal = document.getElementById("statusFilter").value;
+        const tbody = document.querySelector("#reportsTable tbody");
 
-        [...tbody.rows].forEach(row => {
-            let show = true;
-            if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
-            if (typeVal && row.dataset.type !== typeVal) show = false;
-            if (statusVal && row.dataset.status !== statusVal) show = false;
-            row.style.display = show ? "" : "none";
+        function filterTable() {
+            const nameVal = document.getElementById("searchName").value.toLowerCase();
+            const yearVal = document.getElementById("yearFilter").value;
+
+            [...tbody.rows].forEach(row => {
+                let show = true;
+                if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
+                if (yearVal && row.dataset.year !== yearVal) show = false;
+                row.style.display = show ? "" : "none";
+            });
+        }
+
+        document.getElementById("searchName").addEventListener("input", filterTable);
+        document.getElementById("yearFilter").addEventListener("change", filterTable);
+
+        tbody.addEventListener("click", function (e) {
+            const previewBtn = e.target.closest(".preview-btn");
+            const downloadBtn = e.target.closest(".download-btn");
+
+            if (previewBtn) {
+                e.preventDefault();
+                const row = previewBtn.closest("tr");
+
+                const profilePic = row.dataset.profile && row.dataset.profile.trim() !== ""
+                    ? row.dataset.profile
+                    : "/images/defaultpicture.jpg";
+
+                document.getElementById("previewProfilePic").src = profilePic;
+                document.getElementById("pName").textContent = row.dataset.name;
+                document.getElementById("pStudentID").textContent = row.dataset.studentid || "—";
+                document.getElementById("pCourse").textContent = row.dataset.course || "—";
+                document.getElementById("pYear").textContent = row.dataset.year;
+                document.getElementById("pFacebook").textContent = row.dataset.facebook || "—";
+                document.getElementById("pMobileNumber").textContent = row.dataset.mobilenumber || "—";
+                document.getElementById("pAddress").textContent = row.dataset.address || "—";
+                document.getElementById("pContactPerson").textContent = row.dataset.mobilenumber || "—";
+                document.getElementById("pBirthdate").textContent = row.dataset.birthdate || "—";
+                document.getElementById("pEmail").textContent = row.dataset.email || "—";
+                document.getElementById("pCompany").textContent = row.dataset.company;
+
+                document.getElementById("mainReports").style.display = "none";
+                document.getElementById("previewSection").style.display = "block";
+            }
+
+            if (downloadBtn) {
+                e.preventDefault();
+                const row = downloadBtn.closest("tr");
+                // Direct download of report template for this report
+                const link = document.createElement('a');
+                link.href = '/templates/reporttemplate.docx';
+                link.download = 'reporttemplate.docx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
         });
-    }
 
-    ["searchReporter", "reporterTypeFilter", "statusFilter"]
-        .forEach(id => document.getElementById(id).addEventListener("input", filterTable));
-
-    // ===== VIEW REPORT MODAL =====
-    document.querySelectorAll(".view-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-            const row = btn.closest("tr");
-            document.getElementById("modalReporterName").textContent = row.dataset.name;
-            document.getElementById("modalReporterType").textContent = row.dataset.type;
-            document.getElementById("modalStatus").textContent = row.dataset.status;
-            document.getElementById("modalDate").textContent = row.dataset.date;
-            document.getElementById("modalDetails").textContent = row.dataset.details;
-            bootstrap.Modal.getOrCreateInstance(document.getElementById("viewReportModal")).show();
+        document.getElementById("backBtn").addEventListener("click", () => {
+            document.getElementById("previewSection").style.display = "none";
+            document.getElementById("mainReports").style.display = "block";
         });
-    });
 
-    // ===== EXPORT MODAL TRIGGER =====
-    document.querySelectorAll(".download-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-            const row = btn.closest("tr");
-            selectedReportId = row.dataset.id;
-            bootstrap.Modal.getOrCreateInstance(document.getElementById("exportFormatModal")).show();
+        document.getElementById("downloadTemplateBtn").addEventListener("click", () => {
+            const selectedTasks = [...document.querySelectorAll(".task-checkbox:checked")]
+                                    .map(cb => cb.value);
+
+            if(selectedTasks.length === 0){
+                alert("Please select at least one task to download.");
+                return;
+            }
+
+            // Download the template file with selected tasks in filename
+            const templateUrl = "/templates/reporttemplate.docx";
+            const filename = `ReportTemplate_${selectedTasks.join("_")}.docx`;
+            const link = document.createElement('a');
+            link.href = templateUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         });
-    });
 
-    // ===== HANDLE PDF / DOCX EXPORT =====
-    document.getElementById("exportPdfBtn").addEventListener("click", () => {
-        if (!selectedReportId) return;
-        window.location.href = `/Admin/ExportReportPdf?id=${selectedReportId}`;
-        bootstrap.Modal.getOrCreateInstance(document.getElementById("exportFormatModal")).hide();
-    });
-
-    document.getElementById("exportDocxBtn").addEventListener("click", () => {
-        if (!selectedReportId) return;
-        window.location.href = `/Admin/ExportReportDocx?id=${selectedReportId}`;
-        bootstrap.Modal.getOrCreateInstance(document.getElementById("exportFormatModal")).hide();
     });
 </script>
