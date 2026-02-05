@@ -6,29 +6,23 @@ using System.Collections.Generic;
 
 namespace MonitoringSystem.Controllers
 {
-    [Authorize(Roles = "Student")] // Only users in Student role can access
+    // No [Authorize] on the controller
     public class StudentPanelController : Controller
     {
         // ======================= DASHBOARD =======================
+        [AllowAnonymous] // Public
         public IActionResult Dashboard()
         {
             ViewData["Title"] = "Dashboard";
             return View();
         }
 
-        // ======================= MESSAGES =======================
-        public IActionResult Messages()
-        {
-            ViewData["Title"] = "Messages";
-            return View();
-        }
-
-        // ======================= TASK =======================
+        // ======================= TASKS =======================
+        [AllowAnonymous] // Public
         public IActionResult Tasks()
         {
-            ViewData["Title"] = "Tasks";
+            ViewData["Title"] = "TASK LIST";
 
-            // ===== SAMPLE TASK DATA =====
             var tasks = new List<StudentTask>
             {
                 new StudentTask
@@ -37,7 +31,7 @@ namespace MonitoringSystem.Controllers
                     Title = "Design Logo",
                     Company = "ABC Corp",
                     Deadline = DateTime.Now.AddDays(5),
-                    Status = "Pending",
+                    Status = "Ongoing",
                     Description = "Create a modern logo for ABC Corp's new product.",
                     AttachmentPath = null
                 },
@@ -49,7 +43,7 @@ namespace MonitoringSystem.Controllers
                     Deadline = DateTime.Now.AddDays(-2),
                     Status = "Completed",
                     Description = "Submit the monthly monitoring report.",
-                    AttachmentPath = "/files/report.pdf" // example
+                    AttachmentPath = "/files/report.pdf"
                 },
                 new StudentTask
                 {
@@ -57,7 +51,7 @@ namespace MonitoringSystem.Controllers
                     Title = "Update Website",
                     Company = "DesignHub",
                     Deadline = DateTime.Now.AddDays(10),
-                    Status = "Overdue",
+                    Status = "Ongoing",
                     Description = "Update the website with the new product catalog.",
                     AttachmentPath = null
                 }
@@ -66,7 +60,16 @@ namespace MonitoringSystem.Controllers
             return View(tasks);
         }
 
-        // ======================= REPORTS =======================
+        // ======================= MESSAGES (Optional Protected) =======================
+        [Authorize(Roles = "Student")]
+        public IActionResult Messages()
+        {
+            ViewData["Title"] = "Messages";
+            return View();
+        }
+
+        // ======================= REPORTS (Optional Protected) =======================
+        [Authorize(Roles = "Student")]
         public IActionResult Reports()
         {
             ViewData["Title"] = "Reports";

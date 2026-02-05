@@ -5,81 +5,34 @@
 
 <link rel="stylesheet" href="~/css/student.css" />
 
-<div class="dashboard-bg py-5">
+<div class="dashboard-bg py-1">
     <div class="container-fluid dashboard-container">
-        <!-- FULL WIDTH -->
-        <!-- ===== HEADER ===== -->
-        <div class="text-center mb-5">
-            <h1 class="fw-bold text-primary">@ViewData["Title"]</h1>
-            <p class="text-muted">Welcome to the Student Panel</p>
+        <!-- ===== TASKS CHART + TOTAL TASK CARD ===== -->
+        <div class="row g-4">
+            <!-- Task Completed Chart -->
+            <div class="col-12 col-lg-8">
+                <div class="card chart-card p-3" style="height:380px; overflow-x:auto; overflow-y:hidden;">
+                    <div style="width:1200px;">
+                        <canvas id="studentTasksChart" style="width:100%; height:300px;"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Tasks Card -->
+            <div class="col-12 col-lg-4">
+                <div class="card shadow-sm p-3 text-center d-flex flex-column justify-content-center" style="height:380px;">
+                    <h5 class="fw-bold mb-3" id="totalTasksTitle">Total Tasks Completed</h5>
+                    <p class="display-1 fw-bold text-primary mb-0" id="totalTasksNumber">0</p>
+                </div>
+            </div>
         </div>
 
-        <!-- ===== DASHBOARD CARDS ===== -->
-        <div class="row g-4 justify-content-center text-center">
-
-            <!-- Tasks -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <div class="dashboard-link" data-bs-toggle="modal" data-bs-target="#tasksModal">
-                    <div class="card dashboard-card task-card h-100 p-3">
-                        <div class="icon-wrapper mb-3">
-                            <i class="bi bi-clipboard-check-fill fs-1 text-primary"></i>
-                        </div>
-                        <h5 class="fw-bold">Tasks</h5>
-                        <p class="text-muted">View and manage assigned tasks</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reports -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <div class="dashboard-link" data-bs-toggle="modal" data-bs-target="#reportsModal">
-                    <div class="card dashboard-card reports-card h-100 p-3">
-                        <div class="icon-wrapper mb-3">
-                            <i class="bi bi-file-earmark-text-fill fs-1 text-success"></i>
-                        </div>
-                        <h5 class="fw-bold">Reports</h5>
-                        <p class="text-muted">Track submitted reports</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <div class="dashboard-link" data-bs-toggle="modal" data-bs-target="#settingsModal">
-                    <div class="card dashboard-card settings-card h-100 p-3">
-                        <div class="icon-wrapper mb-3">
-                            <i class="bi bi-gear-fill fs-1 text-warning"></i>
-                        </div>
-                        <h5 class="fw-bold">Settings</h5>
-                        <p class="text-muted">Manage profile and security</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Help -->
-            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-                <div class="dashboard-link" data-bs-toggle="modal" data-bs-target="#helpModal">
-                    <div class="card dashboard-card help-card h-100 p-3">
-                        <div class="icon-wrapper mb-3">
-                            <i class="bi bi-question-circle-fill fs-1 text-danger"></i>
-                        </div>
-                        <h5 class="fw-bold">Help & Support</h5>
-                        <p class="text-muted">FAQs and support resources</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ===== CHART ===== -->
-        <div class="row mt-5">
+        <!-- ===== TASK FREQUENCY CHART (FULL WIDTH) ===== -->
+        <div class="row mt-4">
             <div class="col-12">
-                <div class="card chart-card p-4" style="min-height: 350px;">
-                    <h5 class="fw-bold text-center mb-4">
-                        Tasks Completed (@DateTime.Now.Year)
-                    </h5>
-                    <div class="chart-wrapper w-100" style="min-height: 300px;">
-                        <canvas id="tasksChart"></canvas>
+                <div class="card chart-card p-3" style="height:380px;">
+                    <div style="height:300px;">
+                        <canvas id="taskFrequencyChart" style="width:100%; height:100%;"></canvas>
                     </div>
                 </div>
             </div>
@@ -91,24 +44,86 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        const monthlyTasks = [5, 8, 12, 7, 9, 10, 15, 6, 8, 11, 7, 10];
-        const ctx = document.getElementById('tasksChart').getContext('2d');
-        new Chart(ctx, {
+        // Global Chart defaults
+        Chart.defaults.font.family = 'Segoe UI';
+        Chart.defaults.color = '#666';
+
+        // Bar style
+        const premiumBarStyle = {
+            borderRadius: 8,
+            barPercentage: 0.9,
+            categoryPercentage: 0.9,
+            maxBarThickness: 60
+        };
+
+        // Task Completed Chart Options (horizontal scroll)
+        const taskCompletedOptions = {
+            responsive: false,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                x: { grid: { display: false } }
+            }
+        };
+
+        // Task Frequency Chart Options (full width)
+        const taskFrequencyOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                x: { grid: { display: false } }
+            }
+        };
+
+        // Chart Data
+        const taskCompletedData = [5, 8, 12, 7, 9, 10, 15, 6, 8, 11, 7, 10];
+        const taskFrequencyData = [2, 3, 5, 3, 4, 5, 6, 3, 4, 5, 3, 4];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+        // Determine current month
+        const currentDate = new Date();
+        const currentMonthIndex = currentDate.getMonth(); // 0-based index
+        const currentMonthName = months[currentMonthIndex];
+
+        // Update Total Tasks Card dynamically
+        document.getElementById('totalTasksTitle').textContent = `Total Tasks Completed in ${currentMonthName}`;
+        document.getElementById('totalTasksNumber').textContent = taskCompletedData[currentMonthIndex];
+
+        // Task Completed Chart
+        const ctxTasks = document.getElementById('studentTasksChart').getContext('2d');
+        const studentTasksChart = new Chart(ctxTasks, {
             type: 'bar',
             data: {
-                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                labels: months,
                 datasets: [{
-                    data: monthlyTasks,
-                    backgroundColor: 'rgba(13,110,253,0.7)',
-                    borderRadius: 6
+                    label: 'Task Completed',
+                    data: taskCompletedData,
+                    backgroundColor: '#55D2FF', // blue
+                    borderColor: '#55D2FF',
+                    ...premiumBarStyle
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
+            options: taskCompletedOptions
+        });
+
+        // Task Frequency Chart
+        const ctxFreq = document.getElementById('taskFrequencyChart').getContext('2d');
+        const taskFrequencyChart = new Chart(ctxFreq, {
+            type: 'bar',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Task Frequency',
+                    data: taskFrequencyData,
+                    backgroundColor: '#E590FA', // pink/purple
+                    borderColor: '#E590FA',
+                    ...premiumBarStyle
+                }]
+            },
+            options: taskFrequencyOptions
         });
     </script>
 }
