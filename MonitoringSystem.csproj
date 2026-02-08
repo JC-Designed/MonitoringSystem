@@ -39,6 +39,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Folder Include="wwwroot\uploads\" />
 	  <Folder Include="wwwroot\uploads\banners\" />
 	  <Folder Include="wwwroot\uploads\profiles\" />
 	</ItemGroup>

@@ -115,58 +115,98 @@
         @RenderBody()
     </main>
 
-    <!-- PROFILE TEMPLATE (SPA) -->
+    <!-- PROFILE TEMPLATE -->
     <script type="text/template" id="profileTemplate">
-        <div class="container py-4">
-            <div class="profile-pic-wrapper mb-4 position-relative" style="width:140px; height:140px;">
-                <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
-                <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
-                     style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
-                    <i class="bi bi-camera-fill text-white fs-4"></i>
-                </div>
-                <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
-                     style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
-                    <i class="bi bi-camera-fill text-white"></i>
-                </div>
-                <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+        <div class="container-fluid p-0">
+
+            <!-- FULL-WIDTH COVER PHOTO -->
+            <div style="position:relative; width:100%; height:240px; overflow:hidden;">
+                <img id="companyBanner"
+                     src="/images/banner-placeholder.jpg"
+                     style="width:100%; height:100%; object-fit:cover; display:block;">
+
+                <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0 m-3"
+                        onclick="document.getElementById('companyBannerInput').click()">
+                    <i class="bi bi-camera-fill"></i> Edit Cover Photo
+                </button>
+                <input type="file" id="companyBannerInput" hidden accept="image/*">
             </div>
 
-            <div class="card shadow-sm p-4" style="max-width:1200px;">
-                <div class="flex-grow-1 w-100">
+            <!-- PROFILE IMAGE OVER BANNER -->
+            <div class="position-relative" style="margin-top:-85px; margin-left:40px; width:170px; z-index:10;">
+                <img id="profileImage"
+                     src="/images/defaultpicture.jpg"
+                     class="rounded-circle border border-4 border-white shadow"
+                     style="width:170px; height:170px; object-fit:cover; display:block;">
+
+                <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0"
+                        onclick="document.getElementById('profilePicInput').click()">
+                    <i class="bi bi-camera-fill"></i>
+                </button>
+                <input type="file" id="profilePicInput" hidden accept="image/*">
+            </div>
+
+            <!-- FIRST CONTAINER: COMPANY INFORMATION -->
+            <div class="container mt-4">
+                <h4 class="fw-bold mb-3">COMPANY INFORMATION</h4>
+                <div class="card shadow-sm p-4 mb-4">
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
-                            <label for="fullName" class="form-label fw-bold">Full Name</label>
-                            <input type="text" id="fullName" class="form-control" value="John Doe">
+                            <label class="form-label fw-bold">Name</label>
+                            <input type="text" id="fullName" class="form-control" value="Company Name">
                         </div>
                         <div class="col-md-6">
-                            <label for="position" class="form-label fw-bold">Position</label>
-                            <input type="text" id="position" class="form-control" value="Company User">
+                            <label class="form-label fw-bold">Contact</label>
+                            <input type="text" id="position" class="form-control" value="09171234567">
                         </div>
                     </div>
-
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
-                            <label for="username" class="form-label fw-bold">Username</label>
-                            <input type="text" id="username" class="form-control" value="companyuser">
+                            <label class="form-label fw-bold">Address</label>
+                            <input type="text" id="username" class="form-control" value="123 Main St, Balamban">
                         </div>
                         <div class="col-md-6">
-                            <label for="email" class="form-label fw-bold">Email</label>
-                            <input type="email" id="email" class="form-control" value="company@ctu.edu.ph">
+                            <label class="form-label fw-bold">Company ID</label>
+                            <input type="text" id="email" class="form-control" value="COMP12345">
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="address" class="form-label fw-bold">Address</label>
-                        <textarea id="address" class="form-control">123 Main St, Balamban</textarea>
-                    </div>
-
-                    <div class="text-end">
-                        <button class="btn" id="saveProfileBtn" style="background-color:#07B618; border-color:#07B618; color:white;">
-                            Save Changes
-                        </button>
                     </div>
                 </div>
             </div>
+
+            <!-- SECOND CONTAINER: USER INFORMATION -->
+            <div class="container mt-4">
+                <h4 class="fw-bold mb-3">USER INFORMATION</h4>
+                <div class="card shadow-sm p-4">
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-bold">Name</label>
+                            <input type="text" id="userName" class="form-control" value="John Doe">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Facebook</label>
+                            <input type="text" id="userFacebook" class="form-control" value="john.doe">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label class="form-label fw-bold">Contact</label>
+                            <input type="text" id="userContact" class="form-control" value="09171234567">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Password</label>
+                            <input type="password" id="userPassword" class="form-control" value="password123">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SAVE BUTTON BELOW SECOND CONTAINER -->
+                <div class="d-flex justify-content-end mt-3">
+                    <button id="saveProfileBtn" class="btn" style="background-color:#07B618; border-color:#07B618; color:white;">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+
         </div>
     </script>
 
@@ -202,6 +242,7 @@
         const viewProfileBtn = document.getElementById("viewProfileBtn");
         const topbarProfilePic = document.getElementById("topbarProfilePic");
         const originalDashboardHTML = mainContent.innerHTML;
+        const saveProfileBtn = document.getElementById("saveProfileBtn");
 
         function openProfileSPA(){
             mainContent.style.opacity = 0;
@@ -211,12 +252,15 @@
                 document.querySelector(".topbar-title").textContent = "Profile";
 
                 const profileImage = document.getElementById("profileImage");
-                const profileOverlay = document.querySelector(".profile-pic-overlay");
                 const profilePicInput = document.getElementById("profilePicInput");
+                const bannerImage = document.getElementById("companyBanner");
+                const bannerInput = document.getElementById("companyBannerInput");
 
-                profileOverlay.addEventListener("click", ()=> profilePicInput.click());
-                const changePicIcon = document.querySelector(".change-pic-icon");
-                changePicIcon.addEventListener("click", ()=> profilePicInput.click());
+                // Show the save button
+                const saveBtn = document.getElementById("saveProfileBtn");
+                saveBtn.style.display = 'block';
+
+                profileImage.addEventListener("click", ()=> profilePicInput.click());
 
                 profilePicInput.addEventListener("change", (e)=>{
                     if(e.target.files && e.target.files[0]){
@@ -229,18 +273,28 @@
                     }
                 });
 
+                bannerInput?.addEventListener("change", (e)=>{
+                    if(e.target.files && e.target.files[0]){
+                        const reader = new FileReader();
+                        reader.onload = function(evt){
+                            bannerImage.src = evt.target.result;
+                        }
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+
                 mainContent.style.opacity = 1;
             },200);
         }
 
         viewProfileBtn?.addEventListener("click", openProfileSPA);
 
+        // Go back to dashboard
         document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
             mainContent.style.opacity = 0;
             setTimeout(()=>{
                 mainContent.innerHTML = originalDashboardHTML;
                 document.querySelector(".topbar-title").textContent = "Dashboard";
-                mainContent.style.opacity = 1;
             },200);
         });
 

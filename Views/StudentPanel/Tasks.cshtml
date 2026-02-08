@@ -12,13 +12,11 @@
 <div class="container-fluid py-5">
     <div class="card shadow-sm rounded-4 p-4 task-card">
 
-        <!-- Header: Create Task on top-right -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h5 class="fw-bold mb-0">TASK LIST</h5>
             <button class="btn btn-primary" id="createTaskBtn">Create Task</button>
         </div>
 
-        <!-- ================= FILTERS ================= -->
         <div class="row g-3 mb-4 align-items-end">
             <div class="col-md-4">
                 <label class="form-label fw-semibold">Search by Title</label>
@@ -37,7 +35,6 @@
             </div>
         </div>
 
-        <!-- ================= TASK TABLE ================= -->
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0" id="taskTable" style="min-width:800px;">
                 <thead class="table-light">
@@ -139,6 +136,15 @@
                             <textarea class="form-control" name="Learning" rows="12" style="height:220px;"></textarea>
                         </div>
                     </div>
+
+                    <!-- 📎 ATTACHMENT ADDED (DEMO ONLY) -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Attach File</label>
+                            <input type="file" class="form-control" id="demoAttachment">
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end mt-4">
                         <button type="button" class="btn me-2" id="cancelBtn" style="background-color:#FE5252; color:white;" data-bs-dismiss="modal">Cancel</button>
                         <button type="button" class="btn" id="createBtn" style="background-color:#02B508; color:white;">Create</button>
@@ -149,13 +155,12 @@
     </div>
 </div>
 
-<!-- ================= DELETE CONFIRMATION MODAL ================= -->
+<!-- DELETE MODAL UNCHANGED -->
 <div class="modal fade" id="deleteModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-md">
-        <!-- compact & slightly wider -->
         <div class="modal-content rounded-4 shadow-sm" style="background-color:#8B0000; color:white;">
             <div class="modal-body text-center py-4">
-                <p id="deleteModalText" class="fw-bold mb-0" style="font-size:1rem;"></p> <!-- Bold, fits in one line -->
+                <p id="deleteModalText" class="fw-bold mb-0" style="font-size:1rem;"></p>
                 <div class="d-flex justify-content-end gap-2 mt-4">
                     <button type="button" class="btn" id="confirmDeleteBtn" style="background-color:#02B508; color:white;">Yes</button>
                     <button type="button" class="btn" id="cancelDeleteBtn" style="background-color:#FD0606; color:white;" data-bs-dismiss="modal">Cancel</button>
@@ -164,6 +169,7 @@
         </div>
     </div>
 </div>
+
 <script>
     const tbody = document.querySelector("#taskTable tbody");
     const searchInput = document.getElementById("searchInput");
@@ -176,11 +182,9 @@
     let editingRow = null;
     let deletingRow = null;
 
-    // ===== FILTER TABLE =====
     function filterTable() {
         const searchVal = searchInput.value.toLowerCase();
         const statusVal = statusFilter.value;
-
         [...tbody.rows].forEach(row => {
             let show = true;
             if (searchVal && !row.dataset.title.toLowerCase().includes(searchVal)) show = false;
@@ -190,7 +194,6 @@
     }
     [searchInput, statusFilter].forEach(el => el.addEventListener("input", filterTable));
 
-    // ===== OPEN CREATE TASK MODAL =====
     document.getElementById("createTaskBtn").addEventListener("click", () => {
         editingRow = null;
         modalTitle.textContent = "Create Task";
@@ -199,13 +202,16 @@
         bootstrap.Modal.getOrCreateInstance(createModal).show();
     });
 
-    // ===== CREATE / EDIT BUTTON =====
     createBtn.addEventListener("click", () => {
         const title = document.querySelector("input[name='Title']").value;
         const dateFrom = document.querySelector("input[name='DateFrom']").value;
         const dateTo = document.querySelector("input[name='DateTo']").value;
         const status = document.querySelector("select[name='Status']").value;
         const taskContent = taskEditor.innerHTML;
+
+        // 📎 GET FILE NAME
+        const fileInput = document.getElementById("demoAttachment");
+        const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : "";
 
         if (!title || !dateFrom || !dateTo) { alert("Please fill in all fields!"); return; }
 
@@ -215,8 +221,10 @@
             editingRow.dataset.dateto = dateTo;
             editingRow.dataset.status = status;
             editingRow.dataset.taskContent = taskContent;
+            editingRow.dataset.attachment = fileName;
 
-            editingRow.querySelector("td:nth-child(1)").textContent = title;
+            editingRow.querySelector("td:nth-child(1)").innerHTML =
+                `${title} ${fileName ? `<div class="text-muted" style="font-size:12px;">📎 ${fileName}</div>` : ""}`;
             editingRow.querySelector("td:nth-child(2)").textContent = dateFrom;
             editingRow.querySelector("td:nth-child(3)").textContent = dateTo;
             editingRow.querySelector("td:nth-child(4)").textContent = status;
@@ -229,8 +237,13 @@
             newRow.dataset.dateto = dateTo;
             newRow.dataset.status = status;
             newRow.dataset.taskContent = taskContent;
+            newRow.dataset.attachment = fileName;
+
             newRow.innerHTML = `
-                <td class="text-center fw-semibold">${title}</td>
+                <td class="text-center fw-semibold">
+                    ${title}
+                    ${fileName ? `<div class="text-muted" style="font-size:12px;">📎 ${fileName}</div>` : ""}
+                </td>
                 <td>${dateFrom}</td>
                 <td>${dateTo}</td>
                 <td class="task-status">${status}</td>
@@ -250,18 +263,16 @@
         bootstrap.Modal.getOrCreateInstance(createModal).hide();
         document.getElementById("createForm").reset();
         taskEditor.innerHTML = "<ul><li><br></li></ul>";
+        document.getElementById("demoAttachment").value = ""; // reset file
     });
 
-    // ===== CANCEL BUTTON =====
     document.getElementById("cancelBtn").addEventListener("click", () => {
         document.getElementById("createForm").reset();
         taskEditor.innerHTML = "<ul><li><br></li></ul>";
         editingRow = null;
     });
 
-    // ===== EDIT & DELETE DROPDOWN =====
     document.addEventListener("click", (e) => {
-        // Edit
         if(e.target.classList.contains("edit-btn")){
             e.preventDefault();
             editingRow = e.target.closest("tr");
@@ -274,7 +285,6 @@
             bootstrap.Modal.getOrCreateInstance(createModal).show();
         }
 
-        // Delete
         if(e.target.classList.contains("delete-btn")){
             e.preventDefault();
             deletingRow = e.target.closest("tr");
@@ -284,7 +294,6 @@
         }
     });
 
-    // ===== CONFIRM DELETE =====
     document.getElementById("confirmDeleteBtn").addEventListener("click", () => {
         if(deletingRow){
             deletingRow.remove();
@@ -293,4 +302,3 @@
         }
     });
 </script>
-@* hi *@
