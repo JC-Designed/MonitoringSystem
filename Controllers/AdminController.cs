@@ -1,62 +1,14 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using MonitoringSystem.Models;
-using MonitoringSystem.Data;
 using System;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Collections.Generic;
-using Microsoft.AspNetCore.Hosting;
-using System.IO;
+using System.Linq;
 
 namespace MonitoringSystem.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    // Anyone can access, no DB required
     public class AdminController : Controller
     {
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationDbContext _db;
-        private readonly IWebHostEnvironment _env;
-
-        public AdminController(
-            UserManager<ApplicationUser> userManager,
-            ApplicationDbContext db,
-            IWebHostEnvironment env)
-        {
-            _userManager = userManager;
-            _db = db;
-            _env = env;
-
-            // Ensure admin exists
-            Task.Run(async () => await EnsureAdminUser()).Wait();
-        }
-
-        // ================= CREATE DEFAULT ADMIN IF NOT EXISTS =================
-        private async Task EnsureAdminUser()
-        {
-            var adminEmail = "jonardcarmelotes09@gmail.com";
-            var admin = await _userManager.FindByEmailAsync(adminEmail);
-
-            if (admin == null)
-            {
-                admin = new ApplicationUser
-                {
-                    UserName = adminEmail,
-                    Email = adminEmail,
-                    FirstName = "",
-                    LastName = "",
-                    IsApproved = true,
-                    CreatedAt = DateTime.Now
-                };
-
-                var result = await _userManager.CreateAsync(admin, "admin123");
-                if (result.Succeeded)
-                    await _userManager.AddToRoleAsync(admin, "Admin");
-            }
-        }
-
         // ================= HELPER TO GET SCHOOL YEAR =================
         private int GetSchoolYear()
         {
@@ -71,17 +23,18 @@ namespace MonitoringSystem.Controllers
         }
 
         // ================= DASHBOARD =================
-        public async Task<IActionResult> Dashboard()
+        public IActionResult Dashboard()
         {
             int schoolYear = GetSchoolYear();
             ViewBag.SchoolYear = schoolYear;
 
-            var allUsers = await _userManager.Users
-                .Where(u => u.CreatedAt.Year == schoolYear)
-                .ToListAsync();
-
-            foreach (var user in allUsers)
-                user.Roles = (await _userManager.GetRolesAsync(user)).ToList();
+            // Fake users
+            var allUsers = new List<ApplicationUser>
+            {
+                new ApplicationUser { Id="1", FirstName="John", LastName="Doe", Email="john@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,1,10), Roles=new List<string>{"Student"} },
+                new ApplicationUser { Id="2", FirstName="Jane", LastName="Smith", Email="jane@example.com", IsApproved=false, CreatedAt=new DateTime(schoolYear,2,15), Roles=new List<string>{"Company"} },
+                new ApplicationUser { Id="3", FirstName="Admin", LastName="User", Email="admin@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,3,20), Roles=new List<string>{"Admin"} },
+            };
 
             var pendingUsersList = allUsers
                 .Where(u => !u.IsApproved)
@@ -99,13 +52,12 @@ namespace MonitoringSystem.Controllers
             ViewBag.ApprovedUsers = allUsers.Count(u => u.IsApproved);
             ViewBag.TotalUsers = allUsers.Count;
 
-            ViewBag.TotalCompanies = _db.Companies
-                .Include(c => c.User)
-                .Count(c => c.User != null && c.User.CreatedAt.Year == schoolYear);
+            // Fake total companies
+            ViewBag.TotalCompanies = 5;
 
+            // Monthly stats
             var monthlyRegistrations = new int[12];
             var totalUsersByMonth = new int[12];
-
             for (int month = 1; month <= 12; month++)
             {
                 monthlyRegistrations[month - 1] = allUsers.Count(u => u.CreatedAt.Month == month);
@@ -118,175 +70,45 @@ namespace MonitoringSystem.Controllers
             return View(allUsers);
         }
 
-        // ================= USERS PAGE =================
-        public async Task<IActionResult> Users()
+        // ================= USERS =================
+        public IActionResult Users()
         {
             int schoolYear = GetSchoolYear();
             ViewBag.SchoolYear = schoolYear;
 
-            var allUsers = await _userManager.Users
-                .Where(u => u.CreatedAt.Year == schoolYear)
-                .ToListAsync();
-
-            foreach (var user in allUsers)
+            var allUsers = new List<ApplicationUser>
             {
-                // Populate Roles for Role filter
-                var roles = await _userManager.GetRolesAsync(user);
-                user.Roles = roles.ToList();
+                new ApplicationUser { Id="1", FirstName="John", LastName="Doe", Email="john@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,1,10), Roles=new List<string>{"Student"} },
+                new ApplicationUser { Id="2", FirstName="Jane", LastName="Smith", Email="jane@example.com", IsApproved=false, CreatedAt=new DateTime(schoolYear,2,15), Roles=new List<string>{"Company"} },
+                new ApplicationUser { Id="3", FirstName="Admin", LastName="User", Email="admin@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,3,20), Roles=new List<string>{"Admin"} },
+            };
 
-                // Populate Year column
-                user.Year = user.CreatedAt.Year.ToString();
-            }
+            // Add Year property for display
+            foreach (var u in allUsers)
+                u.Year = u.CreatedAt.Year.ToString();
 
             return View(allUsers);
         }
 
-        // ================= REGISTRATION PAGE =================
-        [HttpGet]
+        // ================= REGISTRATION =================
         public IActionResult Registration()
         {
-            // Just return the view
             return View();
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Registration(RegisterDto dto)
+        // ================= REPORTS =================
+        public IActionResult Reports()
         {
-            if (!ModelState.IsValid)
-                return View(dto);
-
-            var existingUser = await _userManager.FindByEmailAsync(dto.Email);
-            if (existingUser != null)
-            {
-                ModelState.AddModelError("", "Email is already registered.");
-                return View(dto);
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = dto.Email,
-                Email = dto.Email,
-                FirstName = dto.FirstName,
-                LastName = dto.LastName,
-                IsApproved = true,
-                CreatedAt = DateTime.Now
-            };
-
-            var result = await _userManager.CreateAsync(user, dto.Password);
-            if (result.Succeeded)
-            {
-                if (!string.IsNullOrEmpty(dto.Role))
-                    await _userManager.AddToRoleAsync(user, dto.Role);
-
-                TempData["SuccessMessage"] = "User registered successfully!";
-                return RedirectToAction("Users");
-            }
-            else
-            {
-                foreach (var err in result.Errors)
-                    ModelState.AddModelError("", err.Description);
-            }
-
-            return View(dto);
+            // Fake report data
+            ViewBag.TotalUsers = 3;
+            ViewBag.PendingUsers = 1;
+            ViewBag.ApprovedUsers = 2;
+            return View();
         }
 
-        // ================= EDIT USER =================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<JsonResult> EditUser([FromBody] EditUserDto dto)
-        {
-            if (dto == null || string.IsNullOrEmpty(dto.Id))
-                return Json(new { success = false, message = "Invalid data" });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false, message = "User not found" });
-
-            user.FirstName = dto.FirstName;
-            user.LastName = dto.LastName;
-            user.Email = dto.Email;
-            user.UserName = dto.Email;
-
-            // Update Role
-            var currentRoles = await _userManager.GetRolesAsync(user);
-            if (currentRoles.Count > 0)
-                await _userManager.RemoveFromRolesAsync(user, currentRoles);
-
-            if (!string.IsNullOrEmpty(dto.Role))
-                await _userManager.AddToRoleAsync(user, dto.Role);
-
-            // Update password if provided
-            if (!string.IsNullOrEmpty(dto.Password))
-            {
-                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
-                var passResult = await _userManager.ResetPasswordAsync(user, token, dto.Password);
-                if (!passResult.Succeeded)
-                    return Json(new { success = false, message = "Password update failed" });
-            }
-
-            var result = await _userManager.UpdateAsync(user);
-            return Json(new { success = result.Succeeded });
-        }
-
-        // ================= DELETE USER =================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<JsonResult> DeleteUser([FromBody] IdDto dto)
-        {
-            if (string.IsNullOrEmpty(dto?.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
-
-            var result = await _userManager.DeleteAsync(user);
-            return Json(new { success = result.Succeeded });
-        }
-
-        // ================= APPROVE / REJECT =================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Approve([FromBody] IdDto dto)
-        {
-            if (string.IsNullOrEmpty(dto?.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
-
-            user.IsApproved = true;
-            var result = await _userManager.UpdateAsync(user);
-            return Json(new { success = result.Succeeded });
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<JsonResult> Reject([FromBody] IdDto dto)
-        {
-            if (string.IsNullOrEmpty(dto?.Id))
-                return Json(new { success = false });
-
-            var user = await _userManager.FindByIdAsync(dto.Id);
-            if (user == null)
-                return Json(new { success = false });
-
-            var result = await _userManager.DeleteAsync(user);
-            return Json(new { success = result.Succeeded });
-        }
-
-        // ================= OTHER PAGES =================
-        public IActionResult Company() { return View(); }
-        public IActionResult Messages() { return View(); }
-        public IActionResult Reports() { return View(); }
-
-        // ================= PROFILE =================
-        [HttpGet]
-        public async Task<JsonResult> GetAdminProfile() { return Json(new { success = true }); }
-        [HttpPost]
-        public async Task<JsonResult> UpdateProfile() { return Json(new { success = true }); }
+        // ================= OTHER PAGES PLACEHOLDERS =================
+        public IActionResult Company() => View();
+        public IActionResult Messages() => View();
 
         // ================= DTOs =================
         public class PendingUserDto
@@ -295,31 +117,6 @@ namespace MonitoringSystem.Controllers
             public string Email { get; set; } = string.Empty;
             public string Role { get; set; } = string.Empty;
             public int RegisteredMonth { get; set; }
-        }
-
-        public class EditUserDto
-        {
-            public string Id { get; set; } = string.Empty;
-            public string FirstName { get; set; } = string.Empty;
-            public string LastName { get; set; } = string.Empty;
-            public string Email { get; set; } = string.Empty;
-            public string Role { get; set; } = string.Empty;
-            public string Password { get; set; } = string.Empty;
-        }
-
-        public class IdDto
-        {
-            public string Id { get; set; } = string.Empty;
-        }
-
-        public class RegisterDto
-        {
-            public string FirstName { get; set; } = string.Empty;
-            public string LastName { get; set; } = string.Empty;
-            public string Email { get; set; } = string.Empty;
-            public string Role { get; set; } = "Student";
-            public string Password { get; set; } = string.Empty;
-            public string ConfirmPassword { get; set; } = string.Empty;
         }
     }
 }

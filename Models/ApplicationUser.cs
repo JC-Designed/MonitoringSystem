@@ -50,6 +50,7 @@ namespace MonitoringSystem.Models
         public ICollection<Message> MessagesSent { get; set; } = new List<Message>();
 
         // ===================== NEW: YEAR =====================
-        public string Year { get; set; } = string.Empty;
+        [NotMapped]
+        public string Year { get; set; } = string.Empty; // ✅ now fully settable
     }
 }

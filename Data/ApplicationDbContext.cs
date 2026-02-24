@@ -19,14 +19,11 @@ namespace MonitoringSystem.Data
         public DbSet<Conversation> Conversations { get; set; } = null!;
         public DbSet<Message> Messages { get; set; } = null!;
 
-        public DbSet<UserAccountModel> Users { get; set; } = null!;
-
-        // ===================== CONFIGURE RELATIONS =====================
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // 1-on-1 Conversation relationships
+            // ------------------ Conversation Relationships ------------------
             builder.Entity<Conversation>()
                 .HasOne(c => c.User1)
                 .WithMany(u => u.ConversationsAsUser1)
@@ -39,7 +36,7 @@ namespace MonitoringSystem.Data
                 .HasForeignKey(c => c.User2Id)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Message relationships
+            // ------------------ Message Relationships ------------------
             builder.Entity<Message>()
                 .HasOne(m => m.Conversation)
                 .WithMany(c => c.Messages)

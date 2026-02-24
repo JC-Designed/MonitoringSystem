@@ -51,30 +51,73 @@
     </div>
 </div>
 
+<!-- E-SIGNATURE REQUIRED MODAL -->
+<div class="modal fade" id="esignModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">e-Signature Required</h5>
+            </div>
+            <div class="modal-body text-center">
+                <p>Please provide an e-signature first before accessing the system.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" id="proceedEsign">Proceed</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     document.getElementById("btnSubmit").addEventListener("click", function(event) {
         event.preventDefault();
 
-        var model = {
-            Username: document.getElementById('textUsername').value,
-            Password: document.getElementById('textPassword').value,
-            RememberMe: document.getElementById('remember').checked
-        };
+        var username = document.getElementById('textUsername').value;
+        var password = document.getElementById('textPassword').value;
+        var rememberMe = document.getElementById('remember').checked;
 
-        fetch('/Account/LoginCredentials', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(model)
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                // Redirect to the correct dashboard based on role
-                window.location.href = data.redirect;
+        // ===== DEMO LOGIN SIMULATION =====
+        // This replaces the real fetch call for demo purposes
+        if (username === "demo@company.com" && password === "Demo@123") {
+            var data = {
+                success: true,
+                role: "Company",
+                hasESign: false, // simulate first-time login
+                redirect: "/CompanyPanel/Dashboard"
+            };
+
+
+            if (data.role === "Company" && !data.hasESign) {
+                var modal = new bootstrap.Modal(document.getElementById('esignModal'));
+                modal.show();
             } else {
-                alert('Login failed: ' + data.message);
+                window.location.href = data.redirect;
             }
-        });
+        } else {
+            // Keep your original fetch call for real login
+            fetch('/Account/LoginCredentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    Username: username,
+                    Password: password,
+                    RememberMe: rememberMe
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = data.redirect;
+                } else {
+                    alert('Login failed: ' + data.message);
+                }
+            });
+        }
+    });
+
+    // Redirect to e-sign page when Proceed is clicked
+    document.getElementById("proceedEsign").addEventListener("click", function() {
+        window.location.href = "/Company/ESign"; // you can create a demo ESign page
     });
 </script>
 

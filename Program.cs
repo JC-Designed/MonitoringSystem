@@ -8,11 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 // ===================== SERVICES =====================
 builder.Services.AddControllersWithViews();
 
+// Add DbContext with SQL Server connection
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// Add Identity services
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
+    // Password settings (relaxed for dev/testing)
     options.Password.RequireDigit = false;
     options.Password.RequireLowercase = false;
     options.Password.RequireNonAlphanumeric = false;
@@ -22,58 +25,15 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-builder.Services.AddSession();
+// Add session
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // optional: session timeout
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 var app = builder.Build();
-
-
-// ===================== DEMO ACCOUNT SEEDING =====================
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-
-    // Ensure roles exist
-    string[] roles = { "Student", "Company" };
-
-    foreach (var role in roles)
-    {
-        if (!await roleManager.RoleExistsAsync(role))
-            await roleManager.CreateAsync(new IdentityRole(role));
-    }
-
-    // ===== STUDENT DEMO =====
-    var studentEmail = "jonarcarmelotes123@gmail.com";
-    if (await userManager.FindByEmailAsync(studentEmail) == null)
-    {
-        var student = new ApplicationUser
-        {
-            UserName = studentEmail,
-            Email = studentEmail,
-            EmailConfirmed = true
-        };
-
-        await userManager.CreateAsync(student, "paolo123!");
-        await userManager.AddToRoleAsync(student, "Student");
-    }
-
-    // ===== COMPANY DEMO =====
-    var companyEmail = "proyanfromyt@gmail.com";
-    if (await userManager.FindByEmailAsync(companyEmail) == null)
-    {
-        var company = new ApplicationUser
-        {
-            UserName = companyEmail,
-            Email = companyEmail,
-            EmailConfirmed = true
-        };
-
-        await userManager.CreateAsync(company, "company123!");
-        await userManager.AddToRoleAsync(company, "Company");
-    }
-}
-
 
 // ===================== MIDDLEWARE =====================
 if (!app.Environment.IsDevelopment())
@@ -87,11 +47,14 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Authentication & Authorization must come before endpoints
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Session must come after authentication if you use it in controllers
 app.UseSession();
 
+// ===================== ROUTING =====================
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
