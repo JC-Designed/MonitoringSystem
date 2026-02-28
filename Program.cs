@@ -1,41 +1,51 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using MonitoringSystem.Data;
 using MonitoringSystem.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ===================== SERVICES =====================
+// ================== 1️⃣ Add services ==================
+
+// MVC Controllers with Views
 builder.Services.AddControllersWithViews();
 
-// Add DbContext with SQL Server connection
+// EF Core DbContext
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
+);
 
-// Add Identity services
+// Identity using ApplicationUser
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Password settings (relaxed for dev/testing)
-    options.Password.RequireDigit = false;
-    options.Password.RequireLowercase = false;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = false;
+    options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireNonAlphanumeric = false;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// Add session
+// Session
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30); // optional: session timeout
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-// ===================== MIDDLEWARE =====================
+// ================== 2️⃣ Seed hard-coded admin safely ==================
+await SeedAdminAsync(app);
+
+// ================== 3️⃣ Configure the HTTP pipeline ==================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -47,16 +57,49 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Authentication & Authorization must come before endpoints
+// Session
+app.UseSession();
+
+// Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Session must come after authentication if you use it in controllers
-app.UseSession();
-
-// ===================== ROUTING =====================
+// Map routes
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();
+
+// ================== 4️⃣ Seed admin function ==================
+async Task SeedAdminAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var services = scope.ServiceProvider;
+    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+    // Create Admin role if missing
+    if (!await roleManager.RoleExistsAsync("Admin"))
+        await roleManager.CreateAsync(new IdentityRole("Admin"));
+
+    // Create Admin user if missing
+    var adminUser = await userManager.FindByNameAsync("admin");
+    if (adminUser == null)
+    {
+        adminUser = new ApplicationUser
+        {
+            UserName = "admin",
+            Email = "admin@example.com",
+            EmailConfirmed = true,
+            FirstName = "Admin",
+            LastName = "Account"
+        };
+
+        var result = await userManager.CreateAsync(adminUser, "Admin123"); // ✅ password meets Identity rules
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(adminUser, "Admin");
+        }
+    }
+}

@@ -18,7 +18,9 @@ namespace MonitoringSystem.Models
         public string DisplayName => FullName;
 
         // ===================== ROLE & PERSONAL INFO =====================
-        public string Role { get; set; } = string.Empty;   // Student, Company, Admin
+        [NotMapped]
+        public string Role { get; set; } = string.Empty; // display only
+
         public string Gender { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
 
@@ -32,9 +34,9 @@ namespace MonitoringSystem.Models
         public string CompanyName { get; set; } = string.Empty;
         public string CompanyDescription { get; set; } = string.Empty;
 
-        // ✅ NEW PROPERTIES FOR COMPANY EDIT
+        // ===================== NEW PROPERTIES FOR COMPANY EDIT =====================
         public string MobileNumber { get; set; } = string.Empty;
-        public string CompanyID { get; set; } = string.Empty;
+        public int CompanyID { get; set; } = 0; // ✅ fixed to int
 
         // ===================== SYSTEM FIELDS =====================
         public bool IsApproved { get; set; } = false;
@@ -51,6 +53,6 @@ namespace MonitoringSystem.Models
 
         // ===================== NEW: YEAR =====================
         [NotMapped]
-        public string Year { get; set; } = string.Empty; // ✅ now fully settable
+        public string Year { get; set; } = string.Empty;
     }
 }

@@ -8,12 +8,20 @@
 	<ItemGroup>
 	  <Compile Remove="wwwroot\lib\jquery-validation-unobtrusive\**" />
 	  <Compile Remove="wwwroot\lib\jquery-validation\**" />
+	  <Compile Remove="wwwroot\uploads\banners\**" />
+	  <Compile Remove="wwwroot\uploads\profiles\**" />
 	  <Content Remove="wwwroot\lib\jquery-validation-unobtrusive\**" />
 	  <Content Remove="wwwroot\lib\jquery-validation\**" />
+	  <Content Remove="wwwroot\uploads\banners\**" />
+	  <Content Remove="wwwroot\uploads\profiles\**" />
 	  <EmbeddedResource Remove="wwwroot\lib\jquery-validation-unobtrusive\**" />
 	  <EmbeddedResource Remove="wwwroot\lib\jquery-validation\**" />
+	  <EmbeddedResource Remove="wwwroot\uploads\banners\**" />
+	  <EmbeddedResource Remove="wwwroot\uploads\profiles\**" />
 	  <None Remove="wwwroot\lib\jquery-validation-unobtrusive\**" />
 	  <None Remove="wwwroot\lib\jquery-validation\**" />
+	  <None Remove="wwwroot\uploads\banners\**" />
+	  <None Remove="wwwroot\uploads\profiles\**" />
 	</ItemGroup>
 	<ItemGroup>
 	  <Content Remove="global.json" />
@@ -40,7 +48,5 @@
 
 	<ItemGroup>
 	  <Folder Include="wwwroot\uploads\" />
-	  <Folder Include="wwwroot\uploads\banners\" />
-	  <Folder Include="wwwroot\uploads\profiles\" />
 	</ItemGroup>
 </Project>

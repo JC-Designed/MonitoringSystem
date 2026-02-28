@@ -12,6 +12,10 @@ namespace MonitoringSystem.Data
         {
         }
 
+        // ===================== CUSTOM TABLES =====================
+        public DbSet<UserAccount> UserAccounts { get; set; } = null!;
+        public DbSet<AccountType> AccountTypes { get; set; } = null!;
+
         // ===================== COMPANY =====================
         public DbSet<Company> Companies { get; set; } = null!;
 
@@ -23,31 +27,51 @@ namespace MonitoringSystem.Data
         {
             base.OnModelCreating(builder);
 
-            // ------------------ Conversation Relationships ------------------
+            // ===================== ACCOUNT TYPE =====================
+            builder.Entity<AccountType>()
+                   .HasKey(a => a.TypeId); // Primary key
+
+            builder.Entity<AccountType>()
+                   .HasMany(a => a.UserAccounts) // Navigation property
+                   .WithOne(u => u.AccountType)
+                   .HasForeignKey(u => u.AccountTypeID)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            // ===================== USER ACCOUNT =====================
+            builder.Entity<UserAccount>()
+                   .HasKey(u => u.UserID); // Primary key
+
+            //// Explicitly configure Status column
+            //builder.Entity<UserAccount>()
+            //       .Property(u => u.Status)
+            //       .HasMaxLength(50)
+            //       .HasDefaultValue("Active");
+
+            // ===================== CONVERSATION =====================
             builder.Entity<Conversation>()
-                .HasOne(c => c.User1)
-                .WithMany(u => u.ConversationsAsUser1)
-                .HasForeignKey(c => c.User1Id)
-                .OnDelete(DeleteBehavior.Restrict);
+                   .HasOne(c => c.User1)
+                   .WithMany(u => u.ConversationsAsUser1)
+                   .HasForeignKey(c => c.User1Id)
+                   .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Conversation>()
-                .HasOne(c => c.User2)
-                .WithMany(u => u.ConversationsAsUser2)
-                .HasForeignKey(c => c.User2Id)
-                .OnDelete(DeleteBehavior.Restrict);
+                   .HasOne(c => c.User2)
+                   .WithMany(u => u.ConversationsAsUser2)
+                   .HasForeignKey(c => c.User2Id)
+                   .OnDelete(DeleteBehavior.Restrict);
 
-            // ------------------ Message Relationships ------------------
+            // ===================== MESSAGE =====================
             builder.Entity<Message>()
-                .HasOne(m => m.Conversation)
-                .WithMany(c => c.Messages)
-                .HasForeignKey(m => m.ConversationId)
-                .OnDelete(DeleteBehavior.Cascade);
+                   .HasOne(m => m.Conversation)
+                   .WithMany(c => c.Messages)
+                   .HasForeignKey(m => m.ConversationId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Message>()
-                .HasOne(m => m.Sender)
-                .WithMany(u => u.MessagesSent)
-                .HasForeignKey(m => m.SenderId)
-                .OnDelete(DeleteBehavior.Restrict);
+                   .HasOne(m => m.Sender)
+                   .WithMany(u => u.MessagesSent)
+                   .HasForeignKey(m => m.SenderId)
+                   .OnDelete(DeleteBehavior.Restrict);
         }
     }
 }

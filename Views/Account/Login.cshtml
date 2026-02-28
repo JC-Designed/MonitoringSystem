@@ -1,4 +1,4 @@
-﻿@model MonitoringSystem.Models.LoginViewModel
+﻿@model MonitoringSystem.Models.ParamModel.LoginParamModel
 @{
     ViewData["Title"] = "Login";
 }
@@ -13,29 +13,29 @@
     <div class="form-side">
         <h4>Login to your account</h4>
 
-        <form>
+        <form id="loginForm">
             <!-- USERNAME -->
             <div class="mb-3">
                 <label class="form-label">Username</label>
-                <input class="form-control" id="textUsername" placeholder="Email" required />
-                <span asp-validation-for="Email" class="text-danger"></span>
+                <input class="form-control" id="textUsername" name="Username" placeholder="Username" required />
+                <span asp-validation-for="Username" class="text-danger"></span>
             </div>
 
             <!-- PASSWORD -->
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <input type="password" id="textPassword" class="form-control" placeholder="Password" required />
+                <input type="password" id="textPassword" name="Password" class="form-control" placeholder="Password" required />
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
 
             <!-- REMEMBER ME -->
             <div class="form-check mb-3">
-                <input type="checkbox" id="remember" class="form-check-input" />
+                <input type="checkbox" id="remember" name="RememberMe" class="form-check-input" />
                 <label for="remember" class="form-check-label">Remember me</label>
             </div>
 
             <!-- BUTTON -->
-            <button type="submit" id="btnSubmit" class="btn-ctu mb-3 w-100">Sign In</button>
+            <button type="submit" class="btn-ctu mb-3 w-100">Sign In</button>
 
             <!-- REGISTER LINK -->
             <div class="text-center">
@@ -43,10 +43,7 @@
             </div>
 
             <!-- ERROR MESSAGE -->
-            @if (ViewBag.Error != null)
-            {
-                <div class="alert alert-danger mt-3 text-center">@ViewBag.Error</div>
-            }
+            <div id="loginError" class="alert alert-danger mt-3 text-center" style="display:none;"></div>
         </form>
     </div>
 </div>
@@ -69,33 +66,15 @@
 </div>
 
 <script>
-    document.getElementById("btnSubmit").addEventListener("click", function(event) {
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        var username = document.getElementById('textUsername').value;
-        var password = document.getElementById('textPassword').value;
+        var username = document.getElementById('textUsername').value.trim();
+        var password = document.getElementById('textPassword').value.trim();
         var rememberMe = document.getElementById('remember').checked;
 
-        // ===== DEMO LOGIN SIMULATION =====
-        // This replaces the real fetch call for demo purposes
-        if (username === "demo@company.com" && password === "Demo@123") {
-            var data = {
-                success: true,
-                role: "Company",
-                hasESign: false, // simulate first-time login
-                redirect: "/CompanyPanel/Dashboard"
-            };
-
-
-            if (data.role === "Company" && !data.hasESign) {
-                var modal = new bootstrap.Modal(document.getElementById('esignModal'));
-                modal.show();
-            } else {
-                window.location.href = data.redirect;
-            }
-        } else {
-            // Keep your original fetch call for real login
-            fetch('/Account/LoginCredentials', {
+        try {
+            const res = await fetch('/Account/LoginCredentials', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -103,21 +82,32 @@
                     Password: password,
                     RememberMe: rememberMe
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    window.location.href = data.redirect;
-                } else {
-                    alert('Login failed: ' + data.message);
-                }
             });
+
+            const data = await res.json();
+
+            if (data.success) {
+                if (data.hasESign === false && data.role === "Company") {
+                    var modal = new bootstrap.Modal(document.getElementById('esignModal'));
+                    modal.show();
+                } else {
+                    window.location.href = data.redirect;
+                }
+            } else {
+                const errorDiv = document.getElementById('loginError');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = data.message;
+            }
+        } catch (err) {
+            console.error(err);
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = "An error occurred while logging in.";
         }
     });
 
-    // Redirect to e-sign page when Proceed is clicked
     document.getElementById("proceedEsign").addEventListener("click", function() {
-        window.location.href = "/Company/ESign"; // you can create a demo ESign page
+        window.location.href = "/Company/ESign";
     });
 </script>
 

@@ -1,52 +1,52 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using static System.Formats.Asn1.AsnWriter;
+﻿//using Microsoft.AspNetCore.Identity;
+//using Microsoft.EntityFrameworkCore;
+//using static System.Formats.Asn1.AsnWriter;
 
-namespace MonitoringSystem.Data
-{
-    public static class SeedData
-    {
-        public static async Task Initialize(IServiceProvider serviceProvider)
-        {
-            //var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            //var userManager = serviceProvider.GetRequiredService<UserManager<MonitoringSystem.Models.ApplicationUser>>();
+//namespace MonitoringSystem.Data
+//{
+//    public static class SeedData
+//    {
+//        public static async Task Initialize(IServiceProvider serviceProvider)
+//        {
+//            //var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+//            //var userManager = serviceProvider.GetRequiredService<UserManager<MonitoringSystem.Models.ApplicationUser>>();
 
-            //// Create roles
-            //string[] roles = { "Admin", "Student", "Company" };
-            //foreach (var role in roles)
-            //{
-            //    if (!await roleManager.RoleExistsAsync(role))
-            //        await roleManager.CreateAsync(new IdentityRole(role));
-            //}
+//            //// Create roles
+//            //string[] roles = { "Admin", "Student", "Company" };
+//            //foreach (var role in roles)
+//            //{
+//            //    if (!await roleManager.RoleExistsAsync(role))
+//            //        await roleManager.CreateAsync(new IdentityRole(role));
+//            //}
 
-            //// Create master Admin
-            //var adminEmail = "Jonardcarmelotes09@gmail.com";
-            //var adminPassword = "admin123";
+//            //// Create master Admin
+//            //var adminEmail = "Jonardcarmelotes09@gmail.com";
+//            //var adminPassword = "admin123";
 
-            //if (await userManager.FindByEmailAsync(adminEmail) == null)
-            //{
-            //    var adminUser = new MonitoringSystem.Models.ApplicationUser
-            //    {
-            //        UserName = adminEmail,
-            //        Email = adminEmail,
-            //        EmailConfirmed = true,
-            //        IsApproved = true
-            //    };
+//            //if (await userManager.FindByEmailAsync(adminEmail) == null)
+//            //{
+//            //    var adminUser = new MonitoringSystem.Models.ApplicationUser
+//            //    {
+//            //        UserName = adminEmail,
+//            //        Email = adminEmail,
+//            //        EmailConfirmed = true,
+//            //        IsApproved = true
+//            //    };
 
-            //    var result = await userManager.CreateAsync(adminUser, adminPassword);
-            //    if (result.Succeeded)
-            //    {
-            //        await userManager.AddToRoleAsync(adminUser, "Admin");
-            //    }
-            //}
+//            //    var result = await userManager.CreateAsync(adminUser, adminPassword);
+//            //    if (result.Succeeded)
+//            //    {
+//            //        await userManager.AddToRoleAsync(adminUser, "Admin");
+//            //    }
+//            //}
 
-            using (var scope = serviceProvider.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(); // Replace with your actual DbContext name
+//            using (var scope = serviceProvider.CreateScope())
+//            {
+//                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(); // Replace with your actual DbContext name
 
-                // Ensure the database is created
-                await context.Database.EnsureCreatedAsync();
-            }
-        }
-    }
-}
+//                // Ensure the database is created
+//                await context.Database.EnsureCreatedAsync();
+//            }
+//        }
+//    }
+//}

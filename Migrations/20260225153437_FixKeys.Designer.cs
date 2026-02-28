@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MonitoringSystem.Data;
 
@@ -11,9 +12,11 @@ using MonitoringSystem.Data;
 namespace MonitoringSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260225153437_FixKeys")]
+    partial class FixKeys
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -396,6 +399,9 @@ namespace MonitoringSystem.Migrations
                     b.Property<int>("AccountTypeID")
                         .HasColumnType("int");
 
+                    b.Property<int?>("AccountTypeTypeId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
@@ -406,6 +412,10 @@ namespace MonitoringSystem.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -413,6 +423,8 @@ namespace MonitoringSystem.Migrations
                     b.HasKey("UserID");
 
                     b.HasIndex("AccountTypeID");
+
+                    b.HasIndex("AccountTypeTypeId");
 
                     b.ToTable("UserAccounts");
                 });
@@ -520,10 +532,14 @@ namespace MonitoringSystem.Migrations
             modelBuilder.Entity("MonitoringSystem.Models.UserAccount", b =>
                 {
                     b.HasOne("MonitoringSystem.Models.AccountType", "AccountType")
-                        .WithMany("UserAccounts")
+                        .WithMany()
                         .HasForeignKey("AccountTypeID")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("MonitoringSystem.Models.AccountType", null)
+                        .WithMany("UserAccounts")
+                        .HasForeignKey("AccountTypeTypeId");
 
                     b.Navigation("AccountType");
                 });

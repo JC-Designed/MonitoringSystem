@@ -1,24 +1,21 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using MonitoringSystem.Models;
 using System;
 using System.Collections.Generic;
 
 namespace MonitoringSystem.Controllers
 {
-    // No [Authorize] on the controller
+    // No [Authorize] attributes, all pages accessible
     public class StudentPanelController : Controller
     {
         // ======================= DASHBOARD =======================
-        [AllowAnonymous] // Public
         public IActionResult Dashboard()
         {
             ViewData["Title"] = "Dashboard";
-            return View();
+            return View(); // Views/StudentPanel/Dashboard.cshtml
         }
 
         // ======================= TASKS =======================
-        [AllowAnonymous] // Public
         public IActionResult Tasks()
         {
             ViewData["Title"] = "TASK LIST";
@@ -57,24 +54,46 @@ namespace MonitoringSystem.Controllers
                 }
             };
 
-            return View(tasks);
+            return View(tasks); // Views/StudentPanel/Tasks.cshtml
         }
 
-        // ======================= MESSAGES (Optional Protected) =======================
-        [Authorize(Roles = "Student")]
+        // ======================= MESSAGES =======================
         public IActionResult Messages()
         {
             ViewData["Title"] = "Messages";
-            return View();
+            return View(); // Views/StudentPanel/Messages.cshtml
         }
 
-        // ======================= REPORTS (Optional Protected) =======================
-        [Authorize(Roles = "Student")]
-        public IActionResult Reports()
+        // ======================= REPORT =======================
+        public IActionResult Report()
         {
-            ViewData["Title"] = "Reports";
-            return View();
+            ViewData["Title"] = "Report";
+
+            var reports = new List<StudentTask>
+            {
+                new StudentTask
+                {
+                    Id = 1,
+                    Title = "Monthly Progress",
+                    Company = "ABC Corp",
+                    Deadline = DateTime.Now.AddDays(-1),
+                    Status = "Completed",
+                    Description = "Detailed report for the monthly progress of tasks.",
+                    AttachmentPath = "/files/monthly-progress.pdf"
+                },
+                new StudentTask
+                {
+                    Id = 2,
+                    Title = "Website Update Summary",
+                    Company = "DesignHub",
+                    Deadline = DateTime.Now.AddDays(3),
+                    Status = "Ongoing",
+                    Description = "Summary report of website updates and changes.",
+                    AttachmentPath = null
+                }
+            };
+
+            return View(reports); // Views/StudentPanel/Report.cshtml
         }
     }
 }
-//hi
