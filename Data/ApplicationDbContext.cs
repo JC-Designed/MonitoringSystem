@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MonitoringSystem.Models;
-using MonitoringSystem.Models.ParamModel;
 
 namespace MonitoringSystem.Data
 {
@@ -11,10 +10,6 @@ namespace MonitoringSystem.Data
             : base(options)
         {
         }
-
-        // ===================== CUSTOM TABLES =====================
-        public DbSet<UserAccount> UserAccounts { get; set; } = null!;
-        public DbSet<AccountType> AccountTypes { get; set; } = null!;
 
         // ===================== COMPANY =====================
         public DbSet<Company> Companies { get; set; } = null!;
@@ -26,26 +21,6 @@ namespace MonitoringSystem.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
-
-            // ===================== ACCOUNT TYPE =====================
-            builder.Entity<AccountType>()
-                   .HasKey(a => a.TypeId); // Primary key
-
-            builder.Entity<AccountType>()
-                   .HasMany(a => a.UserAccounts) // Navigation property
-                   .WithOne(u => u.AccountType)
-                   .HasForeignKey(u => u.AccountTypeID)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            // ===================== USER ACCOUNT =====================
-            builder.Entity<UserAccount>()
-                   .HasKey(u => u.UserID); // Primary key
-
-            //// Explicitly configure Status column
-            //builder.Entity<UserAccount>()
-            //       .Property(u => u.Status)
-            //       .HasMaxLength(50)
-            //       .HasDefaultValue("Active");
 
             // ===================== CONVERSATION =====================
             builder.Entity<Conversation>()
@@ -72,6 +47,18 @@ namespace MonitoringSystem.Data
                    .WithMany(u => u.MessagesSent)
                    .HasForeignKey(m => m.SenderId)
                    .OnDelete(DeleteBehavior.Restrict);
+
+            // ===================== APPLICATIONUSER CONFIG =====================
+            builder.Entity<ApplicationUser>()
+                   .Property(u => u.FullName)
+                   .HasMaxLength(150)
+                   .IsRequired(); // FullName mandatory
+
+            // Ignore non-mapped helper properties
+            builder.Entity<ApplicationUser>()
+                   .Ignore(u => u.DisplayName)
+                   .Ignore(u => u.Role)
+                   .Ignore(u => u.Year);
         }
     }
 }

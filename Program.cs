@@ -42,10 +42,10 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
-// ================== 2️⃣ Seed hard-coded admin safely ==================
-await SeedAdminAsync(app);
+// ================== 2️⃣ Seed roles & optional admin ==================
+await SeedRolesAsync(app);
 
-// ================== 3️⃣ Configure the HTTP pipeline ==================
+// ================== 3️⃣ Configure HTTP pipeline ==================
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -71,32 +71,30 @@ app.MapControllerRoute(
 
 app.Run();
 
-// ================== 4️⃣ Seed admin function ==================
-async Task SeedAdminAsync(WebApplication app)
+// ================== 4️⃣ Seed roles and optional admin function ==================
+async Task SeedRolesAsync(WebApplication app)
 {
     using var scope = app.Services.CreateScope();
     var services = scope.ServiceProvider;
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-    // Create Admin role if missing
+    // ===== Create Admin role if missing =====
     if (!await roleManager.RoleExistsAsync("Admin"))
         await roleManager.CreateAsync(new IdentityRole("Admin"));
 
-    // Create Admin user if missing
-    var adminUser = await userManager.FindByNameAsync("admin");
-    if (adminUser == null)
+    // ===== OPTIONAL: create a first admin if database is empty =====
+    if (!userManager.Users.Any())
     {
-        adminUser = new ApplicationUser
+        var adminUser = new ApplicationUser
         {
             UserName = "admin",
-            Email = "admin@example.com",
+            Email = "admin@ctu.edu.ph",
             EmailConfirmed = true,
-            FirstName = "Admin",
-            LastName = "Account"
+            FullName = "Administrator"
         };
 
-        var result = await userManager.CreateAsync(adminUser, "Admin123"); // ✅ password meets Identity rules
+        var result = await userManager.CreateAsync(adminUser, "Admin123!"); // ✅ Change password as needed
         if (result.Succeeded)
         {
             await userManager.AddToRoleAsync(adminUser, "Admin");

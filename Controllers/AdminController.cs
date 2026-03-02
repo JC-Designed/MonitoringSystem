@@ -1,14 +1,22 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using MonitoringSystem.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace MonitoringSystem.Controllers
 {
-    // Anyone can access, no DB required
     public class AdminController : Controller
     {
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public AdminController(UserManager<ApplicationUser> userManager)
+        {
+            _userManager = userManager;
+        }
+
         // ================= HELPER TO GET SCHOOL YEAR =================
         private int GetSchoolYear()
         {
@@ -23,26 +31,22 @@ namespace MonitoringSystem.Controllers
         }
 
         // ================= DASHBOARD =================
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
             int schoolYear = GetSchoolYear();
             ViewBag.SchoolYear = schoolYear;
 
-            // Fake users
-            var allUsers = new List<ApplicationUser>
-            {
-                new ApplicationUser { Id="1", FirstName="John", LastName="Doe", Email="john@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,1,10), Roles=new List<string>{"Student"} },
-                new ApplicationUser { Id="2", FirstName="Jane", LastName="Smith", Email="jane@example.com", IsApproved=false, CreatedAt=new DateTime(schoolYear,2,15), Roles=new List<string>{"Company"} },
-                new ApplicationUser { Id="3", FirstName="Admin", LastName="User", Email="admin@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,3,20), Roles=new List<string>{"Admin"} },
-            };
+            // Load all users from database
+            var allUsers = _userManager.Users.ToList();
 
+            // Pending / Approved counts
             var pendingUsersList = allUsers
                 .Where(u => !u.IsApproved)
                 .Select(u => new PendingUserDto
                 {
                     Id = u.Id,
                     Email = u.Email,
-                    Role = (u.Roles != null && u.Roles.Count > 0) ? u.Roles.First() : "N/A",
+                    Role = u.Roles?.FirstOrDefault() ?? "N/A",
                     RegisteredMonth = u.CreatedAt.Month
                 })
                 .ToList();
@@ -52,8 +56,8 @@ namespace MonitoringSystem.Controllers
             ViewBag.ApprovedUsers = allUsers.Count(u => u.IsApproved);
             ViewBag.TotalUsers = allUsers.Count;
 
-            // Fake total companies
-            ViewBag.TotalCompanies = 5;
+            // Total companies (example: users with Company role)
+            ViewBag.TotalCompanies = allUsers.Count(u => u.Roles.Contains("Company"));
 
             // Monthly stats
             var monthlyRegistrations = new int[12];
@@ -76,14 +80,8 @@ namespace MonitoringSystem.Controllers
             int schoolYear = GetSchoolYear();
             ViewBag.SchoolYear = schoolYear;
 
-            var allUsers = new List<ApplicationUser>
-            {
-                new ApplicationUser { Id="1", FirstName="John", LastName="Doe", Email="john@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,1,10), Roles=new List<string>{"Student"} },
-                new ApplicationUser { Id="2", FirstName="Jane", LastName="Smith", Email="jane@example.com", IsApproved=false, CreatedAt=new DateTime(schoolYear,2,15), Roles=new List<string>{"Company"} },
-                new ApplicationUser { Id="3", FirstName="Admin", LastName="User", Email="admin@example.com", IsApproved=true, CreatedAt=new DateTime(schoolYear,3,20), Roles=new List<string>{"Admin"} },
-            };
+            var allUsers = _userManager.Users.ToList();
 
-            // Add Year property for display
             foreach (var u in allUsers)
                 u.Year = u.CreatedAt.Year.ToString();
 
@@ -99,16 +97,63 @@ namespace MonitoringSystem.Controllers
         // ================= REPORTS =================
         public IActionResult Reports()
         {
-            // Fake report data
-            ViewBag.TotalUsers = 3;
-            ViewBag.PendingUsers = 1;
-            ViewBag.ApprovedUsers = 2;
+            var allUsers = _userManager.Users.ToList();
+            ViewBag.TotalUsers = allUsers.Count;
+            ViewBag.PendingUsers = allUsers.Count(u => !u.IsApproved);
+            ViewBag.ApprovedUsers = allUsers.Count(u => u.IsApproved);
             return View();
         }
 
-        // ================= OTHER PAGES PLACEHOLDERS =================
+        // ================= OTHER PAGES =================
         public IActionResult Company() => View();
         public IActionResult Messages() => View();
+
+        // ================= ADMIN PROFILE FULL STACK =================
+        [HttpGet]
+        public async Task<IActionResult> GetAdminProfile()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return NotFound();
+
+            var model = new AdminProfileEditModel
+            {
+                FullName = user.FullName,
+                Username = user.UserName,
+                Email = user.Email,
+                Address = user.Address,
+                ProfileImage = user.ProfileImage
+            };
+
+            return PartialView("_AdminProfilePartial", model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SaveAdminProfile([FromForm] AdminProfileEditModel model)
+        {
+            if (!ModelState.IsValid) return BadRequest("Invalid data.");
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return NotFound();
+
+            // ✅ Update FullName directly
+            if (!string.IsNullOrEmpty(model.FullName))
+            {
+                user.FullName = model.FullName.Trim();
+            }
+
+            user.UserName = model.Username;
+            user.Email = model.Email;
+            user.Address = model.Address;
+
+            if (!string.IsNullOrEmpty(model.ProfileImage))
+                user.ProfileImage = model.ProfileImage;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (result.Succeeded)
+                return Json(new { success = true, message = "Profile updated successfully." });
+
+            return Json(new { success = false, message = "Failed to update profile." });
+        }
 
         // ================= DTOs =================
         public class PendingUserDto
@@ -118,5 +163,15 @@ namespace MonitoringSystem.Controllers
             public string Role { get; set; } = string.Empty;
             public int RegisteredMonth { get; set; }
         }
+    }
+
+    // =================== VIEW MODEL FOR ADMIN PROFILE ===================
+    public class AdminProfileEditModel
+    {
+        public string FullName { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string ProfileImage { get; set; } = string.Empty;
     }
 }

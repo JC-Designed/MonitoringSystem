@@ -79,7 +79,7 @@ namespace MonitoringSystem.Controllers
         // ================== REGISTER POST ==================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RegisterPost() // ✅ renamed from Register() to RegisterPost()
+        public async Task<IActionResult> RegisterPost()
         {
             try
             {
@@ -106,18 +106,13 @@ namespace MonitoringSystem.Controllers
                     return View("Register");
                 }
 
-                // Split full name
-                var firstName = fullName.Split(' ').FirstOrDefault() ?? "";
-                var lastName = string.Join(" ", fullName.Split(' ').Skip(1));
-
-                // Create user
+                // Create user using FullName directly
                 var user = new ApplicationUser
                 {
                     UserName = email,
                     Email = email,
                     EmailConfirmed = true,
-                    FirstName = firstName,
-                    LastName = lastName,
+                    FullName = fullName,
                     Role = "Student",
                     Contact = mobileNumber,
                     Address = address,

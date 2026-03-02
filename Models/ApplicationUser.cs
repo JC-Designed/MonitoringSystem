@@ -8,11 +8,7 @@ namespace MonitoringSystem.Models
     public class ApplicationUser : IdentityUser
     {
         // ===================== BASIC USER INFO =====================
-        public string FirstName { get; set; } = string.Empty;
-        public string LastName { get; set; } = string.Empty;
-
-        [NotMapped]
-        public string FullName => $"{FirstName} {LastName}".Trim();
+        public string FullName { get; set; } = string.Empty;
 
         [NotMapped]
         public string DisplayName => FullName;
@@ -36,7 +32,7 @@ namespace MonitoringSystem.Models
 
         // ===================== NEW PROPERTIES FOR COMPANY EDIT =====================
         public string MobileNumber { get; set; } = string.Empty;
-        public int CompanyID { get; set; } = 0; // ✅ fixed to int
+        public int CompanyID { get; set; } = 0;
 
         // ===================== SYSTEM FIELDS =====================
         public bool IsApproved { get; set; } = false;

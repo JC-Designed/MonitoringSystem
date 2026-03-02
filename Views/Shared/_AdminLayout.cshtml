@@ -41,13 +41,13 @@
                 <a asp-action="Dashboard" asp-controller="Admin" class="menu-link" id="dashboardBtn">
                     <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
                 </a>
-                <a asp-action="Users" asp-controller="Admin" class="menu-link" id="usersBtn">
+                <a asp-action="Users" asp-controller="Admin" class="menu-link">
                     <i class="bi bi-person-fill"></i> <span>Users</span>
                 </a>
-                <a asp-action="Registration" asp-controller="Admin" class="menu-link" id="registrationBtn">
+                <a asp-action="Registration" asp-controller="Admin" class="menu-link">
                     <i class="bi bi-building"></i> <span>Registration</span>
                 </a>
-                <a asp-action="Reports" asp-controller="Admin" class="menu-link" id="reportsBtn">
+                <a asp-action="Reports" asp-controller="Admin" class="menu-link">
                     <i class="bi bi-file-bar-graph-fill"></i> <span>Reports</span>
                 </a>
                 <hr />
@@ -114,19 +114,30 @@
         @RenderBody()
     </main>
 
-    <!-- PROFILE TEMPLATE -->
+    <!-- PROFILE TEMPLATE (with camera clickable) -->
     <script type="text/template" id="profileTemplate">
         <div class="container py-4">
+
+            <!-- Profile Picture Container with Mini Camera Icon -->
             <div class="profile-pic-wrapper mb-4 position-relative" style="width:140px; height:140px;">
                 <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
-                <div class="profile-pic-overlay d-flex justify-content-center align-items-center" style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
+
+                <!-- Full Overlay (clickable) -->
+                <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
+                     style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
                     <i class="bi bi-camera-fill text-white fs-4"></i>
                 </div>
-                <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center" style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
+
+                <!-- Mini Camera Icon (clickable) -->
+                <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
+                     style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
                     <i class="bi bi-camera-fill text-white"></i>
                 </div>
+
                 <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
             </div>
+
+            <!-- Card Container below the profile picture -->
             <div class="card shadow-sm p-4" style="max-width:1200px;">
                 <div class="flex-grow-1 w-100">
                     <div class="row mb-3">
@@ -139,6 +150,7 @@
                             <input type="text" id="position" class="form-control" value="Administrator">
                         </div>
                     </div>
+
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label for="username" class="form-label fw-bold">Username</label>
@@ -149,22 +161,40 @@
                             <input type="email" id="email" class="form-control" value="admin@ctu.edu.ph">
                         </div>
                     </div>
+
                     <div class="mb-3">
                         <label for="address" class="form-label fw-bold">Address</label>
                         <textarea id="address" class="form-control">123 Main St, Balamban</textarea>
                     </div>
+
                     <div class="text-end">
-                        <button class="btn" id="saveProfileBtn" style="background-color:#07B618; border-color:#07B618; color:white;">Save Changes</button>
+                        <button class="btn" id="saveProfileBtn" style="background-color:#07B618; border-color:#07B618; color:white;">
+                            Save Changes
+                        </button>
                     </div>
                 </div>
+            </div>
+
+            <!-- DOCUMENTS UPLOAD / MANAGEMENT SECTION -->
+            <div class="card shadow-sm p-4 mt-4" style="max-width:1200px;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0">Documents</h6>
+                    <!-- Hidden file input for multiple uploads -->
+                    <input type="file" id="documentUploadInput" style="display:none;" multiple>
+                    <!-- Upload button -->
+                    <button class="btn btn-primary" id="uploadDocumentBtn">
+                        <i class="bi bi-upload me-1"></i> Upload Document
+                    </button>
+                </div>
+
+                <!-- List of uploaded documents -->
+                <ul id="documentList" class="list-group list-group-flush">
+                </ul>
             </div>
         </div>
     </script>
 
-    <!-- Notification Container -->
-    <div id="notifContainer"></div>
-
-    <!-- NOTIFICATION TEMPLATE (demo only) -->
+    <!-- NOTIFICATION TEMPLATE -->
     <script type="text/template" id="notifTemplate">
         <div class="container py-4">
             <h4 class="mb-4">Notification History</h4>
@@ -177,7 +207,6 @@
                         <h5 class="fw-bold mb-1">Demo Student 1</h5>
                         <small>Report: Complaint</small>
                     </div>
-                    <!-- View icon -->
                     <button class="btn btn-outline-primary btn-sm viewReportBtn" data-bs-toggle="modal" data-bs-target="#reportModal"
                             data-student="Demo Student 1" data-report="This student is not registered in the company.">
                         <i class="bi bi-eye fs-5"></i>
@@ -211,10 +240,8 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Top: Student Name -->
                     <h3 class="fw-bold mb-3" id="modalStudent">Student Name</h3>
                     <hr>
-                    <!-- Bottom: Report Content in a box -->
                     <div style="border:1px solid #ccc; border-radius:10px; padding:15px; background:#f8f9fa;">
                         <p id="modalReport" style="font-size:1.05rem; line-height:1.5;">Report content goes here.</p>
                     </div>
@@ -225,40 +252,6 @@
             </div>
         </div>
     </div>
-
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-
-            const notifBell = document.getElementById("notifBell"); // the bell in topbar
-            const mainContent = document.getElementById("adminMainContent"); // your page content area
-
-            notifBell.addEventListener("click", function () {
-
-                mainContent.style.opacity = 0;
-
-                setTimeout(() => {
-
-                    // Load notification template into MAIN CONTENT (not sidebar)
-                    mainContent.innerHTML = document.getElementById("notifTemplate").innerHTML;
-
-                    // Change title
-                    document.querySelector(".topbar-title").textContent = "Notifications";
-
-                    // Attach modal data events AFTER rendering
-                    document.querySelectorAll(".viewReportBtn").forEach(btn => {
-                        btn.addEventListener("click", function () {
-                            document.getElementById("modalStudent").textContent = this.dataset.student;
-                            document.getElementById("modalReport").textContent = this.dataset.report;
-                        });
-                    });
-
-                    mainContent.style.opacity = 1;
-
-                }, 200);
-            });
-
-        });
-    </script>
 
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -280,36 +273,69 @@
             overlay.classList.remove('active');
         });
 
+        // SPA Content Switching
         const mainContent = document.getElementById("adminMainContent");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
-        const notifBell = document.getElementById("notifBell");
-        const topbarProfilePic = document.getElementById("topbarProfilePic");
+        const topbarProfilePic = document.getElementById("topbarProfilePic"); // for updating
         const originalDashboardHTML = mainContent.innerHTML;
 
-        // PROFILE SPA
-        function openProfileSPA(){
+        function openDocumentSPA(){
             mainContent.style.opacity = 0;
             setTimeout(()=>{
                 const template = document.getElementById("profileTemplate").innerHTML;
                 mainContent.innerHTML = template;
-                document.querySelector(".topbar-title").textContent = "Profile";
+                document.querySelector(".topbar-title").textContent = "Documents";
 
+                // ===== Profile Picture Change Functionality =====
                 const profileImage = document.getElementById("profileImage");
-                const profileOverlay = document.querySelector(".profile-pic-overlay");
                 const profilePicInput = document.getElementById("profilePicInput");
+                const overlayIcon = document.querySelector(".profile-pic-overlay");
+                const miniIcon = document.querySelector(".change-pic-icon");
 
-                profileOverlay.addEventListener("click", ()=> profilePicInput.click());
-                const changePicIcon = document.querySelector(".change-pic-icon");
-                changePicIcon.addEventListener("click", ()=> profilePicInput.click());
+                // Make both camera icons clickable
+                const triggerFileInput = () => profilePicInput.click();
+                overlayIcon?.addEventListener("click", triggerFileInput);
+                miniIcon?.addEventListener("click", triggerFileInput);
 
-                profilePicInput.addEventListener("change", (e)=>{
-                    if(e.target.files && e.target.files[0]){
+                // Handle file selection and preview
+                profilePicInput.addEventListener("change", function(e) {
+                    if (e.target.files && e.target.files[0]) {
                         const reader = new FileReader();
-                        reader.onload = function(evt){
+                        reader.onload = function(evt) {
                             profileImage.src = evt.target.result;
-                            topbarProfilePic.src = evt.target.result;
-                        }
+                            topbarProfilePic.src = evt.target.result; // update top bar too
+                        };
                         reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+
+                // ===== Document Upload Functionality =====
+                const documentInput = document.getElementById("documentUploadInput");
+                const uploadDocumentBtn = document.getElementById("uploadDocumentBtn");
+                const documentList = document.getElementById("documentList");
+
+                uploadDocumentBtn?.addEventListener("click", ()=> documentInput.click());
+
+                documentInput.addEventListener("change", (e)=>{
+                    if(e.target.files && e.target.files.length > 0){
+                        for(const file of e.target.files){
+                            const li = document.createElement("li");
+                            li.className = "list-group-item d-flex justify-content-between align-items-center";
+                            li.innerHTML = `
+                                <span>${file.name}</span>
+                                <a href="#" class="btn btn-sm btn-outline-primary">Download</a>
+                            `;
+                            li.querySelector("a").addEventListener("click", (evt)=>{
+                                evt.preventDefault();
+                                const url = URL.createObjectURL(file);
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = file.name;
+                                a.click();
+                                URL.revokeObjectURL(url);
+                            });
+                            documentList.appendChild(li);
+                        }
                     }
                 });
 
@@ -317,32 +343,34 @@
             },200);
         }
 
-        viewProfileBtn?.addEventListener("click", openProfileSPA);
+        viewProfileBtn?.addEventListener("click", openDocumentSPA);
 
-        // DASHBOARD / MENU SPA
-        function restoreOriginalContent(title){
+        document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
             mainContent.style.opacity = 0;
             setTimeout(()=>{
                 mainContent.innerHTML = originalDashboardHTML;
-                document.querySelector(".topbar-title").textContent = title;
+                document.querySelector(".topbar-title").textContent = "Dashboard";
                 mainContent.style.opacity = 1;
             },200);
-        }
+        });
 
-        document.getElementById("dashboardBtn")?.addEventListener("click", ()=> restoreOriginalContent("Dashboard"));
-        document.getElementById("usersBtn")?.addEventListener("click", ()=> restoreOriginalContent("Users"));
-        document.getElementById("registrationBtn")?.addEventListener("click", ()=> restoreOriginalContent("Registration"));
-        document.getElementById("reportsBtn")?.addEventListener("click", ()=> restoreOriginalContent("Reports"));
-
-        // NOTIFICATIONS SPA
-        notifBell?.addEventListener("click", ()=>{
+        // Notifications SPA
+        const notifBell = document.getElementById("notifBell");
+        notifBell?.addEventListener("click", function() {
             mainContent.style.opacity = 0;
-            setTimeout(()=>{
-                const notifTemplate = document.getElementById("notifTemplate").innerHTML;
-                mainContent.innerHTML = notifTemplate;
+            setTimeout(() => {
+                mainContent.innerHTML = document.getElementById("notifTemplate").innerHTML;
                 document.querySelector(".topbar-title").textContent = "Notifications";
+
+                document.querySelectorAll(".viewReportBtn").forEach(btn => {
+                    btn.addEventListener("click", function () {
+                        document.getElementById("modalStudent").textContent = this.dataset.student;
+                        document.getElementById("modalReport").textContent = this.dataset.report;
+                    });
+                });
+
                 mainContent.style.opacity = 1;
-            },200);
+            }, 200);
         });
 
         // Dark Mode
@@ -360,7 +388,6 @@
             localStorage.setItem("darkMode",isDark);
         });
     </script>
-
     @RenderSection("Scripts", required: false)
 </body>
 </html>
