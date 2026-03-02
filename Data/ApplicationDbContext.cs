@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using MonitoringSystem.Models;
-using MonitoringSystem.Models.ParamModel;
 
 namespace MonitoringSystem.Data
 {
@@ -19,38 +18,47 @@ namespace MonitoringSystem.Data
         public DbSet<Conversation> Conversations { get; set; } = null!;
         public DbSet<Message> Messages { get; set; } = null!;
 
-        public DbSet<UserAccountModel> Users { get; set; } = null!;
-
-        // ===================== CONFIGURE RELATIONS =====================
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // 1-on-1 Conversation relationships
+            // ===================== CONVERSATION =====================
             builder.Entity<Conversation>()
-                .HasOne(c => c.User1)
-                .WithMany(u => u.ConversationsAsUser1)
-                .HasForeignKey(c => c.User1Id)
-                .OnDelete(DeleteBehavior.Restrict);
+                   .HasOne(c => c.User1)
+                   .WithMany(u => u.ConversationsAsUser1)
+                   .HasForeignKey(c => c.User1Id)
+                   .OnDelete(DeleteBehavior.Restrict);
 
             builder.Entity<Conversation>()
-                .HasOne(c => c.User2)
-                .WithMany(u => u.ConversationsAsUser2)
-                .HasForeignKey(c => c.User2Id)
-                .OnDelete(DeleteBehavior.Restrict);
+                   .HasOne(c => c.User2)
+                   .WithMany(u => u.ConversationsAsUser2)
+                   .HasForeignKey(c => c.User2Id)
+                   .OnDelete(DeleteBehavior.Restrict);
 
-            // Message relationships
+            // ===================== MESSAGE =====================
             builder.Entity<Message>()
-                .HasOne(m => m.Conversation)
-                .WithMany(c => c.Messages)
-                .HasForeignKey(m => m.ConversationId)
-                .OnDelete(DeleteBehavior.Cascade);
+                   .HasOne(m => m.Conversation)
+                   .WithMany(c => c.Messages)
+                   .HasForeignKey(m => m.ConversationId)
+                   .OnDelete(DeleteBehavior.Cascade);
 
             builder.Entity<Message>()
-                .HasOne(m => m.Sender)
-                .WithMany(u => u.MessagesSent)
-                .HasForeignKey(m => m.SenderId)
-                .OnDelete(DeleteBehavior.Restrict);
+                   .HasOne(m => m.Sender)
+                   .WithMany(u => u.MessagesSent)
+                   .HasForeignKey(m => m.SenderId)
+                   .OnDelete(DeleteBehavior.Restrict);
+
+            // ===================== APPLICATIONUSER CONFIG =====================
+            builder.Entity<ApplicationUser>()
+                   .Property(u => u.FullName)
+                   .HasMaxLength(150)
+                   .IsRequired(); // FullName mandatory
+
+            // Ignore non-mapped helper properties
+            builder.Entity<ApplicationUser>()
+                   .Ignore(u => u.DisplayName)
+                   .Ignore(u => u.Role)
+                   .Ignore(u => u.Year);
         }
     }
 }

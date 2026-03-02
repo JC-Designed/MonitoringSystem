@@ -3,16 +3,18 @@ using Microsoft.AspNetCore.Authorization;
 
 namespace MonitoringSystem.Controllers
 {
-    [Authorize(Roles = "Company")] // Only accessible by Company users
+    // Removed [Authorize] so anyone can access
     public class CompanyPanelController : Controller
     {
         // ================== DASHBOARD ==================
+        [AllowAnonymous] // Allows anyone to access
         public IActionResult Dashboard()
         {
             return View();
         }
 
         // ================== MANAGE INTERN / OJT ==================
+        [AllowAnonymous] // Allows anyone to access
         public IActionResult ManageOJT()
         {
             return View();

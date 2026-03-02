@@ -61,9 +61,8 @@
                         @foreach (var user in Model)
                         {
                             var role = user.Roles.FirstOrDefault() ?? "No Role";
-                            var fullName = $"{user.FirstName} {user.LastName}";
                             <tr data-id="@user.Id"
-                                data-fullname="@fullName"
+                                data-fullname="@user.FullName"
                                 data-email="@user.Email"
                                 data-role="@role"
                                 data-year="@user.Year"
@@ -72,7 +71,7 @@
                                 data-companyid="@user.CompanyID"
                                 data-task="Complete the monthly report and submit to manager."
                                 data-learning="Learned how to summarize data and meet deadlines.">
-                                <td>@fullName</td>
+                                <td>@user.FullName</td>
                                 <td>@user.Email</td>
                                 <td>@role</td>
                                 <td class="text-end">

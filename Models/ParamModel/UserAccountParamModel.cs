@@ -1,20 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MonitoringSystem.Models.ParamModel
 {
-    [NotMapped] // 🔥 Important: EF won't treat this as a table
-    public class UserAccountModel : BaseResultModel
+    public class LoginParamModel
     {
+        [Required(ErrorMessage = "Username is required")]
         public string Username { get; set; }
-        public string Password { get; set; }
-        public int AccountType { get; set; }
-    }
 
-    public class UserAccountParamModel
-    {
-        public string Username { get; set; }
+        [Required(ErrorMessage = "Password is required")]
+        [DataType(DataType.Password)]
         public string Password { get; set; }
-        public int accountType { get; set; }
-        public bool RememberMe { get; set; } = false; // optional
+
+        public bool RememberMe { get; set; } = false; // optional for "keep me logged in"
     }
 }

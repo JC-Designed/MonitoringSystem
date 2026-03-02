@@ -13,39 +13,29 @@
 
     <!-- RIGHT FORM -->
     <div class="form-side">
-        <h4 class="mb-3">Create your account</h4>
+        <h4 class="mb-3">Create your student account</h4>
 
         <form asp-action="Register" method="post">
-
-            @* <!-- ROLE -->
-            <div class="mb-3">
-                <label class="form-label">Select Role</label>
-                <select name="roleString" id="role" class="form-select" required>
-                    <option value="">Select Role</option>
-                    <option value="Student">Student</option>
-                    <option value="Company">Company</option>
-                </select>
-            </div> *@
 
             <!-- FULL NAME -->
             <div class="mb-3">
                 <input name="fullName" class="form-control" placeholder="Full Name" required />
             </div>
 
-            <!-- STUDENT ID (Students only but safe to include) -->
+            <!-- STUDENT ID -->
             <div class="mb-3">
-                <input name="studentId" class="form-control" placeholder="Student ID " />
+                <input name="studentId" class="form-control" placeholder="Student ID" required />
             </div>
 
             <!-- MOBILE -->
             <div class="mb-3">
                 <input name="mobileNumber" class="form-control" placeholder="Mobile Number" required />
-            </div>   
-            <!-- Facebook -->
+            </div>
+
+            <!-- FACEBOOK -->
             <div class="mb-3">
                 <input name="Facebook" class="form-control" placeholder="Facebook" required />
             </div>
-
 
             <!-- EMERGENCY CONTACT -->
             <div class="mb-3">
@@ -118,22 +108,14 @@
                 </div>
             </div>
 
-            <!-- COMPANY NAME -->
-            <div class="mb-3" id="companyNameDiv" style="display:none;">
-                <input name="companyName" id="companyName"
-                       class="form-control" placeholder="Company Name" />
-            </div>
-
             <!-- EMAIL -->
             <div class="mb-3">
-                <input name="email" type="email" class="form-control"
-                       placeholder="Email" required />
+                <input name="email" type="email" class="form-control" placeholder="Email" required />
             </div>
 
             <!-- PASSWORD -->
             <div class="mb-3">
-                <input name="password" type="password" class="form-control"
-                       placeholder="New password" required />
+                <input name="password" type="password" class="form-control" placeholder="New password" required />
             </div>
 
             <!-- SUBMIT -->
@@ -156,22 +138,3 @@
         </form>
     </div>
 </div>
-
-<script>
-    const roleSelect = document.getElementById('role');
-    const companyDiv = document.getElementById('companyNameDiv');
-    const companyInput = document.getElementById('companyName');
-
-    if (roleSelect) {
-        roleSelect.addEventListener('change', function () {
-            if (this.value === 'Company') {
-                companyDiv.style.display = 'block';
-                companyInput.required = true;
-            } else {
-                companyDiv.style.display = 'none';
-                companyInput.required = false;
-                companyInput.value = '';
-            }
-        });
-    }
-</script>

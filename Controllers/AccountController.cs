@@ -1,141 +1,171 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using MonitoringSystem.Models;
-using MonitoringSystem.Data;
+using MonitoringSystem.Models.ParamModel;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using MonitoringSystem.Models.ParamModel;
 
 namespace MonitoringSystem.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationDbContext _db;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AccountController(
-            SignInManager<ApplicationUser> signInManager,
             UserManager<ApplicationUser> userManager,
-            ApplicationDbContext db)
+            SignInManager<ApplicationUser> signInManager,
+            RoleManager<IdentityRole> roleManager)
         {
-            _signInManager = signInManager;
             _userManager = userManager;
-            _db = db;
+            _signInManager = signInManager;
+            _roleManager = roleManager;
         }
 
-        // ======================= LOGIN =======================
+        // ================== LOGIN PAGE ==================
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
+        // ================== LOGIN AJAX / JSON ==================
         [HttpPost]
-        public async Task<IActionResult> LoginCredentials([FromBody] UserAccountParamModel userModel)
+        public async Task<IActionResult> LoginCredentials([FromBody] LoginParamModel model)
         {
-            if (userModel == null || string.IsNullOrEmpty(userModel.Username))
-                return Json(new { success = false, message = "Invalid request format." });
+            if (!ModelState.IsValid)
+                return Json(new { success = false, message = "Invalid input." });
 
-            var user = await _userManager.FindByNameAsync(userModel.Username);
+            var result = await _signInManager.PasswordSignInAsync(
+                model.Username,
+                model.Password,
+                model.RememberMe,
+                lockoutOnFailure: false
+            );
+
+            if (!result.Succeeded)
+                return Json(new { success = false, message = "Invalid username or password." });
+
+            var user = await _userManager.FindByNameAsync(model.Username);
+            var roles = await _userManager.GetRolesAsync(user);
+            string role = roles.FirstOrDefault() ?? "";
+
+            // Redirect based on role
+            string redirectUrl = "/";
+            if (role == "Admin")
+                redirectUrl = Url.Action("Dashboard", "Admin");
+            else if (role == "Company")
+                redirectUrl = Url.Action("Dashboard", "Company");
+            else if (role == "Student")
+                redirectUrl = Url.Action("Dashboard", "Student");
+
+            return Json(new
+            {
+                success = true,
+                redirect = redirectUrl,
+                role = role
+            });
+        }
+
+        // ================== REGISTER PAGE (GET) ==================
+        [HttpGet]
+        public IActionResult Register()
+        {
+            return View(); // Opens Register.cshtml
+        }
+
+        // ================== REGISTER POST ==================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterPost()
+        {
+            try
+            {
+                // Pull form values from Register.cshtml
+                var fullName = Request.Form["fullName"].ToString();
+                var studentId = Request.Form["studentId"].ToString();
+                var mobileNumber = Request.Form["mobileNumber"].ToString();
+                var facebook = Request.Form["Facebook"].ToString();
+                var emergencyContact = Request.Form["emergencyContact"].ToString();
+                var address = Request.Form["address"].ToString();
+                var program = Request.Form["program"].ToString();
+                var birthMonth = Request.Form["birthMonth"].ToString();
+                var birthDay = Request.Form["birthDay"].ToString();
+                var birthYear = Request.Form["birthYear"].ToString();
+                var gender = Request.Form["gender"].ToString();
+                var email = Request.Form["email"].ToString();
+                var password = Request.Form["password"].ToString();
+
+                // Check if user exists
+                var existingUser = await _userManager.FindByNameAsync(email);
+                if (existingUser != null)
+                {
+                    ViewBag.Error = "Email/Username already exists.";
+                    return View("Register");
+                }
+
+                // Create user using FullName directly
+                var user = new ApplicationUser
+                {
+                    UserName = email,
+                    Email = email,
+                    EmailConfirmed = true,
+                    FullName = fullName,
+                    Role = "Student",
+                    Contact = mobileNumber,
+                    Address = address,
+                    Gender = gender,
+                    BirthDate = new DateTime(int.Parse(birthYear), int.Parse(birthMonth), int.Parse(birthDay)),
+                    CreatedAt = DateTime.Now
+                };
+
+                var result = await _userManager.CreateAsync(user, password);
+                if (!result.Succeeded)
+                {
+                    ViewBag.Error = string.Join(", ", result.Errors.Select(e => e.Description));
+                    return View("Register");
+                }
+
+                // Ensure Student role exists
+                if (!await _roleManager.RoleExistsAsync("Student"))
+                    await _roleManager.CreateAsync(new IdentityRole("Student"));
+
+                await _userManager.AddToRoleAsync(user, "Student");
+
+                TempData["Success"] = "Account created successfully! You can now login.";
+                return RedirectToAction("Login");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = ex.Message;
+                return View("Register");
+            }
+        }
+
+        // ================== RESET PASSWORD ==================
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword([FromBody] LoginParamModel model)
+        {
+            if (!ModelState.IsValid)
+                return Json(new { success = false, message = "Invalid input." });
+
+            var user = await _userManager.FindByNameAsync(model.Username);
             if (user == null)
                 return Json(new { success = false, message = "User not found." });
 
-            var passwordValid = await _userManager.CheckPasswordAsync(user, userModel.Password);
-            if (!passwordValid)
-                return Json(new { success = false, message = "Invalid password." });
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, model.Password);
 
-            await _signInManager.SignInAsync(user, isPersistent: userModel.RememberMe);
+            if (!result.Succeeded)
+                return Json(new { success = false, message = string.Join(", ", result.Errors.Select(e => e.Description)) });
 
-            var roles = await _userManager.GetRolesAsync(user);
-            string redirectUrl = "/";
-            if (roles.Contains("Admin")) redirectUrl = "/Admin/Dashboard";
-            else if (roles.Contains("Company")) redirectUrl = "/CompanyPanel/Dashboard";
-            else if (roles.Contains("Student")) redirectUrl = "/StudentPanel/Dashboard";
-
-            return Json(new { success = true, message = "Login successful", redirect = redirectUrl });
+            return Json(new { success = true, message = $"Password for {model.Username} has been reset successfully." });
         }
 
-        // ======================= REGISTER =======================
+        // ================== LOGOUT ==================
         [HttpGet]
-        public IActionResult Register() => View();
-
-        [HttpPost]
-        public async Task<IActionResult> Register(
-            string firstName,
-            string lastName,
-            string roleString,
-            string gender,
-            int birthDay,
-            int birthMonth,
-            int birthYear,
-            string email,
-            string password,
-            string companyName = null)
-        {
-            if (string.IsNullOrEmpty(roleString))
-            {
-                ViewBag.Error = "Please select a role.";
-                return View();
-            }
-
-            DateTime birthDate;
-            try
-            {
-                birthDate = new DateTime(birthYear, birthMonth, birthDay);
-            }
-            catch
-            {
-                ViewBag.Error = "Invalid birthdate.";
-                return View();
-            }
-
-            var user = new ApplicationUser
-            {
-                UserName = email,
-                Email = email,
-                CreatedAt = DateTime.Now,
-                IsApproved = false,
-                FirstName = firstName,
-                LastName = lastName,
-                Gender = gender,
-                BirthDate = birthDate
-            };
-
-            var result = await _userManager.CreateAsync(user, password);
-
-            if (result.Succeeded)
-            {
-                await _userManager.AddToRoleAsync(user, roleString);
-
-                if (roleString == "Company")
-                {
-                    if (string.IsNullOrEmpty(companyName))
-                        companyName = email;
-
-                    var company = new Company
-                    {
-                        Name = companyName,
-                        Email = email,
-                        UserId = user.Id
-                    };
-
-                    _db.Companies.Add(company);
-                    await _db.SaveChangesAsync();
-                }
-
-                TempData["Success"] = "Registration successful! Please wait for admin approval.";
-                return View();
-            }
-
-            ViewBag.Error = string.Join(", ", result.Errors.Select(e => e.Description));
-            return View();
-        }
-
-        // ======================= LOGOUT =======================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
