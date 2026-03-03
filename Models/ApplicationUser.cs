@@ -8,31 +8,34 @@ namespace MonitoringSystem.Models
     public class ApplicationUser : IdentityUser
     {
         // ===================== BASIC USER INFO =====================
-        public string FullName { get; set; } = string.Empty;
+        public string? FullName { get; set; } = string.Empty;
 
         [NotMapped]
-        public string DisplayName => FullName;
+        public string DisplayName => FullName ?? string.Empty;
 
         // ===================== ROLE & PERSONAL INFO =====================
         [NotMapped]
-        public string Role { get; set; } = string.Empty; // display only
+        public string? Role { get; set; } = string.Empty; // display only
 
-        public string Gender { get; set; } = string.Empty;
+        public string? Gender { get; set; } = string.Empty;
         public DateTime BirthDate { get; set; }
 
+        // ===================== PROGRAM (e.g., Bachelor of Industrial Technology) =====================
+        public string? Program { get; set; } = string.Empty;
+
         // ===================== PROFILE (ALL ROLES) =====================
-        public string Contact { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string ProfileImage { get; set; } = "/images/ctu-logo.png";
-        public string BannerImage { get; set; } = "/images/banner-placeholder.jpg";
+        public string? Contact { get; set; } = string.Empty;
+        public string? Address { get; set; } = string.Empty;
+        public string? ProfileImage { get; set; } = "/images/ctu-logo.png";
+        public string? BannerImage { get; set; } = "/images/banner-placeholder.jpg";
 
         // ===================== ADMIN / COMPANY EXTRA INFO =====================
-        public string CompanyName { get; set; } = string.Empty;
-        public string CompanyDescription { get; set; } = string.Empty;
+        public string? CompanyName { get; set; } = string.Empty;
+        public string? CompanyDescription { get; set; } = string.Empty;
 
-        // ===================== NEW PROPERTIES FOR COMPANY EDIT =====================
-        public string MobileNumber { get; set; } = string.Empty;
-        public int CompanyID { get; set; } = 0;
+        // ===================== PROPERTIES FOR COMPANY EDIT =====================
+        public string? MobileNumber { get; set; } = string.Empty;
+        public int? CompanyID { get; set; } = 0;
 
         // ===================== SYSTEM FIELDS =====================
         public bool IsApproved { get; set; } = false;
@@ -47,8 +50,8 @@ namespace MonitoringSystem.Models
         public ICollection<Conversation> ConversationsAsUser2 { get; set; } = new List<Conversation>();
         public ICollection<Message> MessagesSent { get; set; } = new List<Message>();
 
-        // ===================== NEW: YEAR =====================
+        // ===================== YEAR (NOT MAPPED) =====================
         [NotMapped]
-        public string Year { get; set; } = string.Empty;
+        public string? Year { get; set; } = string.Empty;
     }
 }

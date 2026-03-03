@@ -4,114 +4,254 @@
 
     var demoReports = new List<dynamic>
     {
-        new { Name = "Alice Smith", Facebook="alice.smith", MobileNumber="09171234567", Address="123 Main St", ContactPerson="John Smith", Birthdate="01/15/2005", Email="alice@example.com", ReportType = "MOA", Company="Acme Inc.", Year="2026", Status = "Unread", Details = "Report about late submission.", DateCreated = DateTime.Now.AddHours(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1001", Course="BSIT" },
-        new { Name = "John Doe", Facebook="john.doe", MobileNumber="09172345678", Address="456 Elm St", ContactPerson="Jane Doe", Birthdate="03/22/2004", Email="john@example.com", ReportType = "Complaint", Company="Beta Corp", Year="2026", Status = "Read", Details = "Report on project progress.", DateCreated = DateTime.Now.AddDays(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1002", Course="BSCS" },
-        new { Name = "Beta Corp", Facebook="", MobileNumber="", Address="", ContactPerson="", Birthdate="", Email="", ReportType = "Compliance", Company="Beta Corp", Year="2026", Status = "Read", Details = "Company report for compliance.", DateCreated = DateTime.Now.AddDays(-1), ProfilePic = "", StudentId="", Course="" }
+        new { Name = "Alice Smith", Facebook="alice.smith", MobileNumber="09171234567", Address="123 Main St", ContactPerson="John Smith", ContactNumber="09171234568", Birthdate="01/15/2005", Email="alice@example.com", ReportType = "MOA", Company="Acme Inc.", Year="2026", Status = "Unread", Details = "Report about late submission.", DateCreated = DateTime.Now.AddHours(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1001", Course="BSIT" },
+        new { Name = "John Doe", Facebook="john.doe", MobileNumber="09172345678", Address="456 Elm St", ContactPerson="Jane Doe", ContactNumber="09172345679", Birthdate="03/22/2004", Email="john@example.com", ReportType = "Complaint", Company="Beta Corp", Year="2026", Status = "Read", Details = "Report on project progress.", DateCreated = DateTime.Now.AddDays(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1002", Course="BSCS" }
     };
 }
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
 <style>
-    /* ===== Make dropdown arrow smaller ===== */
-    .dropdown .btn {
-        font-size: 0.7rem;
-        padding: 0.2rem 0.4rem;
-        width: 30px;
-        height: 30px;
-        line-height: 1;
+    /* Card layout */
+    .report-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        background: #fff;
+        transition: 0.2s;
     }
 
-    /* ===== Tasks Table Styling ===== */
-    #tasksTable table {
-        margin-top: 20px;
-        font-size: 1.05rem;
-    }
-
-        #tasksTable table th,
-        #tasksTable table td {
-            border: none !important;
-            text-align: center;
-            padding: 0.75rem 1rem;
+        .report-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
 
-        #tasksTable table thead th {
-            font-weight: 600;
-            background-color: #f8f9fa;
+    .student-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .profile-thumb {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+
+    .student-info {
+        display: flex;
+        flex-direction: column;
+    }
+
+        .student-info .name {
+            font-weight: normal;
+        }
+
+        .student-info .email,
+        .student-info .mobile {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+    .program {
+        font-weight: normal;
+    }
+
+    .action-icon {
+        background: transparent;
+        border: none;
+        font-size: 1.2rem;
+        color: #6c757d;
+        cursor: pointer;
+    }
+
+        .action-icon:hover {
+            color: #0d6efd;
+        }
+
+    /* Filter row styling */
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-item {
+        flex: 1 1 200px;
+    }
+
+    .filter-label {
+        font-weight: normal;
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+
+    /* Tables styling (shared between Tasks and Documents) */
+    .data-table .table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0 8px;
+    }
+
+    .data-table th,
+    .data-table td {
+        padding: 12px 16px !important;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .data-table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        border-bottom: 2px solid #dee2e6;
+    }
+
+    .data-table tbody tr {
+        background-color: #fff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        border-radius: 8px;
+    }
+
+    /* Status badge styling */
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .status-unread {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-read {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+
+    .download-icon {
+        background: transparent;
+        border: none;
+        font-size: 1.1rem;
+        color: #6c757d;
+        cursor: pointer;
+        margin-left: 8px;
+    }
+
+        .download-icon:hover {
+            color: #0d6efd;
+        }
+
+    /* Preview section student info – compact spacing */
+    .student-info-card strong {
+        font-weight: 600;
+        margin-right: 4px;
+    }
+
+    .student-info-card .col-md-6 {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Link styling */
+    .info-link {
+        color: #0d6efd;
+        text-decoration: none;
+    }
+
+        .info-link:hover {
+            text-decoration: underline;
         }
 </style>
 
-<div id="mainReports" class="reports-page container-fluid py-4">
-    <div class="card shadow-sm rounded-4 p-4">
+<!-- MAIN REPORTS VIEW (cards + filters) -->
+<div id="mainReports" class="container py-4">
 
-        <h4 class="fw-bold mb-4"></h4>
-
-        <!-- FILTERS -->
-        <div class="row g-3 mb-4 align-items-end">
-            <div class="col-md-6">
-                <label class="form-label fw-semibold">Search by Name</label>
-                <input type="text" id="searchName" class="form-control" placeholder="Type name..." />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label fw-semibold">Academic Year</label>
-                <select id="yearFilter" class="form-select">
-                    <option value="">All</option>
-                    <option value="2026">2026</option>
-                </select>
-            </div>
+    <!-- FILTERS -->
+    <div class="filter-row">
+        <div class="filter-item">
+            <label class="filter-label">Search by Name</label>
+            <input type="text" id="searchName" class="form-control" placeholder="Type name...">
         </div>
-
-        <!-- REPORTS TABLE -->
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="reportsTable">
-                <thead class="table-light text-center">
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Report Type</th>
-                        <th>Company</th>
-                        <th>Date Created</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var report in demoReports)
-                    {
-                        <tr data-name="@report.Name"
-                            data-facebook="@report.Facebook"
-                            data-mobilenumber="@report.MobileNumber"
-                            data-address="@report.Address"
-                            data-contactperson="@report.ContactPerson"
-                            data-birthdate="@report.Birthdate"
-                            data-email="@report.Email"
-                            data-year="@report.Year"
-                            data-status="@report.Status"
-                            data-details="@report.Details"
-                            data-profile="@report.ProfilePic"
-                            data-studentid="@report.StudentId"
-                            data-course="@report.Course"
-                            data-company="@report.Company"
-                            data-reporttype="@report.ReportType">
-
-                            <td class="text-center">@report.Name</td>
-                            <td class="text-center">@report.ReportType</td>
-                            <td class="text-center">@report.Company</td>
-                            <td class="text-center">@report.DateCreated.ToString("MM/dd/yy")</td>
-                            <td class="text-center">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown">▼</button>
-                                    <ul class="dropdown-menu">
-                                        <li><a class="dropdown-item preview-btn" href="#">Preview</a></li>
-                                        <li><a class="dropdown-item download-btn" href="#">Download</a></li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="filter-item">
+            <label class="filter-label">Academic Year</label>
+            <select id="yearFilter" class="form-select">
+                <option value="">All Years</option>
+            </select>
         </div>
+        <div class="filter-item">
+            <label class="filter-label">Program</label>
+            <select id="programFilter" class="form-select">
+                <option value="">All Programs</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- HEADER LABELS (bold) -->
+    <div class="d-flex justify-content-between px-2 mb-2 text-muted fw-bold">
+        <div style="width:40%;">Student Name</div>
+        <div style="width:30%;">Program</div>
+        <div style="width:30%;" class="text-end">Action</div>
+    </div>
+
+    <!-- CARDS CONTAINER -->
+    <div id="cardsContainer">
+        @foreach (var report in demoReports)
+        {
+            <div class="report-card"
+                 data-name="@report.Name"
+                 data-facebook="@report.Facebook"
+                 data-mobilenumber="@report.MobileNumber"
+                 data-address="@report.Address"
+                 data-contactperson="@report.ContactPerson"
+                 data-contactnumber="@report.ContactNumber"
+                 data-birthdate="@report.Birthdate"
+                 data-email="@report.Email"
+                 data-year="@report.Year"
+                 data-status="@report.Status"
+                 data-details="@report.Details"
+                 data-profile="@report.ProfilePic"
+                 data-studentid="@report.StudentId"
+                 data-course="@report.Course"
+                 data-company="@report.Company"
+                 data-reporttype="@report.ReportType">
+
+                <!-- STUDENT INFO (profile + name/email/mobile) -->
+                <div class="student-section" style="width:40%;">
+                    <img src="@(string.IsNullOrEmpty(report.ProfilePic) ? "/images/defaultpicture.jpg" : report.ProfilePic)"
+                         class="profile-thumb"
+                         onerror="this.src='/images/defaultpicture.jpg';">
+
+                    <div class="student-info">
+                        <span class="name">@report.Name</span>
+                        <span class="email">@report.Email</span>
+                        <span class="mobile">@report.MobileNumber</span>
+                    </div>
+                </div>
+
+                <!-- PROGRAM -->
+                <div class="program" style="width:30%;">
+                    @report.Course
+                </div>
+
+                <!-- ACTION (eye icon) -->
+                <div style="width:30%;" class="text-end">
+                    <button class="action-icon preview-btn">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
-<!-- PREVIEW SECTION -->
+<!-- PREVIEW SECTION (hidden by default) -->
 <div id="previewSection" style="display:none;" class="container py-4">
 
     <button class="btn mb-3" id="backBtn" style="background-color:#0787FF; color:white;">&laquo; Back to Reports</button>
@@ -125,24 +265,24 @@
     </div>
 
     <!-- Student Info Card -->
-    <div class="card shadow-sm rounded-4 p-4" style="overflow:hidden;">
+    <div class="card shadow-sm rounded-4 p-4 student-info-card" style="overflow:hidden;">
         <h5 class="fw-bold border-bottom pb-2 mb-3">Student Information</h5>
         <div class="row g-3">
             <div class="col-md-6"><strong>Name:</strong> <span id="pName"></span></div>
             <div class="col-md-6"><strong>Student ID:</strong> <span id="pStudentID"></span></div>
-            <div class="col-md-6"><strong>Course:</strong> <span id="pCourse"></span></div>
+            <div class="col-md-6"><strong>Program:</strong> <span id="pCourse"></span></div>
             <div class="col-md-6"><strong>Year:</strong> <span id="pYear"></span></div>
             <div class="col-md-6"><strong>Facebook:</strong> <span id="pFacebook"></span></div>
             <div class="col-md-6"><strong>Mobile Number:</strong> <span id="pMobileNumber"></span></div>
             <div class="col-md-6"><strong>Address:</strong> <span id="pAddress"></span></div>
-            <div class="col-md-6"><strong>Contact Person:</strong> <span id="pContactPerson"></span></div>
+            <div class="col-md-6"><strong>Contact Number:</strong> <span id="pContactNumber"></span></div>
             <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
             <div class="col-md-6"><strong>Email:</strong> <span id="pEmail"></span></div>
             <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
         </div>
     </div>
 
-    <!-- Download Template Button -->
+    <!-- TASKS SECTION -->
     <div class="d-flex justify-content-end mt-3">
         <a href="#" id="downloadTemplateBtn" class="btn"
            style="background-color:#FE5252; color:white;">
@@ -150,8 +290,7 @@
         </a>
     </div>
 
-    <!-- Tasks Table with checkboxes -->
-    <div id="tasksTable" class="mt-4 p-3 rounded-4 shadow-sm" style="border: 1px solid #dee2e6;">
+    <div id="tasksTable" class="mt-4 p-3 rounded-4 shadow-sm data-table" style="border: 1px solid #dee2e6;">
         <h5 class="fw-bold mb-3">Tasks</h5>
         <div class="table-responsive">
             <table class="table mb-0 align-middle">
@@ -159,28 +298,104 @@
                     <tr>
                         <th>Select</th>
                         <th>Task Title</th>
-                        <th>Date From</th>
-                        <th>Date To</th>
+                        <th>Date Uploaded</th>
+                        <th>Read Status</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
+                    <tr data-task-id="1" data-task-status="Unread">
                         <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 1"></td>
-                        <td class="text-center">Task 1</td>
-                        <td class="text-center">02/01/2026</td>
-                        <td class="text-center">02/05/2026</td>
+                        <td class="text-center">Task 1 - Initial Report</td>
+                        <td class="text-center">03/01/2026</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-task-btn" title="Download Task">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
                     </tr>
-                    <tr>
+                    <tr data-task-id="2" data-task-status="Unread">
                         <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 2"></td>
-                        <td class="text-center">Task 2</td>
-                        <td class="text-center">02/06/2026</td>
-                        <td class="text-center">02/10/2026</td>
+                        <td class="text-center">Task 2 - Progress Update</td>
+                        <td class="text-center">03/05/2026</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-task-btn" title="Download Task">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
                     </tr>
-                    <tr>
+                    <tr data-task-id="3" data-task-status="Unread">
                         <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 3"></td>
-                        <td class="text-center">Task 3</td>
-                        <td class="text-center">02/11/2026</td>
-                        <td class="text-center">02/15/2026</td>
+                        <td class="text-center">Task 3 - Final Submission</td>
+                        <td class="text-center">—</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-task-btn" title="Download Task">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- NEW DOCUMENTS SECTION -->
+    <div class="d-flex justify-content-end mt-4">
+        <a href="#" id="downloadDocumentsBtn" class="btn"
+           style="background-color:#FE5252; color:white;">
+            Download Documents
+        </a>
+    </div>
+
+    <div id="documentsTable" class="mt-4 p-3 rounded-4 shadow-sm data-table" style="border: 1px solid #dee2e6;">
+        <h5 class="fw-bold mb-3">Documents</h5>
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead class="text-center">
+                    <tr>
+                        <th>Select</th>
+                        <th>Document Type</th>
+                        <th>Date Uploaded</th>
+                        <th>Read Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr data-doc-id="1" data-doc-status="Unread">
+                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="MOA"></td>
+                        <td class="text-center">MOA - Acme Inc.</td>
+                        <td class="text-center">03/02/2026</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-doc-btn" title="Download Document">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-doc-id="2" data-doc-status="Unread">
+                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="Compliance"></td>
+                        <td class="text-center">Compliance Report - Beta Corp</td>
+                        <td class="text-center">03/06/2026</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-doc-btn" title="Download Document">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-doc-id="3" data-doc-status="Unread">
+                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="Endorsement"></td>
+                        <td class="text-center">Endorsement Letter</td>
+                        <td class="text-center">—</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-doc-btn" title="Download Document">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -191,90 +406,227 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll(".report-card");
+        const mainReports = document.getElementById("mainReports");
+        const previewSection = document.getElementById("previewSection");
 
-        const tbody = document.querySelector("#reportsTable tbody");
+        // --- Populate filter dropdowns ---
+        const years = new Set();
+        const programs = new Set();
+        cards.forEach(card => {
+            years.add(card.dataset.year);
+            programs.add(card.dataset.course);
+        });
 
-        function filterTable() {
-            const nameVal = document.getElementById("searchName").value.toLowerCase();
-            const yearVal = document.getElementById("yearFilter").value;
+        const yearFilter = document.getElementById("yearFilter");
+        const programFilter = document.getElementById("programFilter");
 
-            [...tbody.rows].forEach(row => {
+        [...years].sort().forEach(year => {
+            const option = document.createElement("option");
+            option.value = year;
+            option.textContent = year;
+            yearFilter.appendChild(option);
+        });
+
+        [...programs].sort().forEach(program => {
+            const option = document.createElement("option");
+            option.value = program;
+            option.textContent = program;
+            programFilter.appendChild(option);
+        });
+
+        // --- Filter function ---
+        function filterCards() {
+            const searchTerm = document.getElementById("searchName").value.toLowerCase();
+            const selectedYear = yearFilter.value;
+            const selectedProgram = programFilter.value;
+
+            cards.forEach(card => {
+                const name = card.dataset.name.toLowerCase();
+                const year = card.dataset.year;
+                const program = card.dataset.course;
+
                 let show = true;
-                if (nameVal && !row.dataset.name.toLowerCase().includes(nameVal)) show = false;
-                if (yearVal && row.dataset.year !== yearVal) show = false;
-                row.style.display = show ? "" : "none";
+                if (searchTerm && !name.includes(searchTerm)) show = false;
+                if (selectedYear && year !== selectedYear) show = false;
+                if (selectedProgram && program !== selectedProgram) show = false;
+
+                card.style.display = show ? "flex" : "none";
             });
         }
 
-        document.getElementById("searchName").addEventListener("input", filterTable);
-        document.getElementById("yearFilter").addEventListener("change", filterTable);
+        document.getElementById("searchName").addEventListener("input", filterCards);
+        yearFilter.addEventListener("change", filterCards);
+        programFilter.addEventListener("change", filterCards);
 
-        tbody.addEventListener("click", function (e) {
-            const previewBtn = e.target.closest(".preview-btn");
-            const downloadBtn = e.target.closest(".download-btn");
-
-            if (previewBtn) {
+        // --- Preview button (eye icon) ---
+        document.querySelectorAll('.preview-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
                 e.preventDefault();
-                const row = previewBtn.closest("tr");
+                const card = this.closest('.report-card');
 
-                const profilePic = row.dataset.profile && row.dataset.profile.trim() !== ""
-                    ? row.dataset.profile
+                document.getElementById("previewProfilePic").src = card.dataset.profile && card.dataset.profile.trim() !== ""
+                    ? card.dataset.profile
                     : "/images/defaultpicture.jpg";
 
-                document.getElementById("previewProfilePic").src = profilePic;
-                document.getElementById("pName").textContent = row.dataset.name;
-                document.getElementById("pStudentID").textContent = row.dataset.studentid || "—";
-                document.getElementById("pCourse").textContent = row.dataset.course || "—";
-                document.getElementById("pYear").textContent = row.dataset.year;
-                document.getElementById("pFacebook").textContent = row.dataset.facebook || "—";
-                document.getElementById("pMobileNumber").textContent = row.dataset.mobilenumber || "—";
-                document.getElementById("pAddress").textContent = row.dataset.address || "—";
-                document.getElementById("pContactPerson").textContent = row.dataset.mobilenumber || "—";
-                document.getElementById("pBirthdate").textContent = row.dataset.birthdate || "—";
-                document.getElementById("pEmail").textContent = row.dataset.email || "—";
-                document.getElementById("pCompany").textContent = row.dataset.company;
+                document.getElementById("pName").textContent = card.dataset.name || "—";
+                document.getElementById("pStudentID").textContent = card.dataset.studentid || "—";
+                document.getElementById("pCourse").textContent = card.dataset.course || "—";
+                document.getElementById("pYear").textContent = card.dataset.year || "—";
 
-                document.getElementById("mainReports").style.display = "none";
-                document.getElementById("previewSection").style.display = "block";
-            }
+                const fbSpan = document.getElementById("pFacebook");
+                const fbUsername = card.dataset.facebook;
+                if (fbUsername && fbUsername.trim() !== "") {
+                    fbSpan.innerHTML = `<a href="https://facebook.com/${fbUsername}" target="_blank" class="info-link">${fbUsername}</a>`;
+                } else {
+                    fbSpan.textContent = "—";
+                }
 
-            if (downloadBtn) {
-                e.preventDefault();
-                const row = downloadBtn.closest("tr");
-                // Direct download of report template for this report
-                const link = document.createElement('a');
-                link.href = '/templates/reporttemplate.docx';
-                link.download = 'reporttemplate.docx';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+                document.getElementById("pMobileNumber").textContent = card.dataset.mobilenumber || "—";
+                document.getElementById("pAddress").textContent = card.dataset.address || "—";
+                document.getElementById("pContactNumber").textContent = card.dataset.contactnumber || "—";
+                document.getElementById("pBirthdate").textContent = card.dataset.birthdate || "—";
+                document.getElementById("pEmail").textContent = card.dataset.email || "—";
+
+                const companySpan = document.getElementById("pCompany");
+                const company = card.dataset.company;
+                if (company && company.trim() !== "") {
+                    companySpan.innerHTML = `<a href="https://www.google.com/search?q=${encodeURIComponent(company)}" target="_blank" class="info-link">${company}</a>`;
+                } else {
+                    companySpan.textContent = "—";
+                }
+
+                mainReports.style.display = "none";
+                previewSection.style.display = "block";
+            });
         });
 
-        document.getElementById("backBtn").addEventListener("click", () => {
-            document.getElementById("previewSection").style.display = "none";
-            document.getElementById("mainReports").style.display = "block";
+        // --- Back button ---
+        document.getElementById("backBtn").addEventListener("click", function () {
+            previewSection.style.display = "none";
+            mainReports.style.display = "block";
         });
 
-        document.getElementById("downloadTemplateBtn").addEventListener("click", () => {
-            const selectedTasks = [...document.querySelectorAll(".task-checkbox:checked")]
-                                    .map(cb => cb.value);
+        // --- TASKS download (bulk) ---
+        document.getElementById("downloadTemplateBtn").addEventListener("click", function (e) {
+            e.preventDefault();
+            const selectedCheckboxes = [...document.querySelectorAll(".task-checkbox:checked")];
 
-            if(selectedTasks.length === 0){
-                alert("Please select at least one task to download.");
+            if (selectedCheckboxes.length === 0) {
+                alert("Please select at least one task.");
                 return;
             }
 
-            // Download the template file with selected tasks in filename
-            const templateUrl = "/templates/reporttemplate.docx";
-            const filename = `ReportTemplate_${selectedTasks.join("_")}.docx`;
-            const link = document.createElement('a');
-            link.href = templateUrl;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            selectedCheckboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const taskId = row.dataset.taskId;
+                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+
+                if (statusBadge && statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.taskStatus = 'Read';
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx";
+                const filename = `Task_${taskId}_${taskTitle.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
         });
 
+        // --- TASKS per-row download ---
+        document.querySelectorAll('.download-task-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const row = this.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const taskId = row.dataset.taskId;
+                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+
+                if (statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.taskStatus = 'Read';
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx";
+                const filename = `Task_${taskId}_${taskTitle.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+
+        // --- DOCUMENTS download (bulk) ---
+        document.getElementById("downloadDocumentsBtn").addEventListener("click", function (e) {
+            e.preventDefault();
+            const selectedCheckboxes = [...document.querySelectorAll(".doc-checkbox:checked")];
+
+            if (selectedCheckboxes.length === 0) {
+                alert("Please select at least one document.");
+                return;
+            }
+
+            selectedCheckboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const docId = row.dataset.docId;
+                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
+
+                if (statusBadge && statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.docStatus = 'Read';
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx"; // same placeholder
+                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+
+        // --- DOCUMENTS per-row download ---
+        document.querySelectorAll('.download-doc-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const row = this.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const docId = row.dataset.docId;
+                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
+
+                if (statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.docStatus = 'Read';
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx";
+                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
     });
 </script>

@@ -18,7 +18,7 @@
 
                     <!-- ===== FILTERS ROW ===== -->
                     <div class="row g-3 align-items-end mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Year</label>
                             <select id="yearFilter" class="form-select filter-box">
                                 <option value="">All</option>
@@ -29,12 +29,12 @@
                             </select>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Search by Name</label>
                             <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label fw-semibold">Status</label>
                             <select id="statusFilter" class="form-select filter-box">
                                 <option value="">All</option>
@@ -42,23 +42,33 @@
                                 <option value="Declined">Declined</option>
                             </select>
                         </div>
+
+                        <div class="col-md-3">
+                            <label class="form-label fw-semibold">Program</label>
+                            <select id="programFilter" class="form-select filter-box">
+                                <option value="">All</option>
+                            </select>
+                        </div>
                     </div>
 
-                    <!-- ================= USERS TABLE ================= -->
+                    <!-- ================= USERS TABLE (with Program column) ================= -->
                     <div class="table-responsive">
                         <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
                             <thead class="table-light">
                                 <tr>
-                                    <th style="width:35%;">Name</th>
-                                    <th style="width:35%;">Email</th>
+                                    <th style="width:25%;">Name</th>
+                                    <th style="width:25%;">Email</th>
+                                    <th style="width:20%;">Program</th>   <!-- NEW COLUMN -->
                                     <th style="width:15%;">Status</th>
                                     <th class="text-end" style="width:15%;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- Example student row with Program cell added -->
                                 <tr data-firstname="Juan" data-lastname="Dela Cruz" data-year="2026" data-status="Pending" data-email="student@example.com" data-company="ABC Corp" data-mobile="09123456789" data-address="123 Street" data-program="Computer Science" data-emergency="09112223333" data-studentid="S12345" data-birthdate="2000-01-01" data-profile="@Url.Content("~/images/defaultpicture.jpg")">
                                     <td>Juan Dela Cruz</td>
                                     <td>student@example.com</td>
+                                    <td>Computer Science</td>   <!-- PROGRAM DISPLAY -->
                                     <td>Pending</td>
                                     <td class="text-end">
                                         <div class="dropdown">
@@ -69,7 +79,7 @@
                                         </div>
                                     </td>
                                 </tr>
-                                <!-- Add other students similarly -->
+                                <!-- Additional rows will follow the same structure -->
                             </tbody>
                         </table>
                     </div>
@@ -118,28 +128,53 @@
     const tbody = document.querySelector("#usersTable tbody");
     const usersSection = document.getElementById("usersSection");
     const studentDetailsWrapper = document.getElementById("studentDetailsWrapper");
+    const programFilter = document.getElementById("programFilter");
 
-    // ===== FILTER FUNCTION =====
+    // ===== POPULATE PROGRAM FILTER =====
+    function populateProgramFilter() {
+        const programSet = new Set();
+        [...tbody.rows].forEach(row => {
+            const prog = row.dataset.program;
+            if (prog && prog.trim() !== '') {
+                programSet.add(prog.trim());
+            }
+        });
+        const sortedPrograms = Array.from(programSet).sort();
+        programFilter.innerHTML = '<option value="">All</option>';
+        sortedPrograms.forEach(prog => {
+            const option = document.createElement('option');
+            option.value = prog;
+            option.textContent = prog;
+            programFilter.appendChild(option);
+        });
+    }
+    populateProgramFilter();
+
+    // ===== FILTER FUNCTION (includes program) =====
     function filterTable() {
         const yearVal = document.getElementById("yearFilter").value;
         const nameVal = document.getElementById("searchName").value.toLowerCase();
         const statusVal = document.getElementById("statusFilter").value;
+        const programVal = programFilter.value;
 
         [...tbody.rows].forEach(row => {
             let show = true;
             const fullName = (row.dataset.firstname + " " + row.dataset.lastname).toLowerCase();
             const rowYear = row.dataset.year;
             const rowStatus = row.dataset.status;
+            const rowProgram = row.dataset.program;
 
             if (yearVal && rowYear !== yearVal) show = false;
             if (nameVal && !fullName.includes(nameVal)) show = false;
             if (statusVal && rowStatus !== statusVal) show = false;
+            if (programVal && rowProgram !== programVal) show = false;
 
             row.style.display = show ? "" : "none";
         });
     }
 
-    ["yearFilter","searchName","statusFilter"].forEach(id => {
+    // Attach event listeners to all filters
+    ["yearFilter", "searchName", "statusFilter", "programFilter"].forEach(id => {
         document.getElementById(id).addEventListener("input", filterTable);
     });
 
