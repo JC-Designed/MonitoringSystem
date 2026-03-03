@@ -20,9 +20,9 @@
                 <button id="showCreateCompanyForm" class="btn btn-primary">Create Company</button>
             </div>
 
-            <!-- FILTERS -->
+            <!-- FILTERS (now with Program) -->
             <div class="row g-3 mb-4 align-items-end">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Year</label>
                     <select id="yearFilter" class="form-select filter-box">
                         <option value="">All</option>
@@ -30,18 +30,26 @@
                     </select>
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Search by Name</label>
                     <input type="text" id="searchName" class="form-control filter-box" placeholder="Type..." />
                 </div>
 
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label fw-semibold">Role</label>
                     <select id="roleFilter" class="form-select filter-box">
                         <option value="">All</option>
                         <option value="Student">Student</option>
                         <option value="Company">Company</option>
                         <option value="Admin">Admin</option>
+                    </select>
+                </div>
+
+                <!-- NEW: Program Filter -->
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Program</label>
+                    <select id="programFilter" class="form-select filter-box">
+                        <option value="">All</option>
                     </select>
                 </div>
             </div>
@@ -69,6 +77,7 @@
                                 data-mobile="@user.MobileNumber"
                                 data-address="@user.Address"
                                 data-companyid="@user.CompanyID"
+                                data-program="@user.Program"  
                                 data-task="Complete the monthly report and submit to manager."
                                 data-learning="Learned how to summarize data and meet deadlines.">
                                 <td>@user.FullName</td>
@@ -552,6 +561,7 @@ let rowToEdit = null;
 const yearFilter = document.getElementById("yearFilter");
 const searchName = document.getElementById("searchName");
 const roleFilter = document.getElementById("roleFilter");
+const programFilter = document.getElementById("programFilter"); // NEW
 
 const usersSection = document.getElementById("usersSection");
 const createCompanyWrapper = document.getElementById("createCompanyWrapper");
@@ -564,21 +574,45 @@ const profileOverlay = document.querySelector(".profile-pic-overlay");
 const miniCamera = document.querySelector(".change-pic-icon");
 const profileInput = document.getElementById("editStudentPicInput");
 
+// ===== POPULATE PROGRAM FILTER =====
+function populateProgramFilter() {
+    const programSet = new Set();
+    [...tbody.rows].forEach(row => {
+        const prog = row.dataset.program;
+        if (prog && prog.trim() !== '') {
+            programSet.add(prog.trim());
+        }
+    });
+    const sortedPrograms = Array.from(programSet).sort();
+    // Clear existing options except the first "All"
+    programFilter.innerHTML = '<option value="">All</option>';
+    sortedPrograms.forEach(prog => {
+        const option = document.createElement('option');
+        option.value = prog;
+        option.textContent = prog;
+        programFilter.appendChild(option);
+    });
+}
+populateProgramFilter();
+
 // ===== FILTER TABLE =====
 function filterTable() {
     const yearVal = yearFilter.value;
     const nameVal = searchName.value.toLowerCase();
     const roleVal = roleFilter.value;
+    const programVal = programFilter.value;   // NEW
+
     [...tbody.rows].forEach(row => {
         let show = true;
         const fullName = row.dataset.fullname.toLowerCase();
         if (yearVal && row.dataset.year !== yearVal) show = false;
         if (nameVal && !fullName.includes(nameVal)) show = false;
         if (roleVal && row.dataset.role !== roleVal) show = false;
+        if (programVal && row.dataset.program !== programVal) show = false;  // NEW
         row.style.display = show ? "" : "none";
     });
 }
-[yearFilter, searchName, roleFilter].forEach(el => el.addEventListener("input", filterTable));
+[yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
 
 // ===== SHOW CREATE COMPANY =====
 showCreateBtn.addEventListener("click", () => {
@@ -614,6 +648,10 @@ document.querySelectorAll(".edit-btn").forEach(btn => {
             document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
             document.getElementById("editStudentRole").value = role;
             document.getElementById("editStudentPassword").value = "";
+            // NEW: populate additional fields
+            document.getElementById("editStudentMobile").value = rowToEdit.dataset.mobile || "";
+            document.getElementById("editStudentAddress").value = rowToEdit.dataset.address || "";
+            document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
             profilePic.src = "/images/defaultpicture.jpg";
             editStudentWrapper.style.display = "block";
             tasksWrapper.style.display = "block";
