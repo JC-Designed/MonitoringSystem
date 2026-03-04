@@ -13,49 +13,21 @@
 
     <!-- RIGHT FORM -->
     <div class="form-side">
-        <h4 class="mb-3">Create your student account</h4>
+        <h4 class="mb-3">Create your account</h4>
 
         <form asp-action="Register" method="post">
 
-            <!-- FULL NAME -->
+            <!-- STUDENT ID (New) -->
             <div class="mb-3">
-                <input name="fullName" class="form-control" placeholder="Full Name" required />
+                <input name="studentId" class="form-control" placeholder="What is your ID number?" required />
             </div>
 
-            <!-- STUDENT ID -->
+            <!-- EMAIL (kept) -->
             <div class="mb-3">
-                <input name="studentId" class="form-control" placeholder="Student ID" required />
+                <input name="email" type="email" class="form-control" placeholder="Email" required />
             </div>
 
-            <!-- MOBILE -->
-            <div class="mb-3">
-                <input name="mobileNumber" class="form-control" placeholder="Mobile Number" required />
-            </div>
-
-            <!-- FACEBOOK -->
-            <div class="mb-3">
-                <input name="Facebook" class="form-control" placeholder="Facebook" required />
-            </div>
-
-            <!-- EMERGENCY CONTACT -->
-            <div class="mb-3">
-                <input name="emergencyContact" class="form-control" placeholder="Emergency Contact" required />
-            </div>
-
-            <!-- ADDRESS -->
-            <div class="mb-3">
-                <input name="address" class="form-control" placeholder="Address" required />
-            </div>
-
-            <!-- PROGRAM -->
-            <div class="mb-3">
-                <select name="program" class="form-select" required>
-                    <option disabled selected>Select Program</option>
-                    <option>Bachelor of Industrial Technology</option>
-                </select>
-            </div>
-
-            <!-- BIRTHDAY -->
+            <!-- BIRTHDATE (kept exactly as original) -->
             <label class="form-label small">Birthdate</label>
             <div class="row mb-3">
                 <div class="col-4">
@@ -85,46 +57,15 @@
                 </div>
             </div>
 
-            <!-- GENDER -->
-            <label class="form-label small">Gender</label>
-            <div class="row mb-3">
-                <div class="col-4">
-                    <label class="gender-box">
-                        Female
-                        <input type="radio" name="gender" value="Female" required />
-                    </label>
-                </div>
-                <div class="col-4">
-                    <label class="gender-box">
-                        Male
-                        <input type="radio" name="gender" value="Male" />
-                    </label>
-                </div>
-                <div class="col-4">
-                    <label class="gender-box">
-                        Custom
-                        <input type="radio" name="gender" value="Custom" />
-                    </label>
-                </div>
-            </div>
-
-            <!-- EMAIL -->
-            <div class="mb-3">
-                <input name="email" type="email" class="form-control" placeholder="Email" required />
-            </div>
-
-            <!-- PASSWORD -->
-            <div class="mb-3">
-                <input name="password" type="password" class="form-control" placeholder="New password" required />
-            </div>
-
-            <!-- SUBMIT -->
+            <!-- SUBMIT BUTTON -->
             <button type="submit" class="btn-ctu w-100 mb-3">Register</button>
 
+            <!-- LINK TO LOGIN -->
             <div class="text-center">
                 <small>Already have an account? <a asp-action="Login">Sign In</a></small>
             </div>
 
+            <!-- ERROR/SUCCESS MESSAGES -->
             @if (ViewBag.Error != null)
             {
                 <div class="alert alert-danger mt-3 text-center">@ViewBag.Error</div>
