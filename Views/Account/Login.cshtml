@@ -10,7 +10,8 @@
 
     <div class="divider"></div>
 
-    <div class="form-side">
+    <!-- LOGIN FORM (visible by default) -->
+    <div class="form-side" id="loginFormContainer">
         <h4>Login to your account</h4>
 
         <form id="loginForm">
@@ -37,18 +38,44 @@
             <!-- BUTTON -->
             <button type="submit" class="btn-ctu mb-3 w-100">Sign In</button>
 
-            <!-- REGISTER LINK -->
-            <div class="text-center">
+            <!-- REGISTER & FORGOT PASSWORD LINKS -->
+            <div class="d-flex justify-content-between align-items-center">
                 <small>Don’t have an account? <a asp-action="Register">Sign Up</a></small>
+                <small><a href="#" id="forgotPasswordLink">Forgot password?</a></small>
             </div>
 
             <!-- ERROR MESSAGE -->
             <div id="loginError" class="alert alert-danger mt-3 text-center" style="display:none;"></div>
         </form>
     </div>
+
+    <!-- FORGOT PASSWORD FORM (hidden initially) -->
+    <div class="form-side" id="forgotPasswordContainer" style="display:none;">
+        <h4>Reset Password</h4>
+        <p class="text-muted small">Enter your email address and we'll send you a link to reset your password.</p>
+
+        <form id="forgotPasswordForm">
+            <!-- EMAIL -->
+            <div class="mb-4">
+                <label class="form-label">Email address</label>
+                <input type="email" class="form-control" id="emailForgot" name="Email" placeholder="your@email.com" required />
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="d-flex justify-content-between align-items-center">
+                <small>
+                    <a href="#" id="backToLoginLink">← Back to login</a>
+                </small>
+                <button type="submit" class="btn btn-primary">Reset password</button>
+            </div>
+
+            <!-- FORGOT PASSWORD ERROR/SUCCESS MESSAGE -->
+            <div id="forgotPasswordMessage" class="alert mt-3 text-center" style="display:none;"></div>
+        </form>
+    </div>
 </div>
 
-<!-- E-SIGNATURE REQUIRED MODAL -->
+<!-- E-SIGNATURE REQUIRED MODAL (unchanged) -->
 <div class="modal fade" id="esignModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -66,6 +93,27 @@
 </div>
 
 <script>
+    // --- Toggle between Login and Forgot Password forms ---
+    const loginContainer = document.getElementById('loginFormContainer');
+    const forgotContainer = document.getElementById('forgotPasswordContainer');
+    const forgotLink = document.getElementById('forgotPasswordLink');
+    const backToLoginLink = document.getElementById('backToLoginLink');
+
+    forgotLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        loginContainer.style.display = 'none';
+        forgotContainer.style.display = 'block';
+    });
+
+    backToLoginLink.addEventListener('click', function(e) {
+        e.preventDefault();
+        forgotContainer.style.display = 'none';
+        loginContainer.style.display = 'block';
+        // Optionally clear any messages
+        document.getElementById('forgotPasswordMessage').style.display = 'none';
+    });
+
+    // --- Login form submission (unchanged) ---
     document.getElementById("loginForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
@@ -106,6 +154,47 @@
         }
     });
 
+    // --- Forgot Password form submission (example - adjust endpoint as needed) ---
+    document.getElementById("forgotPasswordForm").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const email = document.getElementById('emailForgot').value.trim();
+        const messageDiv = document.getElementById('forgotPasswordMessage');
+
+        // Basic validation
+        if (!email) {
+            messageDiv.style.display = 'block';
+            messageDiv.className = 'alert alert-danger mt-3 text-center';
+            messageDiv.textContent = 'Please enter your email address.';
+            return;
+        }
+
+        try {
+            const res = await fetch('/Account/ForgotPassword', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Email: email })
+            });
+            const data = await res.json();
+
+            messageDiv.style.display = 'block';
+            if (data.success) {
+                messageDiv.className = 'alert alert-success mt-3 text-center';
+                messageDiv.textContent = data.message || 'Reset link sent to your email.';
+                // Optionally clear the email field
+                document.getElementById('emailForgot').value = '';
+            } else {
+                messageDiv.className = 'alert alert-danger mt-3 text-center';
+                messageDiv.textContent = data.message || 'An error occurred. Please try again.';
+            }
+        } catch (err) {
+            console.error(err);
+            messageDiv.style.display = 'block';
+            messageDiv.className = 'alert alert-danger mt-3 text-center';
+            messageDiv.textContent = 'Network error. Please try again later.';
+        }
+    });
+
+    // --- Proceed to e-signature (unchanged) ---
     document.getElementById("proceedEsign").addEventListener("click", function() {
         window.location.href = "/Company/ESign";
     });

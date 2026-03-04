@@ -1,4 +1,5 @@
-﻿@model MonitoringSystem.Models.ApplicationUser
+﻿@model IEnumerable<MonitoringSystem.Models.ApplicationUser>
+@using System.Globalization
 
 @{
     Layout = "_AdminLayout";
@@ -8,206 +9,394 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 <input type="hidden" id="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
-<div class="container-fluid py-4">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- ================= USERS SECTION (Filters + Table) ================= -->
-    <div id="usersSection">
-        <div class="row g-4">
-            <div class="col-md-12">
-                <div class="card shadow-sm rounded-4 p-4 mb-4">
+<style>
+    /* Card layout – taller and more spacious */
+    .report-card {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        background: #fff;
+        transition: 0.2s;
+        min-height: 110px;
+    }
 
-                    <!-- ===== FILTERS ROW ===== -->
-                    <div class="row g-3 align-items-end mb-3">
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Year</label>
-                            <select id="yearFilter" class="form-select filter-box">
-                                <option value="">All</option>
-                                <option value="2023">2023</option>
-                                <option value="2024">2024</option>
-                                <option value="2025">2025</option>
-                                <option value="2026">2026</option>
-                            </select>
-                        </div>
+        .report-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
 
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Search by Name</label>
-                            <input type="text" id="searchName" class="form-control filter-box" placeholder="Type name..." />
-                        </div>
+    /* Student section – clickable */
+    .student-section {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 40%;
+        cursor: pointer;
+    }
 
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Status</label>
-                            <select id="statusFilter" class="form-select filter-box">
-                                <option value="">All</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Declined">Declined</option>
-                            </select>
-                        </div>
+    .profile-thumb {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+    }
 
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">Program</label>
-                            <select id="programFilter" class="form-select filter-box">
-                                <option value="">All</option>
-                            </select>
-                        </div>
-                    </div>
+    .student-info {
+        display: flex;
+        flex-direction: column;
+    }
 
-                    <!-- ================= USERS TABLE (with Program column) ================= -->
-                    <div class="table-responsive">
-                        <table class="table table-hover table-borderless align-middle mb-0" id="usersTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width:25%;">Name</th>
-                                    <th style="width:25%;">Email</th>
-                                    <th style="width:20%;">Program</th>   <!-- NEW COLUMN -->
-                                    <th style="width:15%;">Status</th>
-                                    <th class="text-end" style="width:15%;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <!-- Example student row with Program cell added -->
-                                <tr data-firstname="Juan" data-lastname="Dela Cruz" data-year="2026" data-status="Pending" data-email="student@example.com" data-company="ABC Corp" data-mobile="09123456789" data-address="123 Street" data-program="Computer Science" data-emergency="09112223333" data-studentid="S12345" data-birthdate="2000-01-01" data-profile="@Url.Content("~/images/defaultpicture.jpg")">
-                                    <td>Juan Dela Cruz</td>
-                                    <td>student@example.com</td>
-                                    <td>Computer Science</td>   <!-- PROGRAM DISPLAY -->
-                                    <td>Pending</td>
-                                    <td class="text-end">
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
-                                                <li><a class="dropdown-item viewUserBtn" href="#">View</a></li>
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <!-- Additional rows will follow the same structure -->
-                            </tbody>
-                        </table>
-                    </div>
+        .student-info .email {
+            font-weight: 500;
+            font-size: 1rem;
+        }
 
-                </div>
-            </div>
+        .student-info .birthdate {
+            font-size: 0.85rem;
+            color: #6c757d;
+        }
+
+    /* Action buttons – larger, less rounded */
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        padding: 8px 20px;
+        font-size: 1rem;
+        border-radius: 6px;
+        border: none;
+        font-weight: 500;
+        transition: 0.2s;
+    }
+
+    .btn-approve {
+        background-color: #07B618;
+        color: white;
+    }
+
+        .btn-approve:hover {
+            background-color: #059014;
+            color: white;
+        }
+
+    .btn-decline {
+        background-color: #FA0D0D;
+        color: white;
+    }
+
+        .btn-decline:hover {
+            background-color: #d00b0b;
+            color: white;
+        }
+
+    /* Filter row */
+    .filter-row {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-item {
+        flex: 1 1 200px;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        margin-bottom: 0.2rem;
+        font-size: 0.9rem;
+    }
+
+    /* Header labels – bold and dark */
+    .header-labels {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 10px;
+        margin-bottom: 8px;
+        color: #212529;
+        font-weight: 700;
+        font-size: 0.95rem;
+    }
+
+    /* Preview section */
+    .student-info-card strong {
+        font-weight: 600;
+        margin-right: 4px;
+    }
+
+    .student-info-card .col-md-6 {
+        margin-bottom: 0.5rem;
+    }
+</style>
+
+<!-- MAIN REGISTRATION VIEW (cards + filters) -->
+<div id="mainRegistration" class="container-fluid py-3">
+
+    <!-- FILTERS -->
+    <div class="filter-row">
+        <div class="filter-item">
+            <label class="filter-label">Search by Email</label>
+            <input type="text" id="searchEmail" class="form-control form-control-sm" placeholder="Type email...">
+        </div>
+        <div class="filter-item">
+            <label class="filter-label">Academic Year</label>
+            <select id="yearFilter" class="form-select form-select-sm">
+                <option value="">All Years</option>
+            </select>
         </div>
     </div>
 
-    <!-- ================= STUDENT DETAILS + BUTTONS (Hidden by default) ================= -->
-    <div id="studentDetailsWrapper" style="display:none; position:relative;">
+    <!-- HEADER LABELS – simplified to just "Email" -->
+    <div class="header-labels">
+        <div style="width:40%;">Email</div>
+        <div style="width:30%;">ID Number</div>
+        <div style="width:30%;" class="text-end">Action</div>
+    </div>
 
-        <!-- Profile Picture -->
-        <div class="mb-3 text-start">
-            <img id="detailProfile" src="@Url.Content("~/images/defaultpicture.jpg")" alt="Profile"
-                 class="rounded-circle shadow"
-                 style="width:150px; height:150px; object-fit:cover; border:4px solid white;">
-        </div>
+    <!-- CARDS CONTAINER -->
+    <div id="cardsContainer">
+        @{
+            // Demo data – replace with @model loop
+            var demoUsers = new List<dynamic>
+                {
+                new { Id = "1", FirstName = "Juan", LastName = "Dela Cruz", Email = "juan.delacruz@example.com", StudentId = "S12345", Year = "2026", Status = "Pending", ProfilePic = "/images/defaultpicture.jpg", Company = "ABC Corp", Mobile = "09123456789", Address = "123 Street", Program = "Computer Science", EmergencyContact = "09112223333", Birthdate = "2000-01-01" },
+                new { Id = "2", FirstName = "Maria", LastName = "Santos", Email = "maria.santos@example.com", StudentId = "S12346", Year = "2025", Status = "Approved", ProfilePic = "/images/defaultpicture.jpg", Company = "XYZ Inc", Mobile = "09129876543", Address = "456 Avenue", Program = "Information Technology", EmergencyContact = "09114445555", Birthdate = "2001-02-02" },
+                new { Id = "3", FirstName = "Pedro", LastName = "Gonzales", Email = "pedro.g@example.com", StudentId = "S12347", Year = "2026", Status = "Declined", ProfilePic = "/images/defaultpicture.jpg", Company = "Tech Solutions", Mobile = "09127778888", Address = "789 Boulevard", Program = "Computer Engineering", EmergencyContact = "09116667777", Birthdate = "1999-12-12" }
+                };
+        }
 
-        <!-- Student Info Card -->
-        <div class="card shadow-sm rounded-4 p-4 mb-4">
-            <div class="row g-3">
-                <div class="col-md-6"><strong>Name:</strong> <span id="detailName"></span></div>
-                <div class="col-md-6"><strong>Email:</strong> <span id="detailEmail"></span></div>
-                <div class="col-md-6"><strong>Status:</strong> <span id="detailStatus"></span></div>
-                <div class="col-md-6"><strong>Company:</strong> <span id="detailCompany"></span></div>
-                <div class="col-md-6"><strong>Mobile Number:</strong> <span id="detailMobile"></span></div>
-                <div class="col-md-6"><strong>Address:</strong> <span id="detailAddress"></span></div>
-                <div class="col-md-6"><strong>Program:</strong> <span id="detailProgram"></span></div>
-                <div class="col-md-6"><strong>Emergency Contact:</strong> <span id="detailEmergency"></span></div>
-                <div class="col-md-6"><strong>Student ID:</strong> <span id="detailStudentID"></span></div>
-                <div class="col-md-6"><strong>Birthdate:</strong> <span id="detailBirthdate"></span></div>
+        @foreach (var user in demoUsers)
+        {
+            // Format birthdate to MM/dd/yyyy
+            string formattedBirthdate = "";
+            if (!string.IsNullOrEmpty(user.Birthdate))
+            {
+                DateTime dt;
+                if (DateTime.TryParseExact(user.Birthdate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
+                {
+                    formattedBirthdate = dt.ToString("MM/dd/yyyy");
+                }
+                else
+                {
+                    formattedBirthdate = user.Birthdate; // fallback
+                }
+            }
+
+            <div class="report-card"
+                 data-id="@user.Id"
+                 data-firstname="@user.FirstName"
+                 data-lastname="@user.LastName"
+                 data-email="@user.Email"
+                 data-studentid="@user.StudentId"
+                 data-year="@user.Year"
+                 data-status="@user.Status"
+                 data-profile="@user.ProfilePic"
+                 data-company="@user.Company"
+                 data-mobile="@user.Mobile"
+                 data-address="@user.Address"
+                 data-program="@user.Program"
+                 data-emergency="@user.EmergencyContact"
+                 data-birthdate="@user.Birthdate">
+                @* keep original for preview *@
+
+                <!-- Clickable student section – shows email and formatted birthdate -->
+                <div class="student-section preview-trigger">
+                    <img src="@user.ProfilePic"
+                         class="profile-thumb"
+                         onerror="this.src='/images/defaultpicture.jpg';">
+
+                    <div class="student-info">
+                        <span class="email">@user.Email</span>
+                        <span class="birthdate">@formattedBirthdate</span>
+                    </div>
+                </div>
+
+                <!-- ID Number column -->
+                <div style="width:30%;">
+                    @user.StudentId
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div style="width:30%;" class="text-end action-buttons">
+                    <button class="btn-action btn-approve approve-btn" data-userid="@user.Id">Approve</button>
+                    <button class="btn-action btn-decline decline-btn" data-userid="@user.Id">Decline</button>
+                </div>
             </div>
-        </div>
+        }
+    </div>
+</div>
 
-        <!-- Buttons outside the card -->
-        <div id="actionButtons" style="text-align:right; margin-bottom:20px;">
-            <button id="approveBtn" class="btn" style="background-color:#07B618; color:white; margin-right:10px;">Approved</button>
-            <button id="declineBtn" class="btn" style="background-color:#FA0D0D; color:white;">Declined</button>
-        </div>
+<!-- PREVIEW SECTION (unchanged) -->
+<div id="previewSection" style="display:none;" class="container-fluid py-3">
 
+    <button class="btn btn-sm mb-2" id="backBtn" style="background-color:#0787FF; color:white;">&laquo; Back to Registration</button>
+
+    <!-- Profile Picture -->
+    <div class="mb-2">
+        <img id="previewProfilePic" src="/images/defaultpicture.jpg"
+             class="rounded-circle shadow"
+             style="width:120px;height:120px;object-fit:cover;border:4px solid white;"
+             onerror="this.src='/images/defaultpicture.jpg';">
+    </div>
+
+    <!-- Student Info Card -->
+    <div class="card shadow-sm rounded-4 p-3 student-info-card">
+        <h6 class="fw-bold border-bottom pb-2 mb-2">Student Information</h6>
+        <div class="row g-2">
+            <div class="col-md-6"><strong>Name:</strong> <span id="pName"></span></div>
+            <div class="col-md-6"><strong>Student ID:</strong> <span id="pStudentID"></span></div>
+            <div class="col-md-6"><strong>Program:</strong> <span id="pProgram"></span></div>
+            <div class="col-md-6"><strong>Year:</strong> <span id="pYear"></span></div>
+            <div class="col-md-6"><strong>Email:</strong> <span id="pEmail"></span></div>
+            <div class="col-md-6"><strong>Mobile Number:</strong> <span id="pMobile"></span></div>
+            <div class="col-md-6"><strong>Address:</strong> <span id="pAddress"></span></div>
+            <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
+            <div class="col-md-6"><strong>Emergency Contact:</strong> <span id="pEmergency"></span></div>
+            <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
+            <div class="col-md-6"><strong>Status:</strong> <span id="pStatus"></span></div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="mt-3 text-end">
+        <button id="previewApproveBtn" class="btn btn-sm" style="background-color:#07B618; color:white;">Approve</button>
+        <button id="previewDeclineBtn" class="btn btn-sm" style="background-color:#FA0D0D; color:white;">Decline</button>
     </div>
 </div>
 
 <script>
-    const tbody = document.querySelector("#usersTable tbody");
-    const usersSection = document.getElementById("usersSection");
-    const studentDetailsWrapper = document.getElementById("studentDetailsWrapper");
-    const programFilter = document.getElementById("programFilter");
+    // JavaScript (unchanged) – same as before
+    document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll(".report-card");
+        const mainRegistration = document.getElementById("mainRegistration");
+        const previewSection = document.getElementById("previewSection");
 
-    // ===== POPULATE PROGRAM FILTER =====
-    function populateProgramFilter() {
-        const programSet = new Set();
-        [...tbody.rows].forEach(row => {
-            const prog = row.dataset.program;
-            if (prog && prog.trim() !== '') {
-                programSet.add(prog.trim());
+        // Populate Year filter
+        const years = new Set();
+        cards.forEach(card => years.add(card.dataset.year));
+        const yearFilter = document.getElementById("yearFilter");
+        [...years].sort().forEach(year => {
+            const option = document.createElement("option");
+            option.value = year;
+            option.textContent = year;
+            yearFilter.appendChild(option);
+        });
+
+        function filterCards() {
+            const searchEmail = document.getElementById("searchEmail").value.toLowerCase();
+            const selectedYear = yearFilter.value;
+
+            cards.forEach(card => {
+                const email = card.dataset.email.toLowerCase();
+                const year = card.dataset.year;
+
+                let show = true;
+                if (searchEmail && !email.includes(searchEmail)) show = false;
+                if (selectedYear && year !== selectedYear) show = false;
+
+                card.style.display = show ? "flex" : "none";
+            });
+        }
+
+        document.getElementById("searchEmail").addEventListener("input", filterCards);
+        yearFilter.addEventListener("change", filterCards);
+
+        // Preview trigger
+        document.querySelectorAll('.preview-trigger').forEach(el => {
+            el.addEventListener('click', function (e) {
+                const card = this.closest('.report-card');
+                openPreview(card);
+            });
+        });
+
+        function openPreview(card) {
+            document.getElementById("previewProfilePic").src = card.dataset.profile || "/images/defaultpicture.jpg";
+            document.getElementById("pName").textContent = (card.dataset.firstname + " " + card.dataset.lastname).trim() || "—";
+            document.getElementById("pStudentID").textContent = card.dataset.studentid || "—";
+            document.getElementById("pProgram").textContent = card.dataset.program || "—";
+            document.getElementById("pYear").textContent = card.dataset.year || "—";
+            document.getElementById("pEmail").textContent = card.dataset.email || "—";
+            document.getElementById("pMobile").textContent = card.dataset.mobile || "—";
+            document.getElementById("pAddress").textContent = card.dataset.address || "—";
+            document.getElementById("pCompany").textContent = card.dataset.company || "—";
+            document.getElementById("pEmergency").textContent = card.dataset.emergency || "—";
+            document.getElementById("pBirthdate").textContent = card.dataset.birthdate || "—";
+            document.getElementById("pStatus").textContent = card.dataset.status || "—";
+
+            window.currentUserId = card.dataset.id;
+
+            mainRegistration.style.display = "none";
+            previewSection.style.display = "block";
+        }
+
+        document.getElementById("backBtn").addEventListener("click", function () {
+            previewSection.style.display = "none";
+            mainRegistration.style.display = "block";
+        });
+
+        function updateStatus(userId, newStatus) {
+            if (!userId) {
+                alert("No user selected.");
+                return;
             }
+
+            fetch('/Admin/UpdateUserStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.getElementById('__RequestVerificationToken').value
+                },
+                body: JSON.stringify({ userId: userId, status: newStatus })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const card = [...cards].find(c => c.dataset.id === userId);
+                    if (card) card.dataset.status = newStatus;
+
+                    if (window.currentUserId === userId && previewSection.style.display === "block") {
+                        document.getElementById("pStatus").textContent = newStatus;
+                    }
+
+                    alert(`User status updated to ${newStatus}`);
+                } else {
+                    alert('Error updating status.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred.');
+            });
+        }
+
+        document.querySelectorAll('.approve-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                updateStatus(this.dataset.userid, 'Approved');
+            });
         });
-        const sortedPrograms = Array.from(programSet).sort();
-        programFilter.innerHTML = '<option value="">All</option>';
-        sortedPrograms.forEach(prog => {
-            const option = document.createElement('option');
-            option.value = prog;
-            option.textContent = prog;
-            programFilter.appendChild(option);
+
+        document.querySelectorAll('.decline-btn').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                updateStatus(this.dataset.userid, 'Declined');
+            });
         });
-    }
-    populateProgramFilter();
 
-    // ===== FILTER FUNCTION (includes program) =====
-    function filterTable() {
-        const yearVal = document.getElementById("yearFilter").value;
-        const nameVal = document.getElementById("searchName").value.toLowerCase();
-        const statusVal = document.getElementById("statusFilter").value;
-        const programVal = programFilter.value;
-
-        [...tbody.rows].forEach(row => {
-            let show = true;
-            const fullName = (row.dataset.firstname + " " + row.dataset.lastname).toLowerCase();
-            const rowYear = row.dataset.year;
-            const rowStatus = row.dataset.status;
-            const rowProgram = row.dataset.program;
-
-            if (yearVal && rowYear !== yearVal) show = false;
-            if (nameVal && !fullName.includes(nameVal)) show = false;
-            if (statusVal && rowStatus !== statusVal) show = false;
-            if (programVal && rowProgram !== programVal) show = false;
-
-            row.style.display = show ? "" : "none";
+        document.getElementById("previewApproveBtn").addEventListener("click", function () {
+            if (window.currentUserId) updateStatus(window.currentUserId, 'Approved');
         });
-    }
 
-    // Attach event listeners to all filters
-    ["yearFilter", "searchName", "statusFilter", "programFilter"].forEach(id => {
-        document.getElementById(id).addEventListener("input", filterTable);
-    });
-
-    // ===== VIEW BUTTON CLICK =====
-    document.querySelectorAll(".viewUserBtn").forEach(btn => {
-        btn.addEventListener("click", function(e){
-            e.preventDefault();
-            e.stopPropagation();
-
-            const row = this.closest("tr");
-            usersSection.style.display = "none";
-            studentDetailsWrapper.style.display = "block";
-
-            document.getElementById("detailProfile").src = row.dataset.profile;
-            document.getElementById("detailName").textContent = row.dataset.firstname + " " + row.dataset.lastname;
-            document.getElementById("detailEmail").textContent = row.dataset.email;
-            document.getElementById("detailStatus").textContent = row.dataset.status;
-            document.getElementById("detailCompany").textContent = row.dataset.company;
-            document.getElementById("detailMobile").textContent = row.dataset.mobile;
-            document.getElementById("detailAddress").textContent = row.dataset.address;
-            document.getElementById("detailProgram").textContent = row.dataset.program;
-            document.getElementById("detailEmergency").textContent = row.dataset.emergency;
-            document.getElementById("detailStudentID").textContent = row.dataset.studentid;
-            document.getElementById("detailBirthdate").textContent = row.dataset.birthdate;
+        document.getElementById("previewDeclineBtn").addEventListener("click", function () {
+            if (window.currentUserId) updateStatus(window.currentUserId, 'Declined');
         });
-    });
-
-    // ===== APPROVE / DECLINE BUTTONS =====
-    document.getElementById("approveBtn").addEventListener("click", () => {
-        alert("Student Approved!");
-    });
-
-    document.getElementById("declineBtn").addEventListener("click", () => {
-        alert("Student Declined!");
     });
 </script>
