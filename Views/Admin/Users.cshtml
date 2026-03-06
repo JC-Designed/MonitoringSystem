@@ -45,7 +45,7 @@
                     </select>
                 </div>
 
-                <!-- NEW: Program Filter -->
+                <!-- Program Filter -->
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Program</label>
                     <select id="programFilter" class="form-select filter-box">
@@ -68,7 +68,7 @@
                     <tbody>
                         @foreach (var user in Model)
                         {
-                            var role = user.Roles.FirstOrDefault() ?? "No Role";
+                            var role = user.Role ?? "No Role";
                             <tr data-id="@user.Id"
                                 data-fullname="@user.FullName"
                                 data-email="@user.Email"
@@ -77,7 +77,7 @@
                                 data-mobile="@user.MobileNumber"
                                 data-address="@user.Address"
                                 data-companyid="@user.CompanyID"
-                                data-program="@user.Program"  
+                                data-program="@user.Program"
                                 data-task="Complete the monthly report and submit to manager."
                                 data-learning="Learned how to summarize data and meet deadlines.">
                                 <td>@user.FullName</td>
@@ -89,6 +89,8 @@
                                         <ul class="dropdown-menu shadow-sm">
                                             <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
                                             <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
+                                            <!-- NEW: Make Admin option -->
+                                            <li><a class="dropdown-item make-admin-btn" href="#">Make Admin</a></li>
                                         </ul>
                                     </div>
                                 </td>
@@ -173,7 +175,6 @@
 
     <!-- ================= EDIT STUDENT WRAPPER ================= -->
     <div id="editStudentWrapper" style="display: none; margin-top:20px;">
-        <!-- KEEP STUDENT SECTION EXACTLY AS-IS -->
         <div class="d-flex align-items-start mb-3">
             <div class="position-relative" style="width:140px; height:140px;">
                 <img id="editStudentProfilePic" src="/images/defaultpicture.jpg" alt="Profile"
@@ -317,26 +318,26 @@
             </form>
         </div>
 
+        <style>
+            /* REMOVE ALL BODY & HTML MARGIN/PADDING */
+            html, body {
+                margin: 0;
+                padding: 0;
+                width: 100%;
+            }
 
-    <style>
-        /* REMOVE ALL BODY & HTML MARGIN/PADDING */
-        html, body {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-        }
+            /* REMOVE PADDING FROM PARENT CONTAINER */
+            .users-page.container-fluid {
+                padding: 0 !important;
+                margin: 0;
+            }
 
-        /* REMOVE PADDING FROM PARENT CONTAINER */
-        .users-page.container-fluid {
-            padding: 0 !important;
-            margin: 0;
-        }
+            /* REMOVE CARD TOP SPACING */
+            .company-banner-wrapper img {
+                border-radius: 0 !important;
+            }
+        </style>
 
-        /* REMOVE CARD TOP SPACING */
-        .company-banner-wrapper img {
-            border-radius: 0 !important;
-        }
-    </style>
         <!-- ================= CONTACT PERSON CARD ================= -->
         <div class="card shadow-sm rounded-4 p-4 mt-3" style="margin:0;">
             <h5 class="mb-3">Contact Person</h5>
@@ -371,6 +372,7 @@
                 + Add Trainee
             </button>
         </div>
+
         <!-- ================= ADD TRAINEE MODAL ================= -->
         <div class="modal fade" id="addTraineeModal" tabindex="-1">
             <div class="modal-dialog modal-xl modal-dialog-centered">
@@ -385,7 +387,7 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th class="text-center px-3">Select</th>
-                                        <th class="px-3">Student Code</th> <!-- Updated label -->
+                                        <th class="px-3">Student Code</th>
                                         <th class="px-3">Name</th>
                                         <th class="px-3">Email</th>
                                         <th class="px-3">Program</th>
@@ -399,7 +401,6 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" id="addSelectedTrainees" class="btn btn-success px-4">Add Selected</button>
-
                     </div>
                 </div>
             </div>
@@ -408,12 +409,12 @@
         <style>
             /* Increase row height and padding */
             #modalStudentsTable tbody tr {
-                height: 55px; /* taller rows */
+                height: 55px;
             }
 
             #modalStudentsTable th,
             #modalStudentsTable td {
-                padding: 12px 15px; /* more space inside cells */
+                padding: 12px 15px;
                 vertical-align: middle;
             }
 
@@ -432,9 +433,10 @@
             #modalStudentsTable {
                 width: 100%;
                 border-collapse: separate;
-                border-spacing: 0 6px; /* small spacing between rows */
+                border-spacing: 0 6px;
             }
         </style>
+
         <!-- ================= TRAINEES TABLE ================= -->
         <div class="card shadow-sm rounded-4 p-4 mt-3">
             <h5 class="mb-3">Trainees</h5>
@@ -473,6 +475,7 @@
             <button id="resetTraineesPassword" class="btn btn-warning">Reset Password</button>
         </div>
     </div>
+
     <!-- ================= TASKS TABLE WRAPPER ================= -->
     <div id="tasksWrapper" style="display: none; margin-top:20px;">
         <div class="card shadow-sm rounded-4 p-4">
@@ -556,181 +559,176 @@
 
 <!-- ================= SCRIPT ================= -->
 <script>
-const tbody = document.querySelector("#usersTable tbody");
-let rowToEdit = null;
-const yearFilter = document.getElementById("yearFilter");
-const searchName = document.getElementById("searchName");
-const roleFilter = document.getElementById("roleFilter");
-const programFilter = document.getElementById("programFilter"); // NEW
+    const tbody = document.querySelector("#usersTable tbody");
+    let rowToEdit = null;
+    const yearFilter = document.getElementById("yearFilter");
+    const searchName = document.getElementById("searchName");
+    const roleFilter = document.getElementById("roleFilter");
+    const programFilter = document.getElementById("programFilter");
 
-const usersSection = document.getElementById("usersSection");
-const createCompanyWrapper = document.getElementById("createCompanyWrapper");
-const editStudentWrapper = document.getElementById("editStudentWrapper");
-const editCompanyWrapper = document.getElementById("editCompanyWrapper");
-const tasksWrapper = document.getElementById("tasksWrapper");
-const showCreateBtn = document.getElementById("showCreateCompanyForm");
-const profilePic = document.getElementById("editStudentProfilePic");
-const profileOverlay = document.querySelector(".profile-pic-overlay");
-const miniCamera = document.querySelector(".change-pic-icon");
-const profileInput = document.getElementById("editStudentPicInput");
+    const usersSection = document.getElementById("usersSection");
+    const createCompanyWrapper = document.getElementById("createCompanyWrapper");
+    const editStudentWrapper = document.getElementById("editStudentWrapper");
+    const editCompanyWrapper = document.getElementById("editCompanyWrapper");
+    const tasksWrapper = document.getElementById("tasksWrapper");
+    const showCreateBtn = document.getElementById("showCreateCompanyForm");
+    const profilePic = document.getElementById("editStudentProfilePic");
+    const profileOverlay = document.querySelector(".profile-pic-overlay");
+    const miniCamera = document.querySelector(".change-pic-icon");
+    const profileInput = document.getElementById("editStudentPicInput");
 
-// ===== POPULATE PROGRAM FILTER =====
-function populateProgramFilter() {
-    const programSet = new Set();
-    [...tbody.rows].forEach(row => {
-        const prog = row.dataset.program;
-        if (prog && prog.trim() !== '') {
-            programSet.add(prog.trim());
-        }
-    });
-    const sortedPrograms = Array.from(programSet).sort();
-    // Clear existing options except the first "All"
-    programFilter.innerHTML = '<option value="">All</option>';
-    sortedPrograms.forEach(prog => {
-        const option = document.createElement('option');
-        option.value = prog;
-        option.textContent = prog;
-        programFilter.appendChild(option);
-    });
-}
-populateProgramFilter();
+    // ===== POPULATE PROGRAM FILTER =====
+    function populateProgramFilter() {
+        const programSet = new Set();
+        [...tbody.rows].forEach(row => {
+            const prog = row.dataset.program;
+            if (prog && prog.trim() !== '') {
+                programSet.add(prog.trim());
+            }
+        });
+        const sortedPrograms = Array.from(programSet).sort();
+        programFilter.innerHTML = '<option value="">All</option>';
+        sortedPrograms.forEach(prog => {
+            const option = document.createElement('option');
+            option.value = prog;
+            option.textContent = prog;
+            programFilter.appendChild(option);
+        });
+    }
+    populateProgramFilter();
 
-// ===== FILTER TABLE =====
-function filterTable() {
-    const yearVal = yearFilter.value;
-    const nameVal = searchName.value.toLowerCase();
-    const roleVal = roleFilter.value;
-    const programVal = programFilter.value;   // NEW
+    // ===== FILTER TABLE =====
+    function filterTable() {
+        const yearVal = yearFilter.value;
+        const nameVal = searchName.value.toLowerCase();
+        const roleVal = roleFilter.value;
+        const programVal = programFilter.value;
 
-    [...tbody.rows].forEach(row => {
-        let show = true;
-        const fullName = row.dataset.fullname.toLowerCase();
-        if (yearVal && row.dataset.year !== yearVal) show = false;
-        if (nameVal && !fullName.includes(nameVal)) show = false;
-        if (roleVal && row.dataset.role !== roleVal) show = false;
-        if (programVal && row.dataset.program !== programVal) show = false;  // NEW
-        row.style.display = show ? "" : "none";
-    });
-}
-[yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
+        [...tbody.rows].forEach(row => {
+            let show = true;
+            const fullName = row.dataset.fullname.toLowerCase();
+            if (yearVal && row.dataset.year !== yearVal) show = false;
+            if (nameVal && !fullName.includes(nameVal)) show = false;
+            if (roleVal && row.dataset.role !== roleVal) show = false;
+            if (programVal && row.dataset.program !== programVal) show = false;
+            row.style.display = show ? "" : "none";
+        });
+    }
+    [yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
 
-// ===== SHOW CREATE COMPANY =====
-showCreateBtn.addEventListener("click", () => {
-    usersSection.style.display = "none";
-    createCompanyWrapper.style.display = "block";
-    editStudentWrapper.style.display = "none";
-    editCompanyWrapper.style.display = "none";
-    tasksWrapper.style.display = "none";
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-});
-document.getElementById("cancelCreateCompany").addEventListener("click", () => {
-    createCompanyWrapper.style.display = "none";
-    usersSection.style.display = "block";
-});
-
-// ===== EDIT USER =====
-document.querySelectorAll(".edit-btn").forEach(btn => {
-    btn.addEventListener("click", e => {
-        e.preventDefault();
-        rowToEdit = btn.closest("tr");
-        const role = rowToEdit.dataset.role;
-
-        // Hide all
+    // ===== SHOW CREATE COMPANY =====
+    showCreateBtn.addEventListener("click", () => {
         usersSection.style.display = "none";
-        createCompanyWrapper.style.display = "none";
+        createCompanyWrapper.style.display = "block";
         editStudentWrapper.style.display = "none";
         editCompanyWrapper.style.display = "none";
         tasksWrapper.style.display = "none";
-
-        if(role === "Student"){
-            // Show student edit
-            document.getElementById("editStudentFullName").value = rowToEdit.dataset.fullname;
-            document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
-            document.getElementById("editStudentRole").value = role;
-            document.getElementById("editStudentPassword").value = "";
-            // NEW: populate additional fields
-            document.getElementById("editStudentMobile").value = rowToEdit.dataset.mobile || "";
-            document.getElementById("editStudentAddress").value = rowToEdit.dataset.address || "";
-            document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
-            profilePic.src = "/images/defaultpicture.jpg";
-            editStudentWrapper.style.display = "block";
-            tasksWrapper.style.display = "block";
-        } else if(role === "Company"){
-            // Show company edit
-            document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
-            document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
-            document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
-            document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
-            editCompanyWrapper.style.display = "block";
-        }
-
         window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-});
-
-document.getElementById("topRightEditBtn").addEventListener("click", () => {
-    const form = document.getElementById("editStudentForm");
-    [...form.elements].forEach(el => {
-        if(el.id !== "editStudentRole") el.removeAttribute("readonly");
+    document.getElementById("cancelCreateCompany").addEventListener("click", () => {
+        createCompanyWrapper.style.display = "none";
+        usersSection.style.display = "block";
     });
-});
 
-// ===== PROFILE PICTURE CHANGE =====
-profileOverlay.addEventListener("click", ()=> profileInput.click());
-miniCamera.addEventListener("click", ()=> profileInput.click());
-profileInput.addEventListener("change", (e)=>{
-    if(e.target.files && e.target.files[0]){
-        const reader = new FileReader();
-        reader.onload = function(evt){ profilePic.src = evt.target.result; }
-        reader.readAsDataURL(e.target.files[0]);
-    }
-});
+    // ===== EDIT USER =====
+    document.querySelectorAll(".edit-btn").forEach(btn => {
+        btn.addEventListener("click", e => {
+            e.preventDefault();
+            rowToEdit = btn.closest("tr");
+            const role = rowToEdit.dataset.role;
 
-// ===== VIEW TASK MODAL =====
-document.querySelectorAll(".view-task-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-        const row = btn.closest("tr");
-        document.getElementById("modalTaskTitle").value = row.cells[0].textContent;
-        document.getElementById("modalTaskFrom").value = row.cells[1].textContent;
-        document.getElementById("modalTaskTo").value = row.cells[2].textContent;
-        document.getElementById("modalTaskTask").value = row.dataset.task || "No task provided.";
-        document.getElementById("modalTaskLearning").value = row.dataset.learning || "No learning provided.";
-        document.getElementById("modalTaskStatus").value = row.dataset.status || "Ongoing";
-    });
-});
+            usersSection.style.display = "none";
+            createCompanyWrapper.style.display = "none";
+            editStudentWrapper.style.display = "none";
+            editCompanyWrapper.style.display = "none";
+            tasksWrapper.style.display = "none";
 
-// ===== COMPANY IMAGE PREVIEW =====
-document.getElementById("companyPicInput").addEventListener("change", e => {
-    if (e.target.files[0]) {
-        const reader = new FileReader();
-        reader.onload = ev => document.getElementById("editCompanyProfilePic").src = ev.target.result;
-        reader.readAsDataURL(e.target.files[0]);
-    }
-});
-        // Remove trainee row when clicking "Remove"
-        document.getElementById("traineesTable").addEventListener("click", function(e) {
-            if(e.target && e.target.classList.contains("remove-trainee-btn")) {
-                const row = e.target.closest("tr");
-                row.remove();
+            if(role === "Student"){
+                document.getElementById("editStudentFullName").value = rowToEdit.dataset.fullname;
+                document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
+                document.getElementById("editStudentRole").value = role;
+                document.getElementById("editStudentPassword").value = "";
+                document.getElementById("editStudentMobile").value = rowToEdit.dataset.mobile || "";
+                document.getElementById("editStudentAddress").value = rowToEdit.dataset.address || "";
+                document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
+                profilePic.src = "/images/defaultpicture.jpg";
+                editStudentWrapper.style.display = "block";
+                tasksWrapper.style.display = "block";
+            } else if(role === "Company"){
+                document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
+                document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
+                document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
+                document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                editCompanyWrapper.style.display = "block";
             }
-        });
 
-document.getElementById("companyBannerInput").addEventListener("change", e => {
-    if (e.target.files[0]) {
-        const reader = new FileReader();
-        reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
-        reader.readAsDataURL(e.target.files[0]);
-    }
-});
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    });
+
+    document.getElementById("topRightEditBtn").addEventListener("click", () => {
+        const form = document.getElementById("editStudentForm");
+        [...form.elements].forEach(el => {
+            if(el.id !== "editStudentRole") el.removeAttribute("readonly");
+        });
+    });
+
+    // ===== PROFILE PICTURE CHANGE =====
+    profileOverlay.addEventListener("click", ()=> profileInput.click());
+    miniCamera.addEventListener("click", ()=> profileInput.click());
+    profileInput.addEventListener("change", (e)=>{
+        if(e.target.files && e.target.files[0]){
+            const reader = new FileReader();
+            reader.onload = function(evt){ profilePic.src = evt.target.result; }
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    // ===== VIEW TASK MODAL =====
+    document.querySelectorAll(".view-task-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            const row = btn.closest("tr");
+            document.getElementById("modalTaskTitle").value = row.cells[0].textContent;
+            document.getElementById("modalTaskFrom").value = row.cells[1].textContent;
+            document.getElementById("modalTaskTo").value = row.cells[2].textContent;
+            document.getElementById("modalTaskTask").value = row.dataset.task || "No task provided.";
+            document.getElementById("modalTaskLearning").value = row.dataset.learning || "No learning provided.";
+            document.getElementById("modalTaskStatus").value = row.dataset.status || "Ongoing";
+        });
+    });
+
+    // ===== COMPANY IMAGE PREVIEW =====
+    document.getElementById("companyPicInput").addEventListener("change", e => {
+        if (e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = ev => document.getElementById("editCompanyProfilePic").src = ev.target.result;
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
+    // Remove trainee row when clicking "Remove"
+    document.getElementById("traineesTable").addEventListener("click", function(e) {
+        if(e.target && e.target.classList.contains("remove-trainee-btn")) {
+            const row = e.target.closest("tr");
+            row.remove();
+        }
+    });
+
+    document.getElementById("companyBannerInput").addEventListener("change", e => {
+        if (e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    });
+
     const addTraineeBtn = document.getElementById("addTraineeBtn");
     const modalStudentsTbody = document.querySelector("#modalStudentsTable tbody");
 
     // Open modal and populate with student users
     addTraineeBtn.addEventListener("click", () => {
-        // Clear previous rows
         modalStudentsTbody.innerHTML = "";
 
-        // Loop through users table and find students
         [...tbody.rows].forEach(row => {
             if(row.dataset.role === "Student") {
                 const tr = document.createElement("tr");
@@ -745,7 +743,6 @@ document.getElementById("companyBannerInput").addEventListener("change", e => {
             }
         });
 
-        // Show modal
         const modal = new bootstrap.Modal(document.getElementById('addTraineeModal'));
         modal.show();
     });
@@ -756,7 +753,6 @@ document.getElementById("companyBannerInput").addEventListener("change", e => {
         const traineesTableBody = document.querySelector("#traineesTable tbody");
 
         checkboxes.forEach(cb => {
-            // Prevent duplicates
             if(![...traineesTableBody.rows].some(r => r.cells[1].textContent === cb.dataset.fullname)) {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
@@ -772,10 +768,47 @@ document.getElementById("companyBannerInput").addEventListener("change", e => {
             }
         });
 
-        // Close modal
         const modalEl = document.getElementById('addTraineeModal');
         const modalInstance = bootstrap.Modal.getInstance(modalEl);
         modalInstance.hide();
     });
 
+    // ===== NEW: MAKE ADMIN FUNCTIONALITY =====
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('make-admin-btn')) {
+            e.preventDefault();
+
+            const row = e.target.closest('tr');
+            const userId = row.dataset.id;
+            const fullName = row.dataset.fullname;
+
+            if (confirm(`Are you sure you want to make ${fullName} an Admin?`)) {
+                const token = document.getElementById('__RequestVerificationToken').value;
+
+                fetch('/Admin/Users/MakeAdmin', {   // Adjust URL to match your controller action
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({ userId: userId })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        // Update the role cell (3rd column, index 2) and the data-role attribute
+                        const roleCell = row.cells[2];
+                        roleCell.textContent = 'Admin';
+                        row.dataset.role = 'Admin';
+                        alert('User is now an Admin.');
+                    } else {
+                        alert('Failed to make user Admin.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred.');
+                });
+            }
+        }
+    });
 </script>

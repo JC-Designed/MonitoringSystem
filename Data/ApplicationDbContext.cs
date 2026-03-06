@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using MonitoringSystem.Models;
 
-namespace MonitoringSystem.Data
+namespace MonitoringSystem.Models
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
@@ -11,54 +10,55 @@ namespace MonitoringSystem.Data
         {
         }
 
-        // ===================== COMPANY =====================
-        public DbSet<Company> Companies { get; set; } = null!;
-
-        // ===================== MESSAGES =====================
-        public DbSet<Conversation> Conversations { get; set; } = null!;
-        public DbSet<Message> Messages { get; set; } = null!;
+        // DbSets for your custom tables (Messages and Conversations REMOVED)
+        public DbSet<Student> Students { get; set; }
+        public DbSet<Company> Companies { get; set; }
+        public DbSet<Admin> Admins { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
 
-            // ===================== CONVERSATION =====================
-            builder.Entity<Conversation>()
-                   .HasOne(c => c.User1)
-                   .WithMany(u => u.ConversationsAsUser1)
-                   .HasForeignKey(c => c.User1Id)
-                   .OnDelete(DeleteBehavior.Restrict);
+            // ===================== CONFIGURE ONE-TO-ONE RELATIONSHIPS =====================
 
-            builder.Entity<Conversation>()
-                   .HasOne(c => c.User2)
-                   .WithMany(u => u.ConversationsAsUser2)
-                   .HasForeignKey(c => c.User2Id)
-                   .OnDelete(DeleteBehavior.Restrict);
+            // Student - User (one-to-one)
+            builder.Entity<Student>()
+                .HasOne(s => s.User)
+                .WithOne(u => u.Student)
+                .HasForeignKey<Student>(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // ===================== MESSAGE =====================
-            builder.Entity<Message>()
-                   .HasOne(m => m.Conversation)
-                   .WithMany(c => c.Messages)
-                   .HasForeignKey(m => m.ConversationId)
-                   .OnDelete(DeleteBehavior.Cascade);
+            // Company - User (one-to-one)
+            builder.Entity<Company>()
+                .HasOne(c => c.User)
+                .WithOne(u => u.Company)
+                .HasForeignKey<Company>(c => c.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            builder.Entity<Message>()
-                   .HasOne(m => m.Sender)
-                   .WithMany(u => u.MessagesSent)
-                   .HasForeignKey(m => m.SenderId)
-                   .OnDelete(DeleteBehavior.Restrict);
+            // Admin - User (one-to-one)
+            builder.Entity<Admin>()
+                .HasOne(a => a.User)
+                .WithOne(u => u.Admin)
+                .HasForeignKey<Admin>(a => a.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // ===================== APPLICATIONUSER CONFIG =====================
-            builder.Entity<ApplicationUser>()
-                   .Property(u => u.FullName)
-                   .HasMaxLength(150)
-                   .IsRequired(); // FullName mandatory
+            // ===================== CONFIGURE TABLE NAMES =====================
+            builder.Entity<Student>().ToTable("Students");
+            builder.Entity<Company>().ToTable("Companies");
+            builder.Entity<Admin>().ToTable("Admins");
 
-            // Ignore non-mapped helper properties
-            builder.Entity<ApplicationUser>()
-                   .Ignore(u => u.DisplayName)
-                   .Ignore(u => u.Role)
-                   .Ignore(u => u.Year);
+          
+
+            // ===================== CONFIGURE INDEXES =====================
+            builder.Entity<Student>()
+                .HasIndex(s => s.StudentId)
+                .HasDatabaseName("IX_Students_StudentId");
+
+            builder.Entity<Company>()
+                .HasIndex(c => c.CompanyName)
+                .HasDatabaseName("IX_Companies_CompanyName");
+
+
         }
     }
 }

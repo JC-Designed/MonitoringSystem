@@ -5,32 +5,29 @@
 
 <div class="container-fluid my-4">
 
-    <!-- Year Dropdown -->
+    <!-- Year Dropdown (only 2026) -->
     <div class="row mb-4">
         <div class="col-12 d-flex align-items-center">
             <label for="yearSelector" class="me-3 fw-bold">Select Year:</label>
             <select id="yearSelector" class="form-select" style="width:150px;">
                 <option value="2026" selected>2026</option>
-                <option value="2025">2025</option>
-                <option value="2024">2024</option>
-                <option value="2023">2023</option>
             </select>
         </div>
     </div>
 
     <div class="row g-4">
 
-        <!-- Pending vs Approved -->
+        <!-- Pending Users vs Task Submitted (Pink & Blue) -->
         <div class="col-12">
             <div class="card shadow-sm p-4">
-                <h5 class="fw-bold mb-3" id="pendingApprovedTitle"></h5>
+                <h5 class="fw-bold mb-3" id="pendingTaskTitle"></h5>
                 <div style="height:380px;">
-                    <canvas id="pendingApprovedChart"></canvas>
+                    <canvas id="pendingTaskChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Total Users vs Companies -->
+        <!-- Total Users vs Total Companies (Light Green & Gold) -->
         <div class="col-12">
             <div class="card shadow-sm p-4">
                 <h5 class="fw-bold mb-3" id="totalUsersCompaniesTitle"></h5>
@@ -50,12 +47,12 @@
         Chart.defaults.font.family = 'Segoe UI';
         Chart.defaults.color = '#666';
 
-        // ⭐ BIGGER BARS STYLE
+        // Thick bar styling
         const premiumBarStyle = {
             borderRadius: 8,
-            barPercentage: 0.9,        // was 0.6
-            categoryPercentage: 0.9,   // was 0.6
-            maxBarThickness: 60        // prevents over-stretching
+            barPercentage: 0.9,
+            categoryPercentage: 0.9,
+            maxBarThickness: 60
         };
 
         const premiumOptions = {
@@ -73,34 +70,79 @@
             }
         };
 
-        const pendingApprovedChart = new Chart(document.getElementById('pendingApprovedChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets: [
-                    { label:'Pending User', data:[2,2,6,7,3,4,2,5,6,4,3,5], backgroundColor:'#FA90D3', ...premiumBarStyle },
-                    { label:'Approved User', data:[3,4,5,6,5,4,6,3,5,6,4,7], backgroundColor:'#55D2FF', ...premiumBarStyle }
-                ]
-            },
-            options: premiumOptions
+        // Chart instances
+        let pendingTaskChart, totalUsersCompaniesChart;
+
+        function createCharts() {
+            const ctx1 = document.getElementById('pendingTaskChart').getContext('2d');
+            const ctx2 = document.getElementById('totalUsersCompaniesChart').getContext('2d');
+
+            // First chart: Pending Users (pink) vs Task Submitted (blue)
+            pendingTaskChart = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                    datasets: [
+                        { label: 'Pending Users', data: [], backgroundColor: '#FA90D3', ...premiumBarStyle },
+                        { label: 'Task Submitted', data: [], backgroundColor: '#55D2FF', ...premiumBarStyle }
+                    ]
+                },
+                options: premiumOptions
+            });
+
+            // Second chart: Total Users (light green) vs Total Companies (gold)
+            totalUsersCompaniesChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+                    datasets: [
+                        { label: 'Total Users', data: [], backgroundColor: '#90FAD5', ...premiumBarStyle },
+                        { label: 'Total Companies', data: [], backgroundColor: '#FFC355', ...premiumBarStyle }
+                    ]
+                },
+                options: premiumOptions
+            });
+        }
+
+        // Fetch data from server
+        async function loadDashboardData(year) {
+            try {
+                document.body.style.cursor = 'wait';
+
+                // ✅ FIXED: Correct URL to match AdminController action
+                const response = await fetch(`/Admin/GetDashboardData?year=${year}`);
+                if (!response.ok) throw new Error('Failed to fetch data');
+
+                const data = await response.json();
+                // Update first chart (pending vs task)
+                pendingTaskChart.data.datasets[0].data = data.pendingUsers;
+                pendingTaskChart.data.datasets[1].data = data.tasksSubmitted;
+                pendingTaskChart.update();
+
+                // Update second chart (total users vs companies)
+                totalUsersCompaniesChart.data.datasets[0].data = data.totalUsers;
+                totalUsersCompaniesChart.data.datasets[1].data = data.totalCompanies;
+                totalUsersCompaniesChart.update();
+
+                // Update titles
+                document.getElementById('pendingTaskTitle').textContent = `${year} Pending Users vs Task Submitted`;
+                document.getElementById('totalUsersCompaniesTitle').textContent = `${year} Total Users vs Total Companies`;
+
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                // Optionally show a user-friendly message
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        // Year selector event
+        document.getElementById('yearSelector').addEventListener('change', function (e) {
+            loadDashboardData(e.target.value);
         });
 
-        const totalUsersCompaniesChart = new Chart(document.getElementById('totalUsersCompaniesChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-                datasets: [
-                    { label:'Total User', data:[2,2,6,7,4,5,3,6,7,5,4,6], backgroundColor:'#90FAD5', ...premiumBarStyle },
-                    { label:'Total Companies', data:[3,4,5,6,5,4,5,7,6,4,5,7], backgroundColor:'#FFC355', ...premiumBarStyle }
-                ]
-            },
-            options: premiumOptions
-        });
-
-        document.getElementById('yearSelector').addEventListener('change', function() {
-            const year = this.value;
-            document.getElementById('pendingApprovedTitle').textContent = year + " Pending vs Approved Users";
-            document.getElementById('totalUsersCompaniesTitle').textContent = year + " Total Users vs Companies";
-        });
+        // Initialize
+        createCharts();
+        loadDashboardData(document.getElementById('yearSelector').value);
     </script>
 }

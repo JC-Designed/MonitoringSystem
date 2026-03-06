@@ -5,15 +5,15 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using MonitoringSystem.Data;
+using MonitoringSystem.Models;
 
 #nullable disable
 
 namespace MonitoringSystem.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260103050128_AddUserExtraFields")]
-    partial class AddUserExtraFields
+    [Migration("20260305065030_InitialSyncWithExistingDB")]
+    partial class InitialSyncWithExistingDB
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -158,6 +158,70 @@ namespace MonitoringSystem.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("MonitoringSystem.Models.Admin", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("CanApproveAccounts")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanManageCompanies")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanManageStudents")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanManageUsers")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("CanViewReports")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EmployeeId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("HireDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OfficeLocation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OfficePhone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PermissionsLevel")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Admins", (string)null);
+                });
+
             modelBuilder.Entity("MonitoringSystem.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -166,11 +230,20 @@ namespace MonitoringSystem.Migrations
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("BirthDate")
+                    b.Property<string>("Address")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BannerImage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("BirthDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Contact")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
@@ -183,26 +256,32 @@ namespace MonitoringSystem.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
-                    b.Property<string>("FirstName")
-                        .IsRequired()
+                    b.Property<string>("Facebook")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Gender")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsApproved")
                         .HasColumnType("bit");
 
-                    b.Property<string>("LastName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    b.Property<DateTime?>("LastLogin")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
                         .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("MobileNumber")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NormalizedEmail")
                         .HasMaxLength(256)
@@ -221,8 +300,10 @@ namespace MonitoringSystem.Migrations
                     b.Property<bool>("PhoneNumberConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<string>("ProfileImage")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Role")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SecurityStamp")
@@ -230,6 +311,9 @@ namespace MonitoringSystem.Migrations
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserName")
                         .HasMaxLength(256)
@@ -256,34 +340,72 @@ namespace MonitoringSystem.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Address")
+                    b.Property<string>("BusinessPermit")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CompanyId")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Email")
+                    b.Property<string>("CompanyName")
                         .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CompanySize")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPersonName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContactPersonPosition")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Industry")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TaxId")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<string>("VerifiedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("VerifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Website")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("YearEstablished")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("CompanyName")
+                        .HasDatabaseName("IX_Companies_CompanyName");
 
-                    b.ToTable("Companies");
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Companies", (string)null);
                 });
 
-            modelBuilder.Entity("MonitoringSystem.Models.Conversation", b =>
+            modelBuilder.Entity("MonitoringSystem.Models.Student", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -294,52 +416,56 @@ namespace MonitoringSystem.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("User1Id")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("EmergencyContact")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("User2Id")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<string>("EmergencyPhone")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("User1Id");
-
-                    b.HasIndex("User2Id");
-
-                    b.ToTable("Conversations");
-                });
-
-            modelBuilder.Entity("MonitoringSystem.Models.Message", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ConversationId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime?>("EnrollmentDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("SenderId")
+                    b.Property<DateTime?>("ExpectedGraduation")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("GPA")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("GuardianName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("GuardianPhone")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PreviousSchool")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Program")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("StudentId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("Text")
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
                         .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Year")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ConversationId");
+                    b.HasIndex("StudentId")
+                        .HasDatabaseName("IX_Students_StudentId");
 
-                    b.HasIndex("SenderId");
+                    b.HasIndex("UserId")
+                        .IsUnique();
 
-                    b.ToTable("Messages");
+                    b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -393,58 +519,46 @@ namespace MonitoringSystem.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("MonitoringSystem.Models.Company", b =>
+            modelBuilder.Entity("MonitoringSystem.Models.Admin", b =>
                 {
                     b.HasOne("MonitoringSystem.Models.ApplicationUser", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
+                        .WithOne("Admin")
+                        .HasForeignKey("MonitoringSystem.Models.Admin", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MonitoringSystem.Models.Conversation", b =>
+            modelBuilder.Entity("MonitoringSystem.Models.Company", b =>
                 {
-                    b.HasOne("MonitoringSystem.Models.ApplicationUser", "User1")
-                        .WithMany()
-                        .HasForeignKey("User1Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("MonitoringSystem.Models.ApplicationUser", "User2")
-                        .WithMany()
-                        .HasForeignKey("User2Id")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User1");
-
-                    b.Navigation("User2");
-                });
-
-            modelBuilder.Entity("MonitoringSystem.Models.Message", b =>
-                {
-                    b.HasOne("MonitoringSystem.Models.Conversation", "Conversation")
-                        .WithMany("Messages")
-                        .HasForeignKey("ConversationId")
+                    b.HasOne("MonitoringSystem.Models.ApplicationUser", "User")
+                        .WithOne("Company")
+                        .HasForeignKey("MonitoringSystem.Models.Company", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MonitoringSystem.Models.ApplicationUser", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Conversation");
-
-                    b.Navigation("Sender");
+                    b.Navigation("User");
                 });
 
-            modelBuilder.Entity("MonitoringSystem.Models.Conversation", b =>
+            modelBuilder.Entity("MonitoringSystem.Models.Student", b =>
                 {
-                    b.Navigation("Messages");
+                    b.HasOne("MonitoringSystem.Models.ApplicationUser", "User")
+                        .WithOne("Student")
+                        .HasForeignKey("MonitoringSystem.Models.Student", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MonitoringSystem.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("Admin");
+
+                    b.Navigation("Company");
+
+                    b.Navigation("Student");
                 });
 #pragma warning restore 612, 618
         }

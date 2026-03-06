@@ -15,17 +15,17 @@
         <h4>Login to your account</h4>
 
         <form id="loginForm">
-            <!-- USERNAME -->
+            <!-- EMAIL -->
             <div class="mb-3">
-                <label class="form-label">Username</label>
-                <input class="form-control" id="textUsername" name="Username" placeholder="Username" required />
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="textEmail" name="Email" placeholder="Enter your email" required />
                 <span asp-validation-for="Username" class="text-danger"></span>
             </div>
 
             <!-- PASSWORD -->
             <div class="mb-3">
                 <label class="form-label">Password</label>
-                <input type="password" id="textPassword" name="Password" class="form-control" placeholder="Password" required />
+                <input type="password" id="textPassword" name="Password" class="form-control" placeholder="Enter your password" required />
                 <span asp-validation-for="Password" class="text-danger"></span>
             </div>
 
@@ -40,12 +40,14 @@
 
             <!-- REGISTER & FORGOT PASSWORD LINKS -->
             <div class="d-flex justify-content-between align-items-center">
-                <small>Don’t have an account? <a asp-action="Register">Sign Up</a></small>
+                <small>Don't have an account? <a asp-action="Register">Sign Up</a></small>
                 <small><a href="#" id="forgotPasswordLink">Forgot password?</a></small>
             </div>
 
             <!-- ERROR MESSAGE -->
             <div id="loginError" class="alert alert-danger mt-3 text-center" style="display:none;"></div>
+            <!-- DEBUG INFO (will be hidden by default) -->
+            <div id="debugInfo" class="alert alert-info mt-3 text-center small" style="display:none;"></div>
         </form>
     </div>
 
@@ -75,7 +77,7 @@
     </div>
 </div>
 
-<!-- E-SIGNATURE REQUIRED MODAL (unchanged) -->
+<!-- E-SIGNATURE REQUIRED MODAL -->
 <div class="modal fade" id="esignModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -109,32 +111,87 @@
         e.preventDefault();
         forgotContainer.style.display = 'none';
         loginContainer.style.display = 'block';
-        // Optionally clear any messages
         document.getElementById('forgotPasswordMessage').style.display = 'none';
     });
 
-    // --- Login form submission (unchanged) ---
+    // --- Login form submission ---
     document.getElementById("loginForm").addEventListener("submit", async function(event) {
         event.preventDefault();
 
-        var username = document.getElementById('textUsername').value.trim();
+        var email = document.getElementById('textEmail').value.trim();
         var password = document.getElementById('textPassword').value.trim();
         var rememberMe = document.getElementById('remember').checked;
 
+        console.log("========== LOGIN ATTEMPT ==========");
+        console.log("Email:", email);
+        console.log("Password length:", password.length);
+        console.log("Remember Me:", rememberMe);
+
+        // Show loading state
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Signing in...';
+        submitBtn.disabled = true;
+
+        // Hide any previous errors
+        const errorDiv = document.getElementById('loginError');
+        const debugDiv = document.getElementById('debugInfo');
+        errorDiv.style.display = 'none';
+        debugDiv.style.display = 'none';
+
         try {
+            console.log("Sending request to /Account/LoginCredentials");
+
+            const requestBody = {
+                Username: email,
+                Password: password,
+                RememberMe: rememberMe
+            };
+
+            console.log("Request body:", JSON.stringify(requestBody));
+
             const res = await fetch('/Account/LoginCredentials', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    Username: username,
-                    Password: password,
-                    RememberMe: rememberMe
-                })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
             });
 
-            const data = await res.json();
+            console.log("Response status:", res.status);
+            console.log("Response status text:", res.statusText);
+            console.log("Response headers:", [...res.headers.entries()]);
+
+            // Try to get the response text first
+            const responseText = await res.text();
+            console.log("Raw response text:", responseText);
+
+            // Try to parse as JSON
+            let data;
+            try {
+                data = JSON.parse(responseText);
+                console.log("Parsed JSON data:", data);
+            } catch (parseError) {
+                console.error("Failed to parse response as JSON:", parseError);
+                console.error("Response was:", responseText);
+
+                // Show the raw response for debugging
+                debugDiv.style.display = 'block';
+                debugDiv.innerHTML = `<strong>Server returned non-JSON response:</strong><br>${responseText.substring(0, 200)}`;
+
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = "Server error. Please check console for details.";
+
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+                return;
+            }
 
             if (data.success) {
+                console.log("Login successful, redirecting to:", data.redirect);
+
+                // Check if e-signature is required for company
                 if (data.hasESign === false && data.role === "Company") {
                     var modal = new bootstrap.Modal(document.getElementById('esignModal'));
                     modal.show();
@@ -142,25 +199,34 @@
                     window.location.href = data.redirect;
                 }
             } else {
-                const errorDiv = document.getElementById('loginError');
+                console.log("Login failed:", data.message);
                 errorDiv.style.display = 'block';
-                errorDiv.textContent = data.message;
+                errorDiv.textContent = data.message || "Login failed. Please try again.";
+
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
             }
         } catch (err) {
-            console.error(err);
-            const errorDiv = document.getElementById('loginError');
+            console.error("========== FETCH ERROR ==========");
+            console.error("Error name:", err.name);
+            console.error("Error message:", err.message);
+            console.error("Error stack:", err.stack);
+            console.error("=================================");
+
             errorDiv.style.display = 'block';
-            errorDiv.textContent = "An error occurred while logging in.";
+            errorDiv.textContent = "Network error: " + err.message;
+
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         }
     });
 
-    // --- Forgot Password form submission (example - adjust endpoint as needed) ---
+    // --- Forgot Password form submission ---
     document.getElementById("forgotPasswordForm").addEventListener("submit", async function(e) {
         e.preventDefault();
         const email = document.getElementById('emailForgot').value.trim();
         const messageDiv = document.getElementById('forgotPasswordMessage');
 
-        // Basic validation
         if (!email) {
             messageDiv.style.display = 'block';
             messageDiv.className = 'alert alert-danger mt-3 text-center';
@@ -168,19 +234,31 @@
             return;
         }
 
+        const submitBtn = this.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Sending...';
+        submitBtn.disabled = true;
+
         try {
             const res = await fetch('/Account/ForgotPassword', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ Email: email })
             });
-            const data = await res.json();
+
+            const responseText = await res.text();
+            let data;
+            try {
+                data = JSON.parse(responseText);
+            } catch (e) {
+                console.error("Forgot password response not JSON:", responseText);
+                data = { success: false, message: "Server error" };
+            }
 
             messageDiv.style.display = 'block';
             if (data.success) {
                 messageDiv.className = 'alert alert-success mt-3 text-center';
                 messageDiv.textContent = data.message || 'Reset link sent to your email.';
-                // Optionally clear the email field
                 document.getElementById('emailForgot').value = '';
             } else {
                 messageDiv.className = 'alert alert-danger mt-3 text-center';
@@ -191,10 +269,13 @@
             messageDiv.style.display = 'block';
             messageDiv.className = 'alert alert-danger mt-3 text-center';
             messageDiv.textContent = 'Network error. Please try again later.';
+        } finally {
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
         }
     });
 
-    // --- Proceed to e-signature (unchanged) ---
+    // --- Proceed to e-signature ---
     document.getElementById("proceedEsign").addEventListener("click", function() {
         window.location.href = "/Company/ESign";
     });
