@@ -114,7 +114,7 @@
         @RenderBody()
     </main>
 
-    <!-- PROFILE TEMPLATE (with camera clickable) -->
+    <!-- PROFILE TEMPLATE - UPDATED: Added Facebook beside Email -->
     <script type="text/template" id="profileTemplate">
         <div class="container py-4">
 
@@ -140,45 +140,67 @@
             <!-- Card Container below the profile picture -->
             <div class="card shadow-sm p-4" style="max-width:1200px;">
                 <div class="flex-grow-1 w-100">
+                    <!-- Row 1: Full Name & Position -->
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
                             <label for="fullName" class="form-label fw-bold">Full Name</label>
-                            <input type="text" id="fullName" class="form-control" value="John Doe">
+                            <input type="text" id="fullName" class="form-control" value="" placeholder="Enter full name">
                         </div>
                         <div class="col-md-6">
                             <label for="position" class="form-label fw-bold">Position</label>
-                            <input type="text" id="position" class="form-control" value="Administrator">
+                            <input type="text" id="position" class="form-control" value="" placeholder="Enter position">
                         </div>
                     </div>
 
+                    <!-- Row 2: Email & Facebook (side by side) -->
                     <div class="row mb-3">
                         <div class="col-md-6 mb-3 mb-md-0">
-                            <label for="username" class="form-label fw-bold">Username</label>
-                            <input type="text" id="username" class="form-control" value="adminuser">
+                            <label for="email" class="form-label fw-bold">Email</label>
+                            <input type="email" id="email" class="form-control" value="" placeholder="Enter email">
                         </div>
                         <div class="col-md-6">
-                            <label for="email" class="form-label fw-bold">Email</label>
-                            <input type="email" id="email" class="form-control" value="admin@ctu.edu.ph">
+                            <label for="facebook" class="form-label fw-bold">Facebook</label>
+                            <input type="text" id="facebook" class="form-control" value="" placeholder="Enter Facebook profile URL">
                         </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="address" class="form-label fw-bold">Address</label>
-                        <textarea id="address" class="form-control">123 Main St, Balamban</textarea>
+                    <!-- Row 3: Employee ID & Department -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="employeeId" class="form-label fw-bold">Employee ID</label>
+                            <input type="text" id="employeeId" class="form-control" value="" placeholder="Enter employee ID">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="department" class="form-label fw-bold">Department</label>
+                            <input type="text" id="department" class="form-control" value="" placeholder="Enter department">
+                        </div>
                     </div>
 
+                    <!-- Row 4: Mobile Number & Address (side by side) -->
+                    <div class="row mb-3">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <label for="mobileNumber" class="form-label fw-bold">Mobile Number</label>
+                            <input type="text" id="mobileNumber" class="form-control" value="" placeholder="Enter mobile number">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="address" class="form-label fw-bold">Address</label>
+                            <input type="text" id="address" class="form-control" value="" placeholder="Enter address">
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
                     <div class="text-end">
-                        <button class="btn" id="saveProfileBtn" style="background-color:#07B618; border-color:#07B618; color:white;">
-                            Save Changes
+                        <button class="btn btn-primary" id="saveProfileBtn">
+                            <i class="bi bi-check-circle me-1"></i> Save Changes
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- DOCUMENTS UPLOAD / MANAGEMENT SECTION -->
+            <!-- DOCUMENTS SECTION FOR ADMIN FILES -->
             <div class="card shadow-sm p-4 mt-4" style="max-width:1200px;">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0">Documents</h6>
+                    <h6 class="fw-bold mb-0">Admin Documents</h6>
                     <!-- Hidden file input for multiple uploads -->
                     <input type="file" id="documentUploadInput" style="display:none;" multiple>
                     <!-- Upload button -->
@@ -187,46 +209,22 @@
                     </button>
                 </div>
 
-                <!-- List of uploaded documents -->
+                <!-- Empty list - no sample documents -->
                 <ul id="documentList" class="list-group list-group-flush">
                 </ul>
             </div>
         </div>
     </script>
 
-    <!-- NOTIFICATION TEMPLATE -->
+    <!-- NOTIFICATION TEMPLATE (EMPTY - NO SAMPLE DATA) -->
     <script type="text/template" id="notifTemplate">
         <div class="container py-4">
             <h4 class="mb-4">Notification History</h4>
 
-            <!-- Example Report Card 1 -->
-            <div class="card shadow-sm mb-4 p-4 d-flex justify-content-between align-items-center"
-                 style="max-width:90%; font-size:1.1rem; border-radius:25px; transform: scale(1.02);">
-                <div class="d-flex justify-content-between w-100 align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-1">Demo Student 1</h5>
-                        <small>Report: Complaint</small>
-                    </div>
-                    <button class="btn btn-outline-primary btn-sm viewReportBtn" data-bs-toggle="modal" data-bs-target="#reportModal"
-                            data-student="Demo Student 1" data-report="This student is not registered in the company.">
-                        <i class="bi bi-eye fs-5"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Example Report Card 2 -->
-            <div class="card shadow-sm mb-4 p-4 d-flex justify-content-between align-items-center"
-                 style="max-width:90%; font-size:1.1rem; border-radius:25px; transform: scale(1.02);">
-                <div class="d-flex justify-content-between w-100 align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-1">Demo Student 2</h5>
-                        <small>Report: MOA Submission</small>
-                    </div>
-                    <button class="btn btn-outline-primary btn-sm viewReportBtn" data-bs-toggle="modal" data-bs-target="#reportModal"
-                            data-student="Demo Student 2" data-report="The student submitted all required MOA documents.">
-                        <i class="bi bi-eye fs-5"></i>
-                    </button>
-                </div>
+            <!-- Empty state message -->
+            <div class="text-center text-muted py-5">
+                <i class="bi bi-bell" style="font-size: 3rem;"></i>
+                <p class="mt-3">No notifications yet</p>
             </div>
         </div>
     </script>
@@ -240,10 +238,10 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <h3 class="fw-bold mb-3" id="modalStudent">Student Name</h3>
+                    <h3 class="fw-bold mb-3" id="modalStudent"></h3>
                     <hr>
                     <div style="border:1px solid #ccc; border-radius:10px; padding:15px; background:#f8f9fa;">
-                        <p id="modalReport" style="font-size:1.05rem; line-height:1.5;">Report content goes here.</p>
+                        <p id="modalReport" style="font-size:1.05rem; line-height:1.5;"></p>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -276,7 +274,7 @@
         // SPA Content Switching
         const mainContent = document.getElementById("adminMainContent");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
-        const topbarProfilePic = document.getElementById("topbarProfilePic"); // for updating
+        const topbarProfilePic = document.getElementById("topbarProfilePic");
         const originalDashboardHTML = mainContent.innerHTML;
 
         function openDocumentSPA(){
@@ -284,7 +282,7 @@
             setTimeout(()=>{
                 const template = document.getElementById("profileTemplate").innerHTML;
                 mainContent.innerHTML = template;
-                document.querySelector(".topbar-title").textContent = "Documents";
+                document.querySelector(".topbar-title").textContent = "Admin Profile";
 
                 // ===== Profile Picture Change Functionality =====
                 const profileImage = document.getElementById("profileImage");
@@ -303,10 +301,71 @@
                         const reader = new FileReader();
                         reader.onload = function(evt) {
                             profileImage.src = evt.target.result;
-                            topbarProfilePic.src = evt.target.result; // update top bar too
+                            topbarProfilePic.src = evt.target.result;
                         };
                         reader.readAsDataURL(e.target.files[0]);
                     }
+                });
+
+                // ===== LOAD ADMIN DATA FROM DATABASE =====
+                fetch('/Admin/GetProfileData')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById('fullName').value = data.fullName || '';
+                            document.getElementById('position').value = data.position || '';
+                            document.getElementById('email').value = data.email || '';
+                            document.getElementById('facebook').value = data.facebook || '';
+                            document.getElementById('employeeId').value = data.employeeId || '';
+                            document.getElementById('department').value = data.department || '';
+                            document.getElementById('mobileNumber').value = data.mobileNumber || '';
+                            document.getElementById('address').value = data.address || '';
+
+                            // Update profile picture if exists
+                            if (data.profilePicture) {
+                                document.getElementById('profileImage').src = data.profilePicture;
+                                document.getElementById('topbarProfilePic').src = data.profilePicture;
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Error loading profile:', error));
+
+                // ===== SAVE PROFILE FUNCTIONALITY =====
+                const saveBtn = document.getElementById('saveProfileBtn');
+
+                saveBtn.addEventListener('click', function() {
+                    // Collect data from all fields
+                    const updatedData = {
+                        fullName: document.getElementById('fullName').value,
+                        position: document.getElementById('position').value,
+                        email: document.getElementById('email').value,
+                        facebook: document.getElementById('facebook').value,
+                        employeeId: document.getElementById('employeeId').value,
+                        department: document.getElementById('department').value,
+                        mobileNumber: document.getElementById('mobileNumber').value,
+                        address: document.getElementById('address').value
+                    };
+
+                    // Send to server
+                    fetch('/Admin/UpdateProfile', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(updatedData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Profile saved successfully!');
+                        } else {
+                            alert('Error saving profile: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error saving profile');
+                    });
                 });
 
                 // ===== Document Upload Functionality =====
@@ -361,14 +420,6 @@
             setTimeout(() => {
                 mainContent.innerHTML = document.getElementById("notifTemplate").innerHTML;
                 document.querySelector(".topbar-title").textContent = "Notifications";
-
-                document.querySelectorAll(".viewReportBtn").forEach(btn => {
-                    btn.addEventListener("click", function () {
-                        document.getElementById("modalStudent").textContent = this.dataset.student;
-                        document.getElementById("modalReport").textContent = this.dataset.report;
-                    });
-                });
-
                 mainContent.style.opacity = 1;
             }, 200);
         });

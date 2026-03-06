@@ -1,51 +1,132 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using MonitoringSystem.Data;
+﻿using Microsoft.EntityFrameworkCore;
 using MonitoringSystem.Models;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ================== 1️⃣ Add services ==================
-
-// MVC Controllers with Views
+// Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// EF Core DbContext
+// Register DbContext with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"))
-);
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Identity using ApplicationUser
+// Register Identity with ApplicationUser
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
+    // Password settings
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 6;
+    options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = true;
     options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = false;
+
+    // Lockout settings
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+    options.Lockout.AllowedForNewUsers = true;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// Session
-builder.Services.AddSession(options =>
+// Configure cookie authentication to redirect to login
+builder.Services.ConfigureApplicationCookie(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.LoginPath = "/Account/Login";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.SlidingExpiration = true;
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
 
 var app = builder.Build();
 
-// ================== 2️⃣ Seed roles & optional admin ==================
-await SeedRolesAsync(app);
+// ==================== CREATE HARDCODED ADMIN ACCOUNT ====================
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-// ================== 3️⃣ Configure HTTP pipeline ==================
+    try
+    {
+        // Create Admin role if it doesn't exist
+        if (!await roleManager.RoleExistsAsync("Admin"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
+            Console.WriteLine("Admin role created.");
+        }
+
+        // Create Student role if it doesn't exist
+        if (!await roleManager.RoleExistsAsync("Student"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Student"));
+            Console.WriteLine("Student role created.");
+        }
+
+        // Create Company role if it doesn't exist
+        if (!await roleManager.RoleExistsAsync("Company"))
+        {
+            await roleManager.CreateAsync(new IdentityRole("Company"));
+            Console.WriteLine("Company role created.");
+        }
+
+        // Check if admin already exists
+        string adminEmail = "admin@ctu.edu.ph";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+        if (adminUser == null)
+        {
+            Console.WriteLine("Admin user not found. Creating new admin...");
+
+            // Create new admin user
+            var admin = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                FullName = "System Administrator",
+                Role = "Admin",
+                IsApproved = true,
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                ProfileImage = "/images/ctu-logo.png",
+                BannerImage = "/images/banner-placeholder.jpg"
+            };
+
+            // Create with password: Admin@123
+            var result = await userManager.CreateAsync(admin, "Admin@123");
+
+            if (result.Succeeded)
+            {
+                // Add to Admin role
+                await userManager.AddToRoleAsync(admin, "Admin");
+                Console.WriteLine("Admin user created successfully with email: admin@ctu.edu.ph and password: Admin@123");
+            }
+            else
+            {
+                Console.WriteLine("Failed to create admin user:");
+                foreach (var error in result.Errors)
+                {
+                    Console.WriteLine($"- {error.Description}");
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("Admin user already exists.");
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error creating admin: {ex.Message}");
+    }
+}
+// =========================================================================
+
+// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -57,47 +138,13 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Session
-app.UseSession();
-
-// Authentication & Authorization
+// IMPORTANT: Authentication must be before Authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map routes
+// Default route now goes to Account/Login
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();
-
-// ================== 4️⃣ Seed roles and optional admin function ==================
-async Task SeedRolesAsync(WebApplication app)
-{
-    using var scope = app.Services.CreateScope();
-    var services = scope.ServiceProvider;
-    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
-
-    // ===== Create Admin role if missing =====
-    if (!await roleManager.RoleExistsAsync("Admin"))
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-
-    // ===== OPTIONAL: create a first admin if database is empty =====
-    if (!userManager.Users.Any())
-    {
-        var adminUser = new ApplicationUser
-        {
-            UserName = "admin",
-            Email = "admin@ctu.edu.ph",
-            EmailConfirmed = true,
-            FullName = "Administrator"
-        };
-
-        var result = await userManager.CreateAsync(adminUser, "Admin123!"); // ✅ Change password as needed
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(adminUser, "Admin");
-        }
-    }
-}

@@ -7,51 +7,55 @@ namespace MonitoringSystem.Models
 {
     public class ApplicationUser : IdentityUser
     {
-        // ===================== BASIC USER INFO =====================
+        // ===================== EXACTLY MATCHING YOUR DB COLUMNS =====================
+
+        // BASIC USER INFO (from your AspNetUsers table)
         public string? FullName { get; set; } = string.Empty;
-
-        [NotMapped]
-        public string DisplayName => FullName ?? string.Empty;
-
-        // ===================== ROLE & PERSONAL INFO =====================
-        [NotMapped]
-        public string? Role { get; set; } = string.Empty; // display only
-
+        public string? Role { get; set; } = string.Empty;
         public string? Gender { get; set; } = string.Empty;
-        public DateTime BirthDate { get; set; }
-
-        // ===================== PROGRAM (e.g., Bachelor of Industrial Technology) =====================
-        public string? Program { get; set; } = string.Empty;
-
-        // ===================== PROFILE (ALL ROLES) =====================
+        public DateTime? BirthDate { get; set; }
         public string? Contact { get; set; } = string.Empty;
+        public string? MobileNumber { get; set; } = string.Empty;
         public string? Address { get; set; } = string.Empty;
         public string? ProfileImage { get; set; } = "/images/ctu-logo.png";
         public string? BannerImage { get; set; } = "/images/banner-placeholder.jpg";
-
-        // ===================== ADMIN / COMPANY EXTRA INFO =====================
-        public string? CompanyName { get; set; } = string.Empty;
-        public string? CompanyDescription { get; set; } = string.Empty;
-
-        // ===================== PROPERTIES FOR COMPANY EDIT =====================
-        public string? MobileNumber { get; set; } = string.Empty;
-        public int? CompanyID { get; set; } = 0;
-
-        // ===================== SYSTEM FIELDS =====================
+        public bool IsActive { get; set; } = true;
         public bool IsApproved { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+        public DateTime? UpdatedAt { get; set; }
+        public DateTime? LastLogin { get; set; }
+        public string? Facebook { get; set; } = string.Empty;
 
-        // ===================== TEMP / VIEW HELPERS =====================
+        // ============== NEWLY ADDED COLUMNS ==============
+        public int? Year { get; set; }                    // For student year level
+        public int? CompanyID { get; set; }               // Foreign key to Company
+        public string? Program { get; set; } = string.Empty; // For student program/course
+
+        // ===================== NAVIGATION PROPERTIES =====================
+        public Student? Student { get; set; }
+        public Company? Company { get; set; }
+        public Admin? Admin { get; set; }
+
+        // ===================== DISPLAY HELPERS =====================
         [NotMapped]
-        public List<string> Roles { get; set; } = new List<string>();
+        public string DisplayName => FullName ?? string.Empty;
 
-        // ===================== CHAT NAVIGATION =====================
-        public ICollection<Conversation> ConversationsAsUser1 { get; set; } = new List<Conversation>();
-        public ICollection<Conversation> ConversationsAsUser2 { get; set; } = new List<Conversation>();
-        public ICollection<Message> MessagesSent { get; set; } = new List<Message>();
+        // ===================== HELPER METHODS =====================
+        public string GetFacebookUrl()
+        {
+            if (string.IsNullOrEmpty(Facebook))
+                return string.Empty;
 
-        // ===================== YEAR (NOT MAPPED) =====================
-        [NotMapped]
-        public string? Year { get; set; } = string.Empty;
+            if (Facebook.StartsWith("http"))
+                return Facebook;
+
+            return $"https://facebook.com/{Facebook}";
+        }
+
+        public void UpdateLastLogin()
+        {
+            LastLogin = DateTime.Now;
+            UpdatedAt = DateTime.Now;
+        }
     }
 }
