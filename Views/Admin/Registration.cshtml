@@ -75,6 +75,7 @@
         border: none;
         font-weight: 500;
         transition: 0.2s;
+        cursor: pointer;
     }
 
     .btn-approve {
@@ -135,7 +136,81 @@
     .student-info-card .col-md-6 {
         margin-bottom: 0.5rem;
     }
+
+    /* Loading overlay */
+    .loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+
+    .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #0787FF;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @@keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* Toast notification */
+    .toast-notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        background: #07B618;
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: none;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+    }
+
+        .toast-notification.error {
+            background: #FA0D0D;
+        }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 </style>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+</div>
+
+<!-- Toast Notification -->
+<div class="toast-notification" id="toastNotification">
+    <span id="toastMessage"></span>
+</div>
 
 <!-- MAIN REGISTRATION VIEW (cards + filters) -->
 <div id="mainRegistration" class="container-fluid py-3">
@@ -152,9 +227,18 @@
                 <option value="">All Years</option>
             </select>
         </div>
+        <div class="filter-item">
+            <label class="filter-label">Filter by Status</label>
+            <select id="statusFilter" class="form-select form-select-sm">
+                <option value="">All Status</option>
+                <option value="Pending">Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Declined">Declined</option>
+            </select>
+        </div>
     </div>
 
-    <!-- HEADER LABELS – simplified to just "Email" -->
+    <!-- HEADER LABELS -->
     <div class="header-labels">
         <div style="width:40%;">Email</div>
         <div style="width:30%;">ID Number</div>
@@ -163,81 +247,72 @@
 
     <!-- CARDS CONTAINER -->
     <div id="cardsContainer">
-        @{
-            // Demo data – replace with @model loop
-            var demoUsers = new List<dynamic>
-                {
-                new { Id = "1", FirstName = "Juan", LastName = "Dela Cruz", Email = "juan.delacruz@example.com", StudentId = "S12345", Year = "2026", Status = "Pending", ProfilePic = "/images/defaultpicture.jpg", Company = "ABC Corp", Mobile = "09123456789", Address = "123 Street", Program = "Computer Science", EmergencyContact = "09112223333", Birthdate = "2000-01-01" },
-                new { Id = "2", FirstName = "Maria", LastName = "Santos", Email = "maria.santos@example.com", StudentId = "S12346", Year = "2025", Status = "Approved", ProfilePic = "/images/defaultpicture.jpg", Company = "XYZ Inc", Mobile = "09129876543", Address = "456 Avenue", Program = "Information Technology", EmergencyContact = "09114445555", Birthdate = "2001-02-02" },
-                new { Id = "3", FirstName = "Pedro", LastName = "Gonzales", Email = "pedro.g@example.com", StudentId = "S12347", Year = "2026", Status = "Declined", ProfilePic = "/images/defaultpicture.jpg", Company = "Tech Solutions", Mobile = "09127778888", Address = "789 Boulevard", Program = "Computer Engineering", EmergencyContact = "09116667777", Birthdate = "1999-12-12" }
-                };
-        }
-
-        @foreach (var user in demoUsers)
+        @if (Model != null && Model.Any())
         {
-            // Format birthdate to MM/dd/yyyy
-            string formattedBirthdate = "";
-            if (!string.IsNullOrEmpty(user.Birthdate))
+            @foreach (var user in Model.Where(u => u.Role != "Admin" && u.Status == "Pending"))
             {
-                DateTime dt;
-                if (DateTime.TryParseExact(user.Birthdate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
-                {
-                    formattedBirthdate = dt.ToString("MM/dd/yyyy");
-                }
-                else
-                {
-                    formattedBirthdate = user.Birthdate; // fallback
-                }
-            }
+                // Format birthdate
+                string formattedBirthdate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("MM/dd/yyyy") : "";
 
-            <div class="report-card"
-                 data-id="@user.Id"
-                 data-firstname="@user.FirstName"
-                 data-lastname="@user.LastName"
-                 data-email="@user.Email"
-                 data-studentid="@user.StudentId"
-                 data-year="@user.Year"
-                 data-status="@user.Status"
-                 data-profile="@user.ProfilePic"
-                 data-company="@user.Company"
-                 data-mobile="@user.Mobile"
-                 data-address="@user.Address"
-                 data-program="@user.Program"
-                 data-emergency="@user.EmergencyContact"
-                 data-birthdate="@user.Birthdate">
-                @* keep original for preview *@
+                <div class="report-card"
+                     data-id="@user.Id"
+                     data-firstname="@(user.FullName?.Split(' ').FirstOrDefault() ?? "")"
+                     data-lastname="@(user.FullName?.Contains(' ') == true ? user.FullName.Substring(user.FullName.IndexOf(' ') + 1) : "")"
+                     data-email="@user.Email"
+                     data-studentid="@user.StudentId"
+                     data-year="@user.Year"
+                     data-status="@user.Status"
+                     data-profile="@(user.ProfileImage ?? "/images/defaultpicture.jpg")"
+                     data-company="@(user.Company?.CompanyName ?? "")"
+                     data-mobile="@user.MobileNumber"
+                     data-address="@user.Address"
+                     data-program="@user.Program"
+                     data-birthdate="@(user.BirthDate?.ToString("yyyy-MM-dd") ?? "")">
 
-                <!-- Clickable student section – shows email and formatted birthdate -->
-                <div class="student-section preview-trigger">
-                    <img src="@user.ProfilePic"
-                         class="profile-thumb"
-                         onerror="this.src='/images/defaultpicture.jpg';">
+                    <!-- Clickable student section -->
+                    <div class="student-section preview-trigger">
+                        <img src="@(user.ProfileImage ?? "/images/defaultpicture.jpg")"
+                             class="profile-thumb"
+                             onerror="this.src='/images/defaultpicture.jpg';">
 
-                    <div class="student-info">
-                        <span class="email">@user.Email</span>
-                        <span class="birthdate">@formattedBirthdate</span>
+                        <div class="student-info">
+                            <span class="email">@user.Email</span>
+                            @if (!string.IsNullOrEmpty(formattedBirthdate))
+                            {
+                                <span class="birthdate">@formattedBirthdate</span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- ID Number column -->
+                    <div style="width:30%;">
+                        @user.StudentId
+                    </div>
+
+                    <!-- ACTION BUTTONS -->
+                    <div style="width:30%;" class="text-end action-buttons">
+                        <button class="btn-action btn-approve approve-btn" data-userid="@user.Id">Approve</button>
+                        <button class="btn-action btn-decline decline-btn" data-userid="@user.Id">Decline</button>
                     </div>
                 </div>
-
-                <!-- ID Number column -->
-                <div style="width:30%;">
-                    @user.StudentId
-                </div>
-
-                <!-- ACTION BUTTONS -->
-                <div style="width:30%;" class="text-end action-buttons">
-                    <button class="btn-action btn-approve approve-btn" data-userid="@user.Id">Approve</button>
-                    <button class="btn-action btn-decline decline-btn" data-userid="@user.Id">Decline</button>
-                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-info text-center mt-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                No pending registrations found.
             </div>
         }
     </div>
 </div>
 
-<!-- PREVIEW SECTION (unchanged) -->
+<!-- PREVIEW SECTION -->
 <div id="previewSection" style="display:none;" class="container-fluid py-3">
 
-    <button class="btn btn-sm mb-2" id="backBtn" style="background-color:#0787FF; color:white;">&laquo; Back to Registration</button>
+    <button class="btn btn-sm mb-2" id="backBtn" style="background-color:#0787FF; color:white;">
+        <i class="bi bi-arrow-left"></i> Back to Registration
+    </button>
 
     <!-- Profile Picture -->
     <div class="mb-2">
@@ -259,7 +334,6 @@
             <div class="col-md-6"><strong>Mobile Number:</strong> <span id="pMobile"></span></div>
             <div class="col-md-6"><strong>Address:</strong> <span id="pAddress"></span></div>
             <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
-            <div class="col-md-6"><strong>Emergency Contact:</strong> <span id="pEmergency"></span></div>
             <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
             <div class="col-md-6"><strong>Status:</strong> <span id="pStatus"></span></div>
         </div>
@@ -267,47 +341,85 @@
 
     <!-- Action Buttons -->
     <div class="mt-3 text-end">
-        <button id="previewApproveBtn" class="btn btn-sm" style="background-color:#07B618; color:white;">Approve</button>
-        <button id="previewDeclineBtn" class="btn btn-sm" style="background-color:#FA0D0D; color:white;">Decline</button>
+        <button id="previewApproveBtn" class="btn-action btn-approve">Approve</button>
+        <button id="previewDeclineBtn" class="btn-action btn-decline">Decline</button>
     </div>
 </div>
 
 <script>
-    // JavaScript (unchanged) – same as before
     document.addEventListener("DOMContentLoaded", function () {
-        const cards = document.querySelectorAll(".report-card");
+        // Elements
         const mainRegistration = document.getElementById("mainRegistration");
         const previewSection = document.getElementById("previewSection");
+        const cardsContainer = document.getElementById("cardsContainer");
+        const loadingOverlay = document.getElementById("loadingOverlay");
+        const toastNotification = document.getElementById("toastNotification");
+        const toastMessage = document.getElementById("toastMessage");
 
-        // Populate Year filter
-        const years = new Set();
-        cards.forEach(card => years.add(card.dataset.year));
+        // Get initial cards
+        let cards = document.querySelectorAll(".report-card");
         const yearFilter = document.getElementById("yearFilter");
-        [...years].sort().forEach(year => {
-            const option = document.createElement("option");
-            option.value = year;
-            option.textContent = year;
-            yearFilter.appendChild(option);
-        });
+        const statusFilter = document.getElementById("statusFilter");
+        const searchEmail = document.getElementById("searchEmail");
 
+        // Toast notification function
+        function showToast(message, isError = false) {
+            toastMessage.textContent = message;
+            toastNotification.className = 'toast-notification' + (isError ? ' error' : '');
+            toastNotification.style.display = 'block';
+
+            setTimeout(() => {
+                toastNotification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Show/Hide Loading
+        function showLoading(show) {
+            loadingOverlay.style.display = show ? 'flex' : 'none';
+        }
+
+        // Populate Year filter from actual data
+        function populateYearFilter() {
+            const years = new Set();
+            document.querySelectorAll(".report-card").forEach(card => {
+                const year = card.dataset.year;
+                if (year && year !== "") years.add(year);
+            });
+
+            yearFilter.innerHTML = '<option value="">All Years</option>';
+            [...years].sort().forEach(year => {
+                const option = document.createElement("option");
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            });
+        }
+        populateYearFilter();
+
+        // Filter function
         function filterCards() {
-            const searchEmail = document.getElementById("searchEmail").value.toLowerCase();
+            const searchTerm = searchEmail.value.toLowerCase();
             const selectedYear = yearFilter.value;
+            const selectedStatus = statusFilter.value;
 
-            cards.forEach(card => {
+            document.querySelectorAll(".report-card").forEach(card => {
                 const email = card.dataset.email.toLowerCase();
                 const year = card.dataset.year;
+                const status = card.dataset.status;
 
                 let show = true;
-                if (searchEmail && !email.includes(searchEmail)) show = false;
+                if (searchTerm && !email.includes(searchTerm)) show = false;
                 if (selectedYear && year !== selectedYear) show = false;
+                if (selectedStatus && status !== selectedStatus) show = false;
 
                 card.style.display = show ? "flex" : "none";
             });
         }
 
-        document.getElementById("searchEmail").addEventListener("input", filterCards);
+        // Event listeners for filters
+        searchEmail.addEventListener("input", filterCards);
         yearFilter.addEventListener("change", filterCards);
+        statusFilter.addEventListener("change", filterCards);
 
         // Preview trigger
         document.querySelectorAll('.preview-trigger').forEach(el => {
@@ -327,11 +439,11 @@
             document.getElementById("pMobile").textContent = card.dataset.mobile || "—";
             document.getElementById("pAddress").textContent = card.dataset.address || "—";
             document.getElementById("pCompany").textContent = card.dataset.company || "—";
-            document.getElementById("pEmergency").textContent = card.dataset.emergency || "—";
             document.getElementById("pBirthdate").textContent = card.dataset.birthdate || "—";
             document.getElementById("pStatus").textContent = card.dataset.status || "—";
 
             window.currentUserId = card.dataset.id;
+            window.currentCard = card;
 
             mainRegistration.style.display = "none";
             previewSection.style.display = "block";
@@ -342,11 +454,35 @@
             mainRegistration.style.display = "block";
         });
 
+        // Function to check if there are any cards left
+        function checkEmptyState() {
+            const remainingCards = document.querySelectorAll('.report-card');
+            if (remainingCards.length === 0) {
+                cardsContainer.innerHTML = `
+                    <div class="alert alert-info text-center mt-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        No pending registrations found.
+                    </div>
+                `;
+            }
+        }
+
+        // Update status function
         function updateStatus(userId, newStatus) {
             if (!userId) {
-                alert("No user selected.");
+                showToast("No user selected.", true);
                 return;
             }
+
+            // Show loading
+            showLoading(true);
+
+            // Disable buttons to prevent double clicks
+            const approveButtons = document.querySelectorAll(`.approve-btn[data-userid="${userId}"], #previewApproveBtn`);
+            const declineButtons = document.querySelectorAll(`.decline-btn[data-userid="${userId}"], #previewDeclineBtn`);
+
+            approveButtons.forEach(btn => btn.disabled = true);
+            declineButtons.forEach(btn => btn.disabled = true);
 
             fetch('/Admin/UpdateUserStatus', {
                 method: 'POST',
@@ -354,49 +490,91 @@
                     'Content-Type': 'application/json',
                     'RequestVerificationToken': document.getElementById('__RequestVerificationToken').value
                 },
-                body: JSON.stringify({ userId: userId, status: newStatus })
+                body: JSON.stringify({
+                    userId: userId,
+                    status: newStatus
+                })
             })
             .then(response => response.json())
             .then(data => {
+                // Hide loading
+                showLoading(false);
+
                 if (data.success) {
-                    const card = [...cards].find(c => c.dataset.id === userId);
-                    if (card) card.dataset.status = newStatus;
+                    // Find and remove the card
+                    const card = document.querySelector(`.report-card[data-id="${userId}"]`);
 
-                    if (window.currentUserId === userId && previewSection.style.display === "block") {
-                        document.getElementById("pStatus").textContent = newStatus;
+                    if (card) {
+                        // Remove the card
+                        card.remove();
+
+                        // If preview is open for this user, close it
+                        if (window.currentUserId === userId && previewSection.style.display === "block") {
+                            previewSection.style.display = "none";
+                            mainRegistration.style.display = "block";
+                        }
+
+                        // Show success message
+                        showToast(`User has been ${newStatus.toLowerCase()} successfully.`);
+
+                        // Update the cards collection
+                        cards = document.querySelectorAll(".report-card");
+
+                        // Check if there are any cards left
+                        checkEmptyState();
+
+                        // Refresh year filter
+                        populateYearFilter();
                     }
-
-                    alert(`User status updated to ${newStatus}`);
                 } else {
-                    alert('Error updating status.');
+                    showToast('Error: ' + data.message, true);
+                    // Re-enable buttons on error
+                    approveButtons.forEach(btn => btn.disabled = false);
+                    declineButtons.forEach(btn => btn.disabled = false);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred.');
+                showToast('An error occurred. Please try again.', true);
+                showLoading(false);
+                // Re-enable buttons on error
+                approveButtons.forEach(btn => btn.disabled = false);
+                declineButtons.forEach(btn => btn.disabled = false);
             });
         }
 
-        document.querySelectorAll('.approve-btn').forEach(btn => {
-            btn.addEventListener('click', function (e) {
+        // SINGLE EVENT LISTENER USING EVENT DELEGATION - NO CONFIRMATION MODALS
+        document.addEventListener('click', function(e) {
+            // Handle approve buttons - NO CONFIRMATION
+            if (e.target.classList.contains('approve-btn')) {
+                e.preventDefault();
                 e.stopPropagation();
-                updateStatus(this.dataset.userid, 'Approved');
-            });
+
+                const userId = e.target.dataset.userid;
+                updateStatus(userId, 'Approved');
+            }
+
+            // Handle decline buttons - NO CONFIRMATION
+            if (e.target.classList.contains('decline-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const userId = e.target.dataset.userid;
+                updateStatus(userId, 'Declined');
+            }
         });
 
-        document.querySelectorAll('.decline-btn').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.stopPropagation();
-                updateStatus(this.dataset.userid, 'Declined');
-            });
-        });
-
+        // Preview buttons - NO CONFIRMATION
         document.getElementById("previewApproveBtn").addEventListener("click", function () {
-            if (window.currentUserId) updateStatus(window.currentUserId, 'Approved');
+            if (window.currentUserId) {
+                updateStatus(window.currentUserId, 'Approved');
+            }
         });
 
         document.getElementById("previewDeclineBtn").addEventListener("click", function () {
-            if (window.currentUserId) updateStatus(window.currentUserId, 'Declined');
+            if (window.currentUserId) {
+                updateStatus(window.currentUserId, 'Declined');
+            }
         });
     });
 </script>

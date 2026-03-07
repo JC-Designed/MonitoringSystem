@@ -20,7 +20,13 @@ namespace MonitoringSystem.Models
         public string? ProfileImage { get; set; } = "/images/ctu-logo.png";
         public string? BannerImage { get; set; } = "/images/banner-placeholder.jpg";
         public bool IsActive { get; set; } = true;
-        public bool IsApproved { get; set; } = false;
+
+        // === MODIFIED: Replace IsApproved with Status for more options ===
+        // public bool IsApproved { get; set; } = false; // Remove this line
+
+        // NEW: Status can be "Pending", "Approved", or "Declined"
+        public string Status { get; set; } = "Pending";
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
         public DateTime? LastLogin { get; set; }
@@ -30,6 +36,9 @@ namespace MonitoringSystem.Models
         public int? Year { get; set; }                    // For student year level
         public int? CompanyID { get; set; }               // Foreign key to Company
         public string? Program { get; set; } = string.Empty; // For student program/course
+
+        // NEW: Student ID field for registration
+        public string? StudentId { get; set; } = string.Empty;
 
         // ===================== NAVIGATION PROPERTIES =====================
         public Student? Student { get; set; }
@@ -56,6 +65,12 @@ namespace MonitoringSystem.Models
         {
             LastLogin = DateTime.Now;
             UpdatedAt = DateTime.Now;
+        }
+
+        // NEW: Helper to check if user can login
+        public bool CanLogin()
+        {
+            return Status == "Approved" && IsActive;
         }
     }
 }

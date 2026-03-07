@@ -1,0 +1,32 @@
+﻿@{
+    ViewData["Title"] = "Pending Approval";
+}
+
+<div class="container" style="max-width: 500px; margin: 100px auto;">
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body text-center p-5">
+            <div class="mb-4">
+                <i class="bi bi-hourglass-split" style="font-size: 5rem; color: #ffc107;"></i>
+            </div>
+
+            <h2 class="mb-3">Account Pending Approval</h2>
+
+            <p class="text-muted mb-4">
+                Your account is currently pending approval from an administrator.
+                You will receive access once your account has been reviewed and approved.
+            </p>
+
+            <div class="alert alert-info text-start mb-4">
+                <i class="bi bi-info-circle-fill me-2"></i>
+                <small>
+                    This process typically takes 1-2 business days. You will receive an email
+                    notification once your account has been approved.
+                </small>
+            </div>
+
+            <a asp-action="Logout" class="btn btn-outline-primary px-4 py-2 rounded-pill">
+                <i class="bi bi-box-arrow-right me-2"></i>Return to Login
+            </a>
+        </div>
+    </div>
+</div>

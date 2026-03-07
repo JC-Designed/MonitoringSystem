@@ -10,7 +10,7 @@ namespace MonitoringSystem.Models
         {
         }
 
-        // DbSets for your custom tables (Messages and Conversations REMOVED)
+        // DbSets for your custom tables
         public DbSet<Student> Students { get; set; }
         public DbSet<Company> Companies { get; set; }
         public DbSet<Admin> Admins { get; set; }
@@ -18,6 +18,21 @@ namespace MonitoringSystem.Models
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // ===================== FIX FOR DATABASE TRIGGERS =====================
+            // Tell EF Core that AspNetUsers table has triggers
+            builder.Entity<ApplicationUser>()
+                .ToTable(tb => tb.HasTrigger("AspNetUsers_Trigger"));
+
+            // Also configure other tables that might have triggers
+            builder.Entity<Student>()
+                .ToTable(tb => tb.HasTrigger("Students_Trigger"));
+
+            builder.Entity<Company>()
+                .ToTable(tb => tb.HasTrigger("Companies_Trigger"));
+
+            builder.Entity<Admin>()
+                .ToTable(tb => tb.HasTrigger("Admins_Trigger"));
 
             // ===================== CONFIGURE ONE-TO-ONE RELATIONSHIPS =====================
 
@@ -47,8 +62,6 @@ namespace MonitoringSystem.Models
             builder.Entity<Company>().ToTable("Companies");
             builder.Entity<Admin>().ToTable("Admins");
 
-          
-
             // ===================== CONFIGURE INDEXES =====================
             builder.Entity<Student>()
                 .HasIndex(s => s.StudentId)
@@ -57,8 +70,6 @@ namespace MonitoringSystem.Models
             builder.Entity<Company>()
                 .HasIndex(c => c.CompanyName)
                 .HasDatabaseName("IX_Companies_CompanyName");
-
-
         }
     }
 }

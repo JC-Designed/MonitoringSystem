@@ -70,6 +70,7 @@
                         {
                             var role = user.Role ?? "No Role";
                             <tr data-id="@user.Id"
+                                data-studentid="@user.StudentId"
                                 data-fullname="@user.FullName"
                                 data-email="@user.Email"
                                 data-role="@role"
@@ -78,6 +79,7 @@
                                 data-address="@user.Address"
                                 data-companyid="@user.CompanyID"
                                 data-program="@user.Program"
+                                data-birthdate="@(user.BirthDate?.ToString("yyyy-MM-dd") ?? "")"
                                 data-task="Complete the monthly report and submit to manager."
                                 data-learning="Learned how to summarize data and meet deadlines.">
                                 <td>@user.FullName</td>
@@ -89,7 +91,6 @@
                                         <ul class="dropdown-menu shadow-sm">
                                             <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
                                             <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
-                                            <!-- NEW: Make Admin option -->
                                             <li><a class="dropdown-item make-admin-btn" href="#">Make Admin</a></li>
                                         </ul>
                                     </div>
@@ -253,8 +254,7 @@
                         <input type="text" class="form-control" id="editStudentRole" readonly>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">New Password</label>
-                        <input type="password" class="form-control" id="editStudentPassword">
+                        <!-- Empty column to maintain 3-column layout -->
                     </div>
                 </div>
             </form>
@@ -647,10 +647,11 @@
                 document.getElementById("editStudentFullName").value = rowToEdit.dataset.fullname;
                 document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
                 document.getElementById("editStudentRole").value = role;
-                document.getElementById("editStudentPassword").value = "";
                 document.getElementById("editStudentMobile").value = rowToEdit.dataset.mobile || "";
                 document.getElementById("editStudentAddress").value = rowToEdit.dataset.address || "";
                 document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
+                document.getElementById("editStudentID").value = rowToEdit.dataset.studentid || "";
+                document.getElementById("editStudentBirthdate").value = rowToEdit.dataset.birthdate || "";
                 profilePic.src = "/images/defaultpicture.jpg";
                 editStudentWrapper.style.display = "block";
                 tasksWrapper.style.display = "block";
@@ -733,8 +734,8 @@
             if(row.dataset.role === "Student") {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td><input type="checkbox" class="select-trainee-checkbox" data-id="${row.dataset.id}" data-fullname="${row.dataset.fullname}" data-email="${row.dataset.email}" data-program="${row.dataset.program || ''}"></td>
-                    <td>${row.dataset.id || ''}</td>
+                    <td><input type="checkbox" class="select-trainee-checkbox" data-id="${row.dataset.id}" data-studentid="${row.dataset.studentid || ''}" data-fullname="${row.dataset.fullname}" data-email="${row.dataset.email}" data-program="${row.dataset.program || ''}"></td>
+                    <td>${row.dataset.studentid || row.dataset.id || ''}</td>
                     <td>${row.dataset.fullname}</td>
                     <td>${row.dataset.email}</td>
                     <td>${row.dataset.program || ''}</td>
@@ -756,7 +757,7 @@
             if(![...traineesTableBody.rows].some(r => r.cells[1].textContent === cb.dataset.fullname)) {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td>${cb.dataset.id || ''}</td>
+                    <td>${cb.dataset.studentid || cb.dataset.id || ''}</td>
                     <td>${cb.dataset.fullname}</td>
                     <td>${cb.dataset.email}</td>
                     <td>${cb.dataset.program || ''}</td>
@@ -785,7 +786,7 @@
             if (confirm(`Are you sure you want to make ${fullName} an Admin?`)) {
                 const token = document.getElementById('__RequestVerificationToken').value;
 
-                fetch('/Admin/Users/MakeAdmin', {   // Adjust URL to match your controller action
+                fetch('/Admin/Users/MakeAdmin', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -795,7 +796,6 @@
                 })
                 .then(response => {
                     if (response.ok) {
-                        // Update the role cell (3rd column, index 2) and the data-role attribute
                         const roleCell = row.cells[2];
                         roleCell.textContent = 'Admin';
                         row.dataset.role = 'Admin';

@@ -5,7 +5,7 @@
     var demoReports = new List<dynamic>
     {
         new { Name = "Alice Smith", Facebook="alice.smith", MobileNumber="09171234567", Address="123 Main St", ContactPerson="John Smith", ContactNumber="09171234568", Birthdate="01/15/2005", Email="alice@example.com", ReportType = "MOA", Company="Acme Inc.", Year="2026", Status = "Unread", Details = "Report about late submission.", DateCreated = DateTime.Now.AddHours(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1001", Course="BSIT" },
-        new { Name = "John Doe", Facebook="john.doe", MobileNumber="09172345678", Address="456 Elm St", ContactPerson="Jane Doe", ContactNumber="09172345679", Birthdate="03/22/2004", Email="john@example.com", ReportType = "Complaint", Company="Beta Corp", Year="2026", Status = "Read", Details = "Report on project progress.", DateCreated = DateTime.Now.AddDays(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1002", Course="BSCS" }
+        new { Name = "John Doe", Facebook="john.doe", MobileNumber="09172345678", Address="456 Elm St", ContactPerson="Jane Doe", ContactNumber="09172345679", Birthdate="03/22/2004", Email="john@example.com", ReportType = "Complaint", Company="Beta Corp", Year="2026", Status = "Unread", Details = "Report on project progress.", DateCreated = DateTime.Now.AddDays(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1002", Course="BSCS" }
     };
 }
 
@@ -61,6 +61,24 @@
         font-weight: normal;
     }
 
+    .status-badge-card {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+    }
+
+    .status-unread {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .status-read {
+        background-color: #d1e7dd;
+        color: #0f5132;
+    }
+
     .action-icon {
         background: transparent;
         border: none;
@@ -71,6 +89,22 @@
 
         .action-icon:hover {
             color: #0d6efd;
+        }
+
+    /* Upload button styling */
+    .upload-btn {
+        background-color: #0787FF;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        margin-left: 8px;
+    }
+
+        .upload-btn:hover {
+            background-color: #0066cc;
         }
 
     /* Filter row styling */
@@ -89,6 +123,16 @@
         font-weight: normal;
         margin-bottom: 0.25rem;
         display: block;
+    }
+
+    /* Header labels - black */
+    .header-labels {
+        display: flex;
+        justify-content: space-between;
+        padding: 0 2px;
+        margin-bottom: 10px;
+        font-weight: bold;
+        color: #000 !important;
     }
 
     /* Tables styling (shared between Tasks and Documents) */
@@ -168,6 +212,40 @@
         .info-link:hover {
             text-decoration: underline;
         }
+
+    /* Modal styling */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        border: 1px solid #888;
+        width: 50%;
+        border-radius: 12px;
+        max-width: 500px;
+    }
+
+    .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+        .close:hover {
+            color: black;
+        }
 </style>
 
 <!-- MAIN REPORTS VIEW (cards + filters) -->
@@ -191,13 +269,22 @@
                 <option value="">All Programs</option>
             </select>
         </div>
+        <div class="filter-item">
+            <label class="filter-label">Status</label>
+            <select id="statusFilter" class="form-select">
+                <option value="">All Status</option>
+                <option value="Unread">Unread</option>
+                <option value="Read">Read</option>
+            </select>
+        </div>
     </div>
 
-    <!-- HEADER LABELS (bold) -->
-    <div class="d-flex justify-content-between px-2 mb-2 text-muted fw-bold">
-        <div style="width:40%;">Student Name</div>
-        <div style="width:30%;">Program</div>
-        <div style="width:30%;" class="text-end">Action</div>
+    <!-- HEADER LABELS (black) -->
+    <div class="header-labels">
+        <div style="width:35%;">Student Name</div>
+        <div style="width:25%;">Program</div>
+        <div style="width:20%;">Status</div>
+        <div style="width:20%;" class="text-end">Action</div>
     </div>
 
     <!-- CARDS CONTAINER -->
@@ -220,10 +307,11 @@
                  data-studentid="@report.StudentId"
                  data-course="@report.Course"
                  data-company="@report.Company"
-                 data-reporttype="@report.ReportType">
+                 data-reporttype="@report.ReportType"
+                 data-student-key="@report.StudentId">
 
                 <!-- STUDENT INFO (profile + name/email/mobile) -->
-                <div class="student-section" style="width:40%;">
+                <div class="student-section" style="width:35%;">
                     <img src="@(string.IsNullOrEmpty(report.ProfilePic) ? "/images/defaultpicture.jpg" : report.ProfilePic)"
                          class="profile-thumb"
                          onerror="this.src='/images/defaultpicture.jpg';">
@@ -236,12 +324,19 @@
                 </div>
 
                 <!-- PROGRAM -->
-                <div class="program" style="width:30%;">
+                <div class="program" style="width:25%;">
                     @report.Course
                 </div>
 
+                <!-- STATUS (will be updated dynamically) -->
+                <div style="width:20%;" class="status-container">
+                    <span class="status-badge-card @(report.Status == "Unread" ? "status-unread" : "status-read")">
+                        @report.Status
+                    </span>
+                </div>
+
                 <!-- ACTION (eye icon) -->
-                <div style="width:30%;" class="text-end">
+                <div style="width:20%;" class="text-end">
                     <button class="action-icon preview-btn">
                         <i class="bi bi-eye"></i>
                     </button>
@@ -283,15 +378,19 @@
     </div>
 
     <!-- TASKS SECTION -->
-    <div class="d-flex justify-content-end mt-3">
-        <a href="#" id="downloadTemplateBtn" class="btn"
-           style="background-color:#FE5252; color:white;">
-            Download Template
-        </a>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <h5 class="fw-bold mb-0">Tasks</h5>
+        <div>
+            <button class="btn upload-btn" id="uploadTaskBtn" style="background-color:#0787FF; color:white;">
+                <i class="bi bi-upload"></i> Upload New Task
+            </button>
+            <a href="#" id="downloadTemplateBtn" class="btn" style="background-color:#FE5252; color:white; margin-left:8px;">
+                Download Template
+            </a>
+        </div>
     </div>
 
     <div id="tasksTable" class="mt-4 p-3 rounded-4 shadow-sm data-table" style="border: 1px solid #dee2e6;">
-        <h5 class="fw-bold mb-3">Tasks</h5>
         <div class="table-responsive">
             <table class="table mb-0 align-middle">
                 <thead class="text-center">
@@ -304,7 +403,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr data-task-id="1" data-task-status="Unread">
+                    <!-- Alice Smith's Tasks (STU1001) -->
+                    <tr data-task-id="1" data-task-status="Unread" data-student-id="STU1001">
                         <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 1"></td>
                         <td class="text-center">Task 1 - Initial Report</td>
                         <td class="text-center">03/01/2026</td>
@@ -315,7 +415,7 @@
                             </button>
                         </td>
                     </tr>
-                    <tr data-task-id="2" data-task-status="Unread">
+                    <tr data-task-id="2" data-task-status="Unread" data-student-id="STU1001">
                         <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 2"></td>
                         <td class="text-center">Task 2 - Progress Update</td>
                         <td class="text-center">03/05/2026</td>
@@ -326,10 +426,33 @@
                             </button>
                         </td>
                     </tr>
-                    <tr data-task-id="3" data-task-status="Unread">
+                    <tr data-task-id="3" data-task-status="Unread" data-student-id="STU1001">
                         <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 3"></td>
                         <td class="text-center">Task 3 - Final Submission</td>
                         <td class="text-center">—</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-task-btn" title="Download Task">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <!-- John Doe's Tasks (STU1002) -->
+                    <tr data-task-id="4" data-task-status="Unread" data-student-id="STU1002">
+                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 1"></td>
+                        <td class="text-center">Task 1 - Project Proposal</td>
+                        <td class="text-center">03/02/2026</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-task-btn" title="Download Task">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-task-id="5" data-task-status="Unread" data-student-id="STU1002">
+                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 2"></td>
+                        <td class="text-center">Task 2 - Progress Report</td>
+                        <td class="text-center">03/06/2026</td>
                         <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
                         <td class="text-center">
                             <button class="download-icon download-task-btn" title="Download Task">
@@ -342,16 +465,20 @@
         </div>
     </div>
 
-    <!-- NEW DOCUMENTS SECTION -->
-    <div class="d-flex justify-content-end mt-4">
-        <a href="#" id="downloadDocumentsBtn" class="btn"
-           style="background-color:#FE5252; color:white;">
-            Download Documents
-        </a>
+    <!-- DOCUMENTS SECTION -->
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <h5 class="fw-bold mb-0">Documents</h5>
+        <div>
+            <button class="btn upload-btn" id="uploadDocumentBtn" style="background-color:#0787FF; color:white;">
+                <i class="bi bi-upload"></i> Upload New Document
+            </button>
+            <a href="#" id="downloadDocumentsBtn" class="btn" style="background-color:#FE5252; color:white; margin-left:8px;">
+                Download Documents
+            </a>
+        </div>
     </div>
 
     <div id="documentsTable" class="mt-4 p-3 rounded-4 shadow-sm data-table" style="border: 1px solid #dee2e6;">
-        <h5 class="fw-bold mb-3">Documents</h5>
         <div class="table-responsive">
             <table class="table mb-0 align-middle">
                 <thead class="text-center">
@@ -364,7 +491,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr data-doc-id="1" data-doc-status="Unread">
+                    <!-- Alice Smith's Documents (STU1001) -->
+                    <tr data-doc-id="1" data-doc-status="Unread" data-student-id="STU1001">
                         <td class="text-center"><input type="checkbox" class="doc-checkbox" value="MOA"></td>
                         <td class="text-center">MOA - Acme Inc.</td>
                         <td class="text-center">03/02/2026</td>
@@ -375,7 +503,7 @@
                             </button>
                         </td>
                     </tr>
-                    <tr data-doc-id="2" data-doc-status="Unread">
+                    <tr data-doc-id="2" data-doc-status="Unread" data-student-id="STU1001">
                         <td class="text-center"><input type="checkbox" class="doc-checkbox" value="Compliance"></td>
                         <td class="text-center">Compliance Report - Beta Corp</td>
                         <td class="text-center">03/06/2026</td>
@@ -386,7 +514,19 @@
                             </button>
                         </td>
                     </tr>
-                    <tr data-doc-id="3" data-doc-status="Unread">
+                    <!-- John Doe's Documents (STU1002) -->
+                    <tr data-doc-id="3" data-doc-status="Unread" data-student-id="STU1002">
+                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="MOA"></td>
+                        <td class="text-center">MOA - Beta Corp</td>
+                        <td class="text-center">03/03/2026</td>
+                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                        <td class="text-center">
+                            <button class="download-icon download-doc-btn" title="Download Document">
+                                <i class="bi bi-download"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr data-doc-id="4" data-doc-status="Unread" data-student-id="STU1002">
                         <td class="text-center"><input type="checkbox" class="doc-checkbox" value="Endorsement"></td>
                         <td class="text-center">Endorsement Letter</td>
                         <td class="text-center">—</td>
@@ -404,11 +544,279 @@
 
 </div>
 
+<!-- Upload Modal -->
+<div id="uploadModal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h4 id="modalTitle">Upload New File</h4>
+        <div class="mt-3">
+            <label for="fileTitle" class="form-label">File Title</label>
+            <input type="text" class="form-control" id="fileTitle" placeholder="Enter file title">
+        </div>
+        <div class="mt-3">
+            <label for="fileInput" class="form-label">Choose File</label>
+            <input type="file" class="form-control" id="fileInput">
+        </div>
+        <div class="mt-4 text-end">
+            <button class="btn btn-secondary me-2" id="cancelUpload">Cancel</button>
+            <button class="btn" id="confirmUpload" style="background-color:#0787FF; color:white;">Upload</button>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
         const cards = document.querySelectorAll(".report-card");
         const mainReports = document.getElementById("mainReports");
         const previewSection = document.getElementById("previewSection");
+        const cardsContainer = document.getElementById("cardsContainer");
+        const uploadModal = document.getElementById("uploadModal");
+        const closeModal = document.querySelector(".close");
+        const cancelUpload = document.getElementById("cancelUpload");
+        const confirmUpload = document.getElementById("confirmUpload");
+        const modalTitle = document.getElementById("modalTitle");
+        const fileTitle = document.getElementById("fileTitle");
+        const fileInput = document.getElementById("fileInput");
+
+        let currentStudentId = null;
+        let uploadType = null; // 'task' or 'document'
+
+        // Function to update main card status based on tasks and documents
+        function updateMainCardStatus(studentId) {
+            const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
+            if (!card) return;
+
+            const statusContainer = card.querySelector('.status-container .status-badge-card');
+
+            // Check all tasks for this student
+            const taskRows = document.querySelectorAll(`#tasksTable tbody tr[data-student-id="${studentId}"]`);
+            const docRows = document.querySelectorAll(`#documentsTable tbody tr[data-student-id="${studentId}"]`);
+
+            let allRead = true;
+
+            // Check tasks
+            taskRows.forEach(row => {
+                const taskStatus = row.dataset.taskStatus;
+                if (taskStatus === 'Unread') {
+                    allRead = false;
+                }
+            });
+
+            // Check documents
+            docRows.forEach(row => {
+                const docStatus = row.dataset.docStatus;
+                if (docStatus === 'Unread') {
+                    allRead = false;
+                }
+            });
+
+            // Update the status badge
+            if (allRead) {
+                statusContainer.className = 'status-badge-card status-read';
+                statusContainer.textContent = 'Read';
+                card.dataset.status = 'Read';
+            } else {
+                statusContainer.className = 'status-badge-card status-unread';
+                statusContainer.textContent = 'Unread';
+                card.dataset.status = 'Unread';
+            }
+
+            // After updating status, reapply the status filter
+            applyStatusFilter();
+        }
+
+        // Function to mark a student's status as Unread (when new file is uploaded)
+        function markAsUnread(studentId) {
+            const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
+            if (!card) return;
+
+            const statusContainer = card.querySelector('.status-container .status-badge-card');
+
+            // Always set to Unread when new file is uploaded
+            statusContainer.className = 'status-badge-card status-unread';
+            statusContainer.textContent = 'Unread';
+            card.dataset.status = 'Unread';
+
+            // After updating status, reapply the status filter
+            applyStatusFilter();
+        }
+
+        // Function to apply status filter
+        function applyStatusFilter() {
+            const selectedStatus = document.getElementById("statusFilter").value;
+
+            if (selectedStatus === "") {
+                // Show all cards
+                cards.forEach(card => {
+                    card.style.display = "flex";
+                });
+            } else {
+                // Filter by selected status
+                cards.forEach(card => {
+                    const cardStatus = card.dataset.status;
+                    if (cardStatus === selectedStatus) {
+                        card.style.display = "flex";
+                    } else {
+                        card.style.display = "none";
+                    }
+                });
+            }
+        }
+
+        // Function to filter tables by student
+        function filterTablesByStudent(studentId) {
+            // Hide/show task rows
+            document.querySelectorAll('#tasksTable tbody tr').forEach(row => {
+                if (row.dataset.studentId === studentId) {
+                    row.style.display = '';
+                    // Uncheck any checkboxes in hidden rows
+                    const checkbox = row.querySelector('.task-checkbox');
+                    if (checkbox) checkbox.checked = false;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Hide/show document rows
+            document.querySelectorAll('#documentsTable tbody tr').forEach(row => {
+                if (row.dataset.studentId === studentId) {
+                    row.style.display = '';
+                    // Uncheck any checkboxes in hidden rows
+                    const checkbox = row.querySelector('.doc-checkbox');
+                    if (checkbox) checkbox.checked = false;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        // Function to add a new task row
+        function addNewTask(studentId, title) {
+            const tbody = document.querySelector('#tasksTable tbody');
+            const newTaskId = Date.now(); // Simple unique ID
+            const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+
+            const newRow = document.createElement('tr');
+            newRow.dataset.taskId = newTaskId;
+            newRow.dataset.taskStatus = 'Unread';
+            newRow.dataset.studentId = studentId;
+
+            newRow.innerHTML = `
+                <td class="text-center"><input type="checkbox" class="task-checkbox" value="New Task"></td>
+                <td class="text-center">${title}</td>
+                <td class="text-center">${today}</td>
+                <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                <td class="text-center">
+                    <button class="download-icon download-task-btn" title="Download Task">
+                        <i class="bi bi-download"></i>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(newRow);
+
+            // Add download event listener to the new button
+            const downloadBtn = newRow.querySelector('.download-task-btn');
+            downloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const row = this.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const taskId = row.dataset.taskId;
+                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
+                const checkbox = row.querySelector('.task-checkbox');
+
+                if (statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.taskStatus = 'Read';
+
+                    if (checkbox) checkbox.checked = false;
+                }
+
+                if (studentId) {
+                    updateMainCardStatus(studentId);
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx";
+                const filename = `Task_${taskId}_${taskTitle.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        // Function to add a new document row
+        function addNewDocument(studentId, title) {
+            const tbody = document.querySelector('#documentsTable tbody');
+            const newDocId = Date.now(); // Simple unique ID
+            const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+
+            const newRow = document.createElement('tr');
+            newRow.dataset.docId = newDocId;
+            newRow.dataset.docStatus = 'Unread';
+            newRow.dataset.studentId = studentId;
+
+            newRow.innerHTML = `
+                <td class="text-center"><input type="checkbox" class="doc-checkbox" value="New Document"></td>
+                <td class="text-center">${title}</td>
+                <td class="text-center">${today}</td>
+                <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
+                <td class="text-center">
+                    <button class="download-icon download-doc-btn" title="Download Document">
+                        <i class="bi bi-download"></i>
+                    </button>
+                </td>
+            `;
+
+            tbody.appendChild(newRow);
+
+            // Add download event listener to the new button
+            const downloadBtn = newRow.querySelector('.download-doc-btn');
+            downloadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const row = this.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const docId = row.dataset.docId;
+                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
+                const checkbox = row.querySelector('.doc-checkbox');
+
+                if (statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.docStatus = 'Read';
+
+                    if (checkbox) checkbox.checked = false;
+                }
+
+                if (studentId) {
+                    updateMainCardStatus(studentId);
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx";
+                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        // Initialize all cards with correct status on page load
+        function initializeAllStatuses() {
+            cards.forEach(card => {
+                const studentId = card.dataset.studentKey;
+                updateMainCardStatus(studentId);
+            });
+        }
 
         // --- Populate filter dropdowns ---
         const years = new Set();
@@ -420,6 +828,7 @@
 
         const yearFilter = document.getElementById("yearFilter");
         const programFilter = document.getElementById("programFilter");
+        const statusFilter = document.getElementById("statusFilter");
 
         [...years].sort().forEach(year => {
             const option = document.createElement("option");
@@ -435,21 +844,24 @@
             programFilter.appendChild(option);
         });
 
-        // --- Filter function ---
+        // --- Combined filter function ---
         function filterCards() {
             const searchTerm = document.getElementById("searchName").value.toLowerCase();
             const selectedYear = yearFilter.value;
             const selectedProgram = programFilter.value;
+            const selectedStatus = statusFilter.value;
 
             cards.forEach(card => {
                 const name = card.dataset.name.toLowerCase();
                 const year = card.dataset.year;
                 const program = card.dataset.course;
+                const status = card.dataset.status;
 
                 let show = true;
                 if (searchTerm && !name.includes(searchTerm)) show = false;
                 if (selectedYear && year !== selectedYear) show = false;
                 if (selectedProgram && program !== selectedProgram) show = false;
+                if (selectedStatus && status !== selectedStatus) show = false;
 
                 card.style.display = show ? "flex" : "none";
             });
@@ -458,12 +870,17 @@
         document.getElementById("searchName").addEventListener("input", filterCards);
         yearFilter.addEventListener("change", filterCards);
         programFilter.addEventListener("change", filterCards);
+        statusFilter.addEventListener("change", filterCards);
 
         // --- Preview button (eye icon) ---
         document.querySelectorAll('.preview-btn').forEach(btn => {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const card = this.closest('.report-card');
+                currentStudentId = card.dataset.studentKey;
+
+                // Filter tables to show only this student's data
+                filterTablesByStudent(currentStudentId);
 
                 document.getElementById("previewProfilePic").src = card.dataset.profile && card.dataset.profile.trim() !== ""
                     ? card.dataset.profile
@@ -501,33 +918,116 @@
             });
         });
 
+        // --- Upload button handlers ---
+        document.getElementById("uploadTaskBtn").addEventListener("click", function() {
+            uploadType = 'task';
+            modalTitle.textContent = 'Upload New Task';
+            fileTitle.value = '';
+            fileInput.value = '';
+            uploadModal.style.display = 'block';
+        });
+
+        document.getElementById("uploadDocumentBtn").addEventListener("click", function() {
+            uploadType = 'document';
+            modalTitle.textContent = 'Upload New Document';
+            fileTitle.value = '';
+            fileInput.value = '';
+            uploadModal.style.display = 'block';
+        });
+
+        // --- Modal close handlers ---
+        function closeUploadModal() {
+            uploadModal.style.display = 'none';
+            uploadType = null;
+        }
+
+        closeModal.addEventListener('click', closeUploadModal);
+        cancelUpload.addEventListener('click', closeUploadModal);
+
+        window.addEventListener('click', function(event) {
+            if (event.target === uploadModal) {
+                closeUploadModal();
+            }
+        });
+
+        // --- Confirm upload handler ---
+        confirmUpload.addEventListener('click', function() {
+            if (!fileTitle.value.trim()) {
+                alert('Please enter a file title');
+                return;
+            }
+
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a file to upload');
+                return;
+            }
+
+            // Simulate upload (in real app, you'd send to server)
+            alert(`File "${fileInput.files[0].name}" uploaded successfully!`);
+
+            // Add new row based on upload type
+            if (uploadType === 'task') {
+                addNewTask(currentStudentId, fileTitle.value);
+            } else if (uploadType === 'document') {
+                addNewDocument(currentStudentId, fileTitle.value);
+            }
+
+            // Mark the student's main status as Unread
+            markAsUnread(currentStudentId);
+
+            closeUploadModal();
+        });
+
         // --- Back button ---
         document.getElementById("backBtn").addEventListener("click", function () {
             previewSection.style.display = "none";
             mainReports.style.display = "block";
+
+            // Show all rows again and uncheck all checkboxes
+            document.querySelectorAll('#tasksTable tbody tr, #documentsTable tbody tr').forEach(row => {
+                row.style.display = '';
+                // Uncheck all checkboxes
+                const taskCheckbox = row.querySelector('.task-checkbox');
+                const docCheckbox = row.querySelector('.doc-checkbox');
+                if (taskCheckbox) taskCheckbox.checked = false;
+                if (docCheckbox) docCheckbox.checked = false;
+            });
+
+            currentStudentId = null;
         });
 
-        // --- TASKS download (bulk) ---
+        // --- TASKS download (bulk) - Only visible checkboxes ---
         document.getElementById("downloadTemplateBtn").addEventListener("click", function (e) {
             e.preventDefault();
-            const selectedCheckboxes = [...document.querySelectorAll(".task-checkbox:checked")];
 
-            if (selectedCheckboxes.length === 0) {
+            // Only get checkboxes from visible rows (current student)
+            const visibleCheckboxes = [...document.querySelectorAll("#tasksTable tbody tr:not([style*='none']) .task-checkbox:checked")];
+
+            if (visibleCheckboxes.length === 0) {
                 alert("Please select at least one task.");
                 return;
             }
 
-            selectedCheckboxes.forEach(cb => {
+            visibleCheckboxes.forEach(cb => {
                 const row = cb.closest('tr');
                 const statusBadge = row.querySelector('.status-badge');
                 const taskId = row.dataset.taskId;
                 const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
 
                 if (statusBadge && statusBadge.classList.contains('status-unread')) {
                     statusBadge.classList.remove('status-unread');
                     statusBadge.classList.add('status-read');
                     statusBadge.textContent = 'Read';
                     row.dataset.taskStatus = 'Read';
+
+                    // Uncheck the checkbox after download
+                    cb.checked = false;
+                }
+
+                // Update main card status for this student
+                if (studentId) {
+                    updateMainCardStatus(studentId);
                 }
 
                 const templateUrl = "/templates/reporttemplate.docx";
@@ -542,19 +1042,29 @@
         });
 
         // --- TASKS per-row download ---
-        document.querySelectorAll('.download-task-btn').forEach(btn => {
+        function addTaskDownloadListener(btn) {
             btn.addEventListener('click', function (e) {
                 e.preventDefault();
                 const row = this.closest('tr');
                 const statusBadge = row.querySelector('.status-badge');
                 const taskId = row.dataset.taskId;
                 const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
+                const checkbox = row.querySelector('.task-checkbox');
 
                 if (statusBadge.classList.contains('status-unread')) {
                     statusBadge.classList.remove('status-unread');
                     statusBadge.classList.add('status-read');
                     statusBadge.textContent = 'Read';
                     row.dataset.taskStatus = 'Read';
+
+                    // Uncheck the checkbox after download
+                    if (checkbox) checkbox.checked = false;
+                }
+
+                // Update main card status for this student
+                if (studentId) {
+                    updateMainCardStatus(studentId);
                 }
 
                 const templateUrl = "/templates/reporttemplate.docx";
@@ -566,56 +1076,44 @@
                 link.click();
                 document.body.removeChild(link);
             });
+        }
+
+        document.querySelectorAll('.download-task-btn').forEach(btn => {
+            addTaskDownloadListener(btn);
         });
 
-        // --- DOCUMENTS download (bulk) ---
+        // --- DOCUMENTS download (bulk) - Only visible checkboxes ---
         document.getElementById("downloadDocumentsBtn").addEventListener("click", function (e) {
             e.preventDefault();
-            const selectedCheckboxes = [...document.querySelectorAll(".doc-checkbox:checked")];
 
-            if (selectedCheckboxes.length === 0) {
+            // Only get checkboxes from visible rows (current student)
+            const visibleCheckboxes = [...document.querySelectorAll("#documentsTable tbody tr:not([style*='none']) .doc-checkbox:checked")];
+
+            if (visibleCheckboxes.length === 0) {
                 alert("Please select at least one document.");
                 return;
             }
 
-            selectedCheckboxes.forEach(cb => {
+            visibleCheckboxes.forEach(cb => {
                 const row = cb.closest('tr');
                 const statusBadge = row.querySelector('.status-badge');
                 const docId = row.dataset.docId;
                 const docType = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
 
                 if (statusBadge && statusBadge.classList.contains('status-unread')) {
                     statusBadge.classList.remove('status-unread');
                     statusBadge.classList.add('status-read');
                     statusBadge.textContent = 'Read';
                     row.dataset.docStatus = 'Read';
+
+                    // Uncheck the checkbox after download
+                    cb.checked = false;
                 }
 
-                const templateUrl = "/templates/reporttemplate.docx"; // same placeholder
-                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
-                const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        });
-
-        // --- DOCUMENTS per-row download ---
-        document.querySelectorAll('.download-doc-btn').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                const row = this.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const docId = row.dataset.docId;
-                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
-
-                if (statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.docStatus = 'Read';
+                // Update main card status for this student
+                if (studentId) {
+                    updateMainCardStatus(studentId);
                 }
 
                 const templateUrl = "/templates/reporttemplate.docx";
@@ -628,5 +1126,49 @@
                 document.body.removeChild(link);
             });
         });
+
+        // --- DOCUMENTS per-row download ---
+        function addDocumentDownloadListener(btn) {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const row = this.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const docId = row.dataset.docId;
+                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
+                const checkbox = row.querySelector('.doc-checkbox');
+
+                if (statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.docStatus = 'Read';
+
+                    // Uncheck the checkbox after download
+                    if (checkbox) checkbox.checked = false;
+                }
+
+                // Update main card status for this student
+                if (studentId) {
+                    updateMainCardStatus(studentId);
+                }
+
+                const templateUrl = "/templates/reporttemplate.docx";
+                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
+                const link = document.createElement('a');
+                link.href = templateUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+        document.querySelectorAll('.download-doc-btn').forEach(btn => {
+            addDocumentDownloadListener(btn);
+        });
+
+        // Initialize all statuses on page load
+        initializeAllStatuses();
     });
 </script>
