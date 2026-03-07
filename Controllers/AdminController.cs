@@ -36,37 +36,49 @@ namespace MonitoringSystem.Controllers
             return View();
         }
 
-        // GET: Admin Users page - CHANGED: Now showing ALL users including admin
+        // GET: Admin Users page - FIXED: Excluding declined accounts
         public async Task<IActionResult> Users()
         {
             Console.WriteLine("========== USERS ACTION HIT ==========");
 
             try
             {
-                // Get ALL users from database (including admin)
+                // Get users from database EXCLUDING declined accounts
                 var users = await _userManager.Users
+                    .Where(u => u.Status == "Approved") // FILTER OUT DECLINED USERS
                     .OrderBy(u => u.FullName)
                     .ToListAsync();
 
-                // Log count for debugging
-                Console.WriteLine($"Found {users.Count} users in database (including admin)");
+                Console.WriteLine($"Found {users.Count} active users in database (excluding declined)");
 
-                // Return the list to the view
                 return View(users ?? new List<ApplicationUser>());
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"ERROR in Users action: {ex.Message}");
-                // Return empty list if there's an error
                 return View(new List<ApplicationUser>());
             }
         }
 
         // GET: Admin Registration page
-        public IActionResult Registration()
+        public async Task<IActionResult> Registration()
         {
             Console.WriteLine("========== REGISTRATION ACTION HIT ==========");
-            return View();
+
+            try
+            {
+                // Get all users ordered by registration date
+                var users = await _userManager.Users
+                    .OrderByDescending(u => u.CreatedAt)
+                    .ToListAsync();
+
+                return View(users);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in Registration action: {ex.Message}");
+                return View(new List<ApplicationUser>());
+            }
         }
 
         // GET: Admin Reports page
@@ -89,7 +101,7 @@ namespace MonitoringSystem.Controllers
             ", "text/html");
         }
 
-        // API: Get dashboard data for charts
+        // API: Get dashboard data for charts - UPDATED WITH REAL MONTHLY DATA
         [HttpGet]
         public async Task<IActionResult> GetDashboardData(int year)
         {
@@ -97,40 +109,84 @@ namespace MonitoringSystem.Controllers
             {
                 Console.WriteLine($"========== GET DASHBOARD DATA FOR YEAR {year} ==========");
 
-                // Get real data from database
+                // Get real data from database using Status
                 var totalUsers = await _userManager.Users.CountAsync();
                 var totalCompanies = await _userManager.Users.CountAsync(u => u.Role == "Company");
                 var totalStudents = await _userManager.Users.CountAsync(u => u.Role == "Student");
-                var pendingApprovals = await _userManager.Users.CountAsync(u => !u.IsApproved && u.Role != "Admin");
+                var pendingApprovals = await _userManager.Users.CountAsync(u => u.Status == "Pending" && u.Role != "Admin");
+                var approvedUsers = await _userManager.Users.CountAsync(u => u.Status == "Approved" && u.Role != "Admin");
+                var declinedUsers = await _userManager.Users.CountAsync(u => u.Status == "Declined" && u.Role != "Admin");
 
-                // Generate monthly data
-                var pendingUsers = new List<int>();
-                var tasksSubmitted = new List<int>();
-                var monthlyUsers = new List<int>();
-                var monthlyCompanies = new List<int>();
+                // Get recent registrations (last 5 users)
+                var recentUsers = await _userManager.Users
+                    .Where(u => u.Role != "Admin")
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Take(5)
+                    .Select(u => new
+                    {
+                        u.Email,
+                        u.FullName,
+                        u.Status,
+                        CreatedAt = u.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                    })
+                    .ToListAsync();
 
-                var random = new Random();
+                // REAL MONTHLY DATA for charts
+                var pendingUsers = new List<int>();      // Pink chart - Pending users per month
+                var tasksSubmitted = new List<int>();    // Blue chart - Tasks (placeholder for now)
+                var monthlyUsers = new List<int>();      // Green chart - Total users per month
+                var monthlyCompanies = new List<int>();  // Gold chart - Companies per month
+
+                // For each month, get real data from database
                 for (int month = 1; month <= 12; month++)
                 {
-                    pendingUsers.Add(random.Next(5, 30));
-                    tasksSubmitted.Add(random.Next(10, 50));
-                    monthlyUsers.Add(random.Next(100, 200));
-                    monthlyCompanies.Add(random.Next(20, 40));
+                    // Create date range for the month
+                    var startDate = new DateTime(year, month, 1);
+                    var endDate = startDate.AddMonths(1).AddDays(-1);
+
+                    // PENDING USERS created in this month (for pink chart)
+                    var pendingCount = await _userManager.Users
+                        .CountAsync(u => u.Status == "Pending"
+                            && u.Role != "Admin"
+                            && u.CreatedAt >= startDate
+                            && u.CreatedAt <= endDate);
+                    pendingUsers.Add(pendingCount);
+
+                    // TASKS SUBMITTED (you can replace this with actual task data later)
+                    // For now, using a simple calculation based on users
+                    tasksSubmitted.Add(pendingCount + new Random().Next(1, 5));
+
+                    // TOTAL USERS created in this month (for green chart)
+                    var usersCount = await _userManager.Users
+                        .CountAsync(u => u.Role != "Admin"
+                            && u.CreatedAt >= startDate
+                            && u.CreatedAt <= endDate);
+                    monthlyUsers.Add(usersCount);
+
+                    // COMPANIES created in this month (for gold chart)
+                    var companiesCount = await _userManager.Users
+                        .CountAsync(u => u.Role == "Company"
+                            && u.CreatedAt >= startDate
+                            && u.CreatedAt <= endDate);
+                    monthlyCompanies.Add(companiesCount);
                 }
 
                 var data = new
                 {
-                    pendingUsers = pendingUsers,
-                    tasksSubmitted = tasksSubmitted,
-                    totalUsers = monthlyUsers,
-                    totalCompanies = monthlyCompanies,
+                    pendingUsers = pendingUsers,        // REAL pending users per month
+                    tasksSubmitted = tasksSubmitted,    // Placeholder for now
+                    totalUsers = monthlyUsers,          // REAL total users per month
+                    totalCompanies = monthlyCompanies,  // REAL companies per month
                     year = year,
+                    recentUsers = recentUsers,
                     stats = new
                     {
                         totalUsers,
                         totalCompanies,
                         totalStudents,
-                        pendingApprovals
+                        pendingApprovals,
+                        approvedUsers,
+                        declinedUsers
                     }
                 };
 
@@ -140,6 +196,120 @@ namespace MonitoringSystem.Controllers
             {
                 Console.WriteLine($"ERROR in GetDashboardData: {ex.Message}");
                 return Json(new { error = ex.Message });
+            }
+        }
+
+        // API: Update user status (Approve/Decline)
+        [HttpPost]
+        public async Task<IActionResult> UpdateUserStatus([FromBody] UpdateStatusModel model)
+        {
+            try
+            {
+                Console.WriteLine($"========== UPDATE USER STATUS ==========");
+                Console.WriteLine($"UserId: {model.UserId}, Status: {model.Status}");
+
+                var user = await _userManager.FindByIdAsync(model.UserId);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "User not found" });
+                }
+
+                // Update status
+                user.Status = model.Status;
+                user.UpdatedAt = DateTime.Now;
+
+                var result = await _userManager.UpdateAsync(user);
+
+                if (result.Succeeded)
+                {
+                    Console.WriteLine($"User {user.Email} status updated to {model.Status}");
+                    return Json(new
+                    {
+                        success = true,
+                        message = $"User has been {model.Status.ToLower()} successfully",
+                        status = model.Status
+                    });
+                }
+                else
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    return Json(new { success = false, message = $"Failed to update status: {errors}" });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR in UpdateUserStatus: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // API: Get pending users
+        [HttpGet]
+        public async Task<IActionResult> GetPendingUsers()
+        {
+            try
+            {
+                var pendingUsers = await _userManager.Users
+                    .Where(u => u.Status == "Pending" && u.Role != "Admin")
+                    .OrderByDescending(u => u.CreatedAt)
+                    .Select(u => new
+                    {
+                        u.Id,
+                        u.FullName,
+                        u.Email,
+                        u.StudentId,
+                        u.Role,
+                        u.Status,
+                        u.CreatedAt,
+                        u.BirthDate
+                    })
+                    .ToListAsync();
+
+                return Json(new { success = true, users = pendingUsers });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // API: Get user details for preview
+        [HttpGet]
+        public async Task<IActionResult> GetUserDetails(string id)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(id);
+                if (user == null)
+                {
+                    return Json(new { success = false, message = "User not found" });
+                }
+
+                return Json(new
+                {
+                    success = true,
+                    user = new
+                    {
+                        user.Id,
+                        user.FullName,
+                        user.Email,
+                        user.StudentId,
+                        user.Role,
+                        user.Status,
+                        user.BirthDate,
+                        user.MobileNumber,
+                        user.Address,
+                        user.Program,
+                        user.Year,
+                        user.ProfileImage,
+                        user.CreatedAt,
+                        user.IsActive
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
             }
         }
 
@@ -305,5 +475,12 @@ namespace MonitoringSystem.Controllers
         public string OfficeLocation { get; set; } = "";
         public string OfficePhone { get; set; } = "";
         public string Address { get; set; } = "";
+    }
+
+    // Model for updating user status
+    public class UpdateStatusModel
+    {
+        public string UserId { get; set; }
+        public string Status { get; set; }
     }
 }

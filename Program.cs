@@ -14,12 +14,12 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register Identity with ApplicationUser
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
-    // Password settings
-    options.Password.RequireDigit = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequireLowercase = true;
+    // Password settings - CHANGED for Student ID compatibility
+    options.Password.RequireDigit = true;           // Keep (Student IDs have numbers)
+    options.Password.RequiredLength = 6;            // Keep minimum length
+    options.Password.RequireNonAlphanumeric = false; // Don't need special chars
+    options.Password.RequireUppercase = false;       // CHANGED to false
+    options.Password.RequireLowercase = false;       // CHANGED to false
 
     // Lockout settings
     options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
@@ -89,7 +89,7 @@ using (var scope = app.Services.CreateScope())
                 Email = adminEmail,
                 FullName = "System Administrator",
                 Role = "Admin",
-                IsApproved = true,
+                Status = "Approved",
                 IsActive = true,
                 CreatedAt = DateTime.Now,
                 ProfileImage = "/images/ctu-logo.png",
@@ -117,6 +117,14 @@ using (var scope = app.Services.CreateScope())
         else
         {
             Console.WriteLine("Admin user already exists.");
+
+            // Update existing admin to use Status if it's not set
+            if (string.IsNullOrEmpty(adminUser.Status))
+            {
+                adminUser.Status = "Approved";
+                await userManager.UpdateAsync(adminUser);
+                Console.WriteLine("Updated existing admin with Status = Approved");
+            }
         }
     }
     catch (Exception ex)
