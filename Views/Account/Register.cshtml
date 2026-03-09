@@ -17,17 +17,27 @@
 
         <form asp-action="Register" method="post">
 
-            <!-- STUDENT ID (New) -->
+            <!-- STUDENT ID -->
             <div class="mb-3">
                 <input name="studentId" class="form-control" placeholder="What is your ID number?" required />
             </div>
 
-            <!-- EMAIL (kept) -->
+            <!-- EMAIL -->
             <div class="mb-3">
                 <input name="email" type="email" class="form-control" placeholder="Email" required />
             </div>
 
-            <!-- BIRTHDATE (kept exactly as original) -->
+            <!-- PROGRAM (New) -->
+            <div class="mb-3">
+                <label class="form-label small">Program</label>
+                <select name="program" class="form-select" required>
+                    <option value="">Select Program</option>
+                    <option value="BIT">Bachelor in Industrial Technology (BIT)</option>
+                    <option value="BSIT">Bachelor of Science in Information Technology (BSIT)</option>
+                </select>
+            </div>
+
+            <!-- BIRTHDATE -->
             <label class="form-label small">Birthdate</label>
             <div class="row mb-3">
                 <div class="col-4">
@@ -41,6 +51,7 @@
                 </div>
                 <div class="col-4">
                     <select name="birthDay" class="form-select" required>
+                        <option value="">Day</option>
                         @for (int d = 1; d <= 31; d++)
                         {
                             <option value="@d">@d</option>
@@ -49,6 +60,7 @@
                 </div>
                 <div class="col-4">
                     <select name="birthYear" class="form-select" required>
+                        <option value="">Year</option>
                         @for (int y = DateTime.Now.Year; y >= 1950; y--)
                         {
                             <option value="@y">@y</option>

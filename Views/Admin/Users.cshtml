@@ -89,9 +89,9 @@
                                     <div class="dropdown dropend d-inline-block">
                                         <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
                                         <ul class="dropdown-menu shadow-sm">
-                                            <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
-                                            <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
-                                            <li><a class="dropdown-item make-admin-btn" href="#">Make Admin</a></li>
+                                            <li><a class="dropdown-item edit-btn" href="javascript:void(0);">Edit</a></li>
+                                            <li><a class="dropdown-item delete-btn" href="javascript:void(0);">Delete</a></li>
+                                            <li><a class="dropdown-item make-admin-btn" href="javascript:void(0);">Make Admin</a></li>
                                         </ul>
                                     </div>
                                 </td>
@@ -557,6 +557,45 @@
     </div>
 </div>
 
+<!-- ================= DELETE CONFIRMATION MODAL ================= -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="deleteConfirmModalLabel" style="color: white; font-size: 1.1rem;">Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
+            </div>
+            <div class="modal-body py-2">
+                <p class="mb-1" style="font-size: 0.95rem;">Are you sure you want to delete?</p>
+                <p class="fw-bold text-center mb-0" id="deleteUserInfo" style="color: white; word-break: break-word; font-size: 1.1rem;"></p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
+                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmDeleteBtn">YES</button>
+                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- ================= MAKE ADMIN CONFIRMATION MODAL ================= -->
+<div class="modal fade" id="makeAdminConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="makeAdminConfirmModalLabel" style="color: white; font-size: 1.1rem;">Confirm Make Admin</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
+            </div>
+            <div class="modal-body py-2">
+                <p class="mb-1" style="font-size: 0.95rem;">Are you sure you want to make</p>
+                <p class="fw-bold text-center mb-1" id="makeAdminUserInfo" style="color: white; word-break: break-word; font-size: 1.1rem;"></p>
+                <p class="text-center mb-0" style="font-size: 0.95rem;">an Administrator?</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
+                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmMakeAdminBtn">YES</button>
+                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+            </div>
+        </div>
+    </div>
+</div>
 <!-- ================= SCRIPT ================= -->
 <script>
     const tbody = document.querySelector("#usersTable tbody");
@@ -774,41 +813,138 @@
         modalInstance.hide();
     });
 
-    // ===== NEW: MAKE ADMIN FUNCTIONALITY =====
+    // ===== DELETE USER MODAL FUNCTIONALITY =====
+    let userToDelete = null;
+
+    // Open delete modal when delete button is clicked
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('delete-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const row = e.target.closest('tr');
+            userToDelete = {
+                id: row.dataset.id,
+                fullName: row.dataset.fullname,
+                row: row
+            };
+
+            // Display user fullname in modal
+            document.getElementById('deleteUserInfo').textContent = `${userToDelete.fullName}`;
+
+            // Show the modal
+            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            deleteModal.show();
+        }
+    });
+
+    // Handle confirm delete button
+    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+        if (!userToDelete) return;
+
+        const token = document.getElementById('__RequestVerificationToken').value;
+
+        fetch('/Admin/DeleteUser', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify(userToDelete.id)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Remove the row from table
+                if (userToDelete.row) {
+                    userToDelete.row.remove();
+                    // Reprogram filter after deletion
+                    populateProgramFilter();
+                    filterTable();
+                }
+                alert('User deleted successfully');
+            } else {
+                alert('Failed to delete user: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting');
+        })
+        .finally(() => {
+            // Hide modal
+            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+            if (deleteModal) {
+                deleteModal.hide();
+            }
+            userToDelete = null;
+        });
+    });
+
+    // ===== MAKE ADMIN MODAL FUNCTIONALITY =====
+    let userToMakeAdmin = null;
+
+    // Open make admin modal when make-admin button is clicked
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('make-admin-btn')) {
             e.preventDefault();
+            e.stopPropagation();
 
             const row = e.target.closest('tr');
-            const userId = row.dataset.id;
-            const fullName = row.dataset.fullname;
+            userToMakeAdmin = {
+                id: row.dataset.id,
+                fullName: row.dataset.fullname,
+                row: row
+            };
 
-            if (confirm(`Are you sure you want to make ${fullName} an Admin?`)) {
-                const token = document.getElementById('__RequestVerificationToken').value;
+            // Display user fullname in modal
+            document.getElementById('makeAdminUserInfo').textContent = `${userToMakeAdmin.fullName}`;
 
-                fetch('/Admin/Users/MakeAdmin', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
-                    body: JSON.stringify({ userId: userId })
-                })
-                .then(response => {
-                    if (response.ok) {
-                        const roleCell = row.cells[2];
-                        roleCell.textContent = 'Admin';
-                        row.dataset.role = 'Admin';
-                        alert('User is now an Admin.');
-                    } else {
-                        alert('Failed to make user Admin.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred.');
-                });
-            }
+            // Show the modal
+            const makeAdminModal = new bootstrap.Modal(document.getElementById('makeAdminConfirmModal'));
+            makeAdminModal.show();
         }
+    });
+
+    // Handle confirm make admin button
+    document.getElementById('confirmMakeAdminBtn').addEventListener('click', function() {
+        if (!userToMakeAdmin) return;
+
+        const token = document.getElementById('__RequestVerificationToken').value;
+
+        fetch('/Admin/Users/MakeAdmin', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': token
+            },
+            body: JSON.stringify({ userId: userToMakeAdmin.id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update the role in the table
+                if (userToMakeAdmin.row) {
+                    const roleCell = userToMakeAdmin.row.cells[2];
+                    roleCell.textContent = 'Admin';
+                    userToMakeAdmin.row.dataset.role = 'Admin';
+                }
+                alert('User is now an Admin.');
+            } else {
+                alert('Failed to make user Admin: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred.');
+        })
+        .finally(() => {
+            // Hide modal
+            const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
+            if (makeAdminModal) {
+                makeAdminModal.hide();
+            }
+            userToMakeAdmin = null;
+        });
     });
 </script>

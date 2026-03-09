@@ -16,11 +16,19 @@ namespace MonitoringSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly ILogger<AdminController> _logger;
 
-        public AdminController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public AdminController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            ILogger<AdminController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _roleManager = roleManager;
+            _logger = logger;
         }
 
         // GET: Admin Dashboard
@@ -60,17 +68,31 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // GET: Admin Registration page
+        // GET: Admin Registration page - UPDATED to show Pending first and include Program
         public async Task<IActionResult> Registration()
         {
             Console.WriteLine("========== REGISTRATION ACTION HIT ==========");
 
             try
             {
-                // Get all users ordered by registration date
+                // Get all users ordered by Status (Pending first) then by registration date
                 var users = await _userManager.Users
-                    .OrderByDescending(u => u.CreatedAt)
+                    .OrderBy(u => u.Status == "Pending" ? 0 : 1)  // Pending users first
+                    .ThenByDescending(u => u.CreatedAt)           // Then by newest first
                     .ToListAsync();
+
+                // Log for debugging
+                Console.WriteLine($"Total users found: {users.Count}");
+                Console.WriteLine($"Pending users: {users.Count(u => u.Status == "Pending")}");
+                Console.WriteLine($"Approved users: {users.Count(u => u.Status == "Approved")}");
+                Console.WriteLine($"Declined users: {users.Count(u => u.Status == "Declined")}");
+
+                // Log a sample user to verify Program is included
+                var sampleUser = users.FirstOrDefault();
+                if (sampleUser != null)
+                {
+                    Console.WriteLine($"Sample User - Email: {sampleUser.Email}, Program: '{sampleUser.Program}', Status: {sampleUser.Status}");
+                }
 
                 return View(users);
             }
@@ -127,6 +149,7 @@ namespace MonitoringSystem.Controllers
                         u.Email,
                         u.FullName,
                         u.Status,
+                        u.Program,
                         CreatedAt = u.CreatedAt.ToString("yyyy-MM-dd HH:mm")
                     })
                     .ToListAsync();
@@ -260,6 +283,7 @@ namespace MonitoringSystem.Controllers
                         u.StudentId,
                         u.Role,
                         u.Status,
+                        u.Program,
                         u.CreatedAt,
                         u.BirthDate
                     })
@@ -437,9 +461,127 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // API: Make user admin
+        // ==================== IMPROVED MAKE ADMIN FUNCTIONALITY ====================
+        /// <summary>
+        /// Makes a user an Admin by updating both custom Role field and Identity Role
+        /// </summary>
         [HttpPost]
-        public async Task<IActionResult> MakeAdmin([FromBody] string userId)
+        [Route("Admin/Users/MakeAdmin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MakeAdmin([FromBody] MakeAdminRequest request)
+        {
+            try
+            {
+                _logger.LogInformation($"========== MAKE ADMIN ATTEMPT ==========");
+                _logger.LogInformation($"UserId: {request?.UserId}");
+
+                if (request == null || string.IsNullOrEmpty(request.UserId))
+                {
+                    return BadRequest(new { success = false, message = "Invalid request" });
+                }
+
+                // Find the user by ID
+                var user = await _userManager.FindByIdAsync(request.UserId);
+                if (user == null)
+                {
+                    _logger.LogWarning($"User not found with ID: {request.UserId}");
+                    return NotFound(new { success = false, message = "User not found" });
+                }
+
+                _logger.LogInformation($"Found user: {user.Email}, Current Role: {user.Role}");
+
+                // Check if user is already an Admin
+                if (user.Role == "Admin")
+                {
+                    return BadRequest(new { success = false, message = "User is already an Admin" });
+                }
+
+                // Store the old role for logging
+                var oldRole = user.Role;
+
+                // ===== STEP 1: Update the custom Role field =====
+                user.Role = "Admin";
+                user.UpdatedAt = DateTime.Now;
+
+                var updateResult = await _userManager.UpdateAsync(user);
+
+                if (!updateResult.Succeeded)
+                {
+                    var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
+                    _logger.LogError($"Failed to update user Role field: {errors}");
+                    return BadRequest(new { success = false, message = $"Failed to update role: {errors}" });
+                }
+
+                // ===== STEP 2: Ensure Admin Identity Role exists =====
+                if (!await _roleManager.RoleExistsAsync("Admin"))
+                {
+                    _logger.LogInformation("Creating Admin role as it doesn't exist");
+                    await _roleManager.CreateAsync(new IdentityRole("Admin"));
+                }
+
+                // ===== STEP 3: Remove from any existing Identity Roles =====
+                var currentRoles = await _userManager.GetRolesAsync(user);
+                if (currentRoles.Any())
+                {
+                    _logger.LogInformation($"Removing user from existing roles: {string.Join(", ", currentRoles)}");
+                    await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                }
+
+                // ===== STEP 4: Add to Admin Identity Role =====
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, "Admin");
+
+                if (!addToRoleResult.Succeeded)
+                {
+                    var errors = string.Join(", ", addToRoleResult.Errors.Select(e => e.Description));
+                    _logger.LogError($"Failed to add user to Admin role: {errors}");
+
+                    // Try to revert the custom Role change if Identity role assignment fails
+                    user.Role = oldRole;
+                    await _userManager.UpdateAsync(user);
+
+                    return BadRequest(new { success = false, message = $"Failed to assign Admin role: {errors}" });
+                }
+
+                // ===== STEP 5: Log the successful promotion =====
+                var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var currentAdmin = await _userManager.FindByIdAsync(currentAdminId);
+
+                _logger.LogInformation($"USER PROMOTED TO ADMIN - User: {user.Email} ({user.Id}) was promoted by Admin: {currentAdmin?.Email} ({currentAdminId})");
+
+                Console.WriteLine($"========== MAKE ADMIN SUCCESS ==========");
+                Console.WriteLine($"User: {user.Email} is now an Admin");
+                Console.WriteLine($"Previous Role: {oldRole}");
+                Console.WriteLine($"Promoted by: {currentAdmin?.Email}");
+                Console.WriteLine($"Time: {DateTime.Now}");
+                Console.WriteLine($"========================================");
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "User is now an Admin",
+                    userEmail = user.Email,
+                    newRole = "Admin"
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR in MakeAdmin: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "An error occurred while processing your request",
+                    error = ex.Message
+                });
+            }
+        }
+
+        // ===== Alternative simpler version if you only want to update the custom Role field =====
+        [HttpPost]
+        [Route("Admin/Users/MakeAdminSimple")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MakeAdminSimple([FromBody] string userId)
         {
             try
             {
@@ -449,12 +591,15 @@ namespace MonitoringSystem.Controllers
                     return Json(new { success = false, message = "User not found" });
                 }
 
-                // Add to Admin role
-                var result = await _userManager.AddToRoleAsync(user, "Admin");
+                // Update just the custom Role field
+                user.Role = "Admin";
+                user.UpdatedAt = DateTime.Now;
+
+                var result = await _userManager.UpdateAsync(user);
+
                 if (result.Succeeded)
                 {
-                    user.Role = "Admin";
-                    await _userManager.UpdateAsync(user);
+                    _logger.LogInformation($"User {user.Email} promoted to Admin (simple method)");
                     return Json(new { success = true, message = "User is now an Admin" });
                 }
 
@@ -462,9 +607,16 @@ namespace MonitoringSystem.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError($"Error in MakeAdminSimple: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
+    }
+
+    // Model for the Make Admin request
+    public class MakeAdminRequest
+    {
+        public string UserId { get; set; }
     }
 
     public class AdminProfileModel
