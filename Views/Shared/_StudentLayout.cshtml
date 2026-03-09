@@ -1,6 +1,14 @@
 ﻿@* _StudentLayout.cshtml *@
 @using Microsoft.AspNetCore.Http
+@using Microsoft.AspNetCore.Identity
+@using MonitoringSystem.Models
 @inject IHttpContextAccessor HttpContextAccessor
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
+@{
+    var token = Xsrf.GetAndStoreTokens(Context).RequestToken;
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,11 +23,129 @@
     <link rel="stylesheet" href="~/css/darkmode.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
 
+    <style>
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 9999;
+        }
+
+        .toast-notification {
+            min-width: 320px;
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(400px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            border-left: 4px solid #07B618;
+            margin-bottom: 10px;
+        }
+
+            .toast-notification.show {
+                transform: translateX(0);
+                opacity: 1;
+            }
+
+            .toast-notification.success {
+                border-left-color: #07B618;
+            }
+
+            .toast-notification.error {
+                border-left-color: #FD0606;
+            }
+
+        .toast-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .toast-notification.success .toast-icon {
+            background: #07B618;
+            color: white;
+        }
+
+        .toast-notification.error .toast-icon {
+            background: #FD0606;
+            color: white;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .toast-message {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .toast-close {
+            cursor: pointer;
+            color: #999;
+            font-size: 18px;
+            transition: color 0.2s;
+        }
+
+            .toast-close:hover {
+                color: #333;
+            }
+
+        /* Dark mode support */
+        .dark-mode .toast-notification {
+            background: #2d2d2d;
+            color: #fff;
+        }
+
+        .dark-mode .toast-message {
+            color: #ccc;
+        }
+
+        .dark-mode .toast-close:hover {
+            color: #fff;
+        }
+    </style>
+
     @RenderSection("Styles", required: false)
 </head>
 <body>
+    @{
+        var user = await UserManager.GetUserAsync(User);
+        var userRole = user?.Role ?? "Student";
+        var userFullName = user?.FullName ?? "Student User";
+        var userEmail = user?.Email ?? "";
+        var userProfileImage = user?.ProfileImage ?? "/images/ctu-logo.png";
+        var userMobileNumber = user?.MobileNumber ?? "";
+        var userAddress = user?.Address ?? "";
+        var userFacebook = user?.Facebook ?? "";
+        var userCompany = user?.CompanyID?.ToString() ?? "";
+        var userStudentId = user?.StudentId ?? "";
+        var userProgram = user?.Program ?? "";
+        var userBirthDate = user?.BirthDate?.ToString("yyyy-MM-dd") ?? "2000-01-01";
+        var userContact = user?.Contact ?? "";
+    }
+
     <!-- Overlay -->
     <div class="sidebar-overlay"></div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <!-- LEFT SIDEBAR -->
     <aside class="admin-sidebar">
@@ -88,14 +214,14 @@
             </div>
 
             <!-- Small Topbar Profile Picture -->
-            <img src="/images/ctu-logo.png" id="topbarProfilePic" title="Profile Picture" />
+            <img src="@userProfileImage" id="topbarProfilePic" title="Profile Picture" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
 
             <!-- Profile Dropdown -->
             <div class="dropdown">
                 <div class="d-flex align-items-center gap-2 dropdown-toggle" role="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor:pointer;">
                     <div class="d-flex flex-column" style="font-size:0.75rem;">
-                        <strong>Student User</strong>
-                        <span>Student</span>
+                        <strong>@userFullName</strong>
+                        <span>@userRole</span>
                     </div>
                 </div>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileDropdown">
@@ -111,181 +237,68 @@
         @RenderBody()
     </main>
 
-    <!-- PROFILE TEMPLATE (Complete) -->
-    <script type="text/template" id="profileTemplate">
-        <div class="container py-4">
-            <!-- Profile Picture with upload -->
-            <div class="profile-pic-wrapper mb-4 position-relative" style="width:140px; height:140px;">
-                <img src="/images/ctu-logo.png" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
-                <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
-                     style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
-                    <i class="bi bi-camera-fill text-white fs-4"></i>
-                </div>
-                <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
-                     style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
-                    <i class="bi bi-camera-fill text-white"></i>
-                </div>
-                <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
-            </div>
-
-            <div class="card shadow-sm p-4" style="max-width:1200px;">
-                <div class="flex-grow-1 w-100">
-                    <!-- Row 1 -->
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="fullName" class="form-label fw-bold">Full Name</label>
-                            <input type="text" id="fullName" class="form-control" value="John Doe">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="facebook" class="form-label fw-bold">Facebook</label>
-                            <input type="text" id="facebook" class="form-control" value="facebook.com/johndoe">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="company" class="form-label fw-bold">Company</label>
-                            <input type="text" id="company" class="form-control" value="CTU Balamban">
-                        </div>
-                    </div>
-
-                    <!-- Row 2 -->
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="phone" class="form-label fw-bold">Phone Number</label>
-                            <input type="text" id="phone" class="form-control" value="09171234567">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="address" class="form-label fw-bold">Address</label>
-                            <input type="text" id="address" class="form-control" value="123 Main St, Balamban">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="password" class="form-label fw-bold">Password</label>
-                            <div class="input-group">
-                                <input type="password" id="password" class="form-control" value="password123" />
-                                <span class="input-group-text" id="togglePassword" style="background:transparent; border-left:0; cursor:pointer;">
-                                    <i class="bi bi-eye-slash"></i>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Row 3 -->
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="contactPerson" class="form-label fw-bold">Contact Person</label>
-                            <input type="text" id="contactPerson" class="form-control" value="John Smith">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="studentId" class="form-label fw-bold">Student ID</label>
-                            <input type="text" id="studentId" class="form-control" value="202300123">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="program" class="form-label fw-bold">Program</label>
-                            <input type="text" id="program" class="form-control" value="BSIT">
-                        </div>
-                    </div>
-
-                    <!-- Row 4 -->
-                    <div class="row mb-3">
-                        <div class="col-md-4">
-                            <label for="birthdate" class="form-label fw-bold">Birthdate</label>
-                            <input type="date" id="birthdate" class="form-control" value="2005-01-15">
-                        </div>
-                        <div class="col-md-4">
-                            <label for="lastEmail" class="form-label fw-bold">Last Email</label>
-                            <input type="email" id="lastEmail" class="form-control" value="student@ctu.edu.ph">
-                        </div>
-                        <div class="col-md-4">
-                            <!-- Empty for spacing -->
-                        </div>
-                    </div>
-
-                    <div class="text-end">
-                        <button class="btn" id="saveProfileBtn" style="background-color:#07B618; border-color:#07B618; color:white;">
-                            Save Changes
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </script>
-
-    <!-- NOTIFICATION TEMPLATE -->
-    <script type="text/template" id="notifTemplate">
-        <div class="container py-4">
-            <h4 class="mb-4">Notification History</h4>
-
-            <!-- Example Notification Card 1 -->
-            <div class="card shadow-sm mb-4 p-4 d-flex justify-content-between align-items-center"
-                 style="max-width:90%; font-size:1.1rem; border-radius:25px; transform: scale(1.02);">
-                <div class="d-flex justify-content-between w-100 align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-1">Task Reminder</h5>
-                        <small>Your daily report is due tomorrow.</small>
-                    </div>
-                    <button class="btn btn-outline-primary btn-sm viewNotifBtn" data-bs-toggle="modal" data-bs-target="#reportModal"
-                            data-title="Task Reminder" data-message="Please submit your daily report before 5:00 PM tomorrow.">
-                        <i class="bi bi-eye fs-5"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Example Notification Card 2 -->
-            <div class="card shadow-sm mb-4 p-4 d-flex justify-content-between align-items-center"
-                 style="max-width:90%; font-size:1.1rem; border-radius:25px; transform: scale(1.02);">
-                <div class="d-flex justify-content-between w-100 align-items-center">
-                    <div>
-                        <h5 class="fw-bold mb-1">Report Status</h5>
-                        <small>Your MOA has been approved.</small>
-                    </div>
-                    <button class="btn btn-outline-primary btn-sm viewNotifBtn" data-bs-toggle="modal" data-bs-target="#reportModal"
-                            data-title="Report Status" data-message="Your Memorandum of Agreement has been approved by the coordinator.">
-                        <i class="bi bi-eye fs-5"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </script>
-
-    <!-- REPORT DETAILS MODAL -->
-    <div class="modal fade" id="reportModal" tabindex="-1" aria-labelledby="reportModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content rounded-4">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="reportModalLabel">Notification Details</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <h3 class="fw-bold mb-3" id="modalTitle">Title</h3>
-                    <hr>
-                    <div style="border:1px solid #ccc; border-radius:10px; padding:15px; background:#f8f9fa;">
-                        <p id="modalMessage" style="font-size:1.05rem; line-height:1.5;">Message goes here.</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Hidden inputs -->
+    <input type="hidden" id="currentUserId" value="@user?.Id" />
+    <input type="hidden" id="antiForgeryToken" value="@token" />
 
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Sidebar functionality
         const sidebar = document.querySelector('.admin-sidebar');
         const desktopToggle = document.getElementById('desktopSidebarToggle');
         const mobileToggle = document.getElementById('sidebarToggle');
         const overlay = document.querySelector('.sidebar-overlay');
 
-        if(window.innerWidth >= 768) sidebar.classList.add('expanded');
+        if (window.innerWidth >= 768) sidebar.classList.add('expanded');
 
-        desktopToggle?.addEventListener('click', ()=>sidebar.classList.toggle('expanded'));
-        mobileToggle?.addEventListener('click', ()=>{
+        desktopToggle?.addEventListener('click', () => sidebar.classList.toggle('expanded'));
+        mobileToggle?.addEventListener('click', () => {
             sidebar.classList.toggle('expanded');
             overlay.classList.toggle('active');
         });
-        overlay?.addEventListener('click', ()=>{
+        overlay?.addEventListener('click', () => {
             sidebar.classList.remove('expanded');
             overlay.classList.remove('active');
         });
+
+        // ========== Toast Notification Function ==========
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toastId = 'toast_' + Date.now();
+
+            const icon = type === 'success' ? '✓' : '✗';
+            const title = type === 'success' ? 'Success' : 'Error';
+
+            const toastHTML = `
+                <div class="toast-notification ${type}" id="${toastId}">
+                    <div class="toast-icon">${icon}</div>
+                    <div class="toast-content">
+                        <div class="toast-title">${title}</div>
+                        <div class="toast-message">${message}</div>
+                    </div>
+                    <div class="toast-close" onclick="this.parentElement.remove()">×</div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', toastHTML);
+
+            setTimeout(() => {
+                const toast = document.getElementById(toastId);
+                if (toast) {
+                    toast.classList.add('show');
+                }
+            }, 10);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                const toast = document.getElementById(toastId);
+                if (toast) {
+                    toast.classList.remove('show');
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 3000);
+        }
 
         // ========== SPA Content Switching ==========
         const mainContent = document.getElementById("adminMainContent");
@@ -293,95 +306,434 @@
         const topbarProfilePic = document.getElementById("topbarProfilePic");
         const originalDashboardHTML = mainContent.innerHTML;
 
-        // Profile SPA
-        function openProfileSPA(){
-            mainContent.style.opacity = 0;
-            setTimeout(()=>{
-                const template = document.getElementById("profileTemplate").innerHTML;
-                mainContent.innerHTML = template;
-                document.querySelector(".topbar-title").textContent = "Profile";
+        // Store original user data from Razor
+        let currentUserData = {
+            fullName: '@Html.Raw(userFullName)',
+            facebook: '@Html.Raw(userFacebook)',
+            company: '@Html.Raw(userCompany)',
+            mobileNumber: '@Html.Raw(userMobileNumber)',
+            address: '@Html.Raw(userAddress)',
+            contact: '@Html.Raw(userContact)',
+            studentId: '@Html.Raw(userStudentId)',
+            program: '@Html.Raw(userProgram)',
+            birthDate: '@userBirthDate',
+            email: '@Html.Raw(userEmail)',
+            profileImage: '@Html.Raw(userProfileImage)'
+        };
 
-                const profileImage = document.getElementById("profileImage");
-                const profileOverlay = document.querySelector(".profile-pic-overlay");
-                const profilePicInput = document.getElementById("profilePicInput");
-
-                profileOverlay.addEventListener("click", ()=> profilePicInput.click());
-                const changePicIcon = document.querySelector(".change-pic-icon");
-                changePicIcon.addEventListener("click", ()=> profilePicInput.click());
-
-                profilePicInput.addEventListener("change", (e)=>{
-                    if(e.target.files && e.target.files[0]){
-                        const reader = new FileReader();
-                        reader.onload = function(evt){
-                            profileImage.src = evt.target.result;
-                            topbarProfilePic.src = evt.target.result;
-                        }
-                        reader.readAsDataURL(e.target.files[0]);
+        // Function to fetch fresh user data
+        async function fetchFreshUserData() {
+            try {
+                const token = document.getElementById('antiForgeryToken')?.value;
+                const response = await fetch('/Student/GetCurrentUser', {
+                    method: 'GET',
+                    headers: {
+                        'RequestVerificationToken': token
                     }
                 });
 
-                // Password toggle
-                const passwordInput = document.getElementById('password');
-                const togglePassword = document.getElementById('togglePassword');
-                if (togglePassword) {
-                    togglePassword.addEventListener('click', () => {
-                        const type = passwordInput.type === 'password' ? 'text' : 'password';
-                        passwordInput.type = type;
-                        const icon = togglePassword.querySelector('i');
-                        icon.classList.toggle('bi-eye');
-                        icon.classList.toggle('bi-eye-slash');
-                    });
-                }
+                const data = await response.json();
+                console.log('User data:', data);
 
-                mainContent.style.opacity = 1;
-            },200);
+                if (data.success) {
+                    return data.user;
+                }
+                return currentUserData;
+            } catch (error) {
+                console.error('Error fetching user data:', error);
+                return currentUserData;
+            }
         }
 
-        viewProfileBtn?.addEventListener("click", openProfileSPA);
+        // Function to create profile HTML with data
+        function getProfileHTML(userData) {
+            return `
+                <div class="container py-4">
+                    <!-- Profile Picture with upload -->
+                    <div class="profile-pic-wrapper mb-4 position-relative" style="width:140px; height:140px;">
+                        <img src="${userData.profileImage || '/images/ctu-logo.png'}" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
+                        <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
+                             style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
+                            <i class="bi bi-camera-fill text-white fs-4"></i>
+                        </div>
+                        <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
+                             style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
+                            <i class="bi bi-camera-fill text-white"></i>
+                        </div>
+                        <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+                    </div>
 
-        // Dashboard button
-        document.getElementById("dashboardBtn")?.addEventListener("click", ()=>{
-            mainContent.style.opacity = 0;
-            setTimeout(()=>{
-                mainContent.innerHTML = originalDashboardHTML;
-                document.querySelector(".topbar-title").textContent = "Dashboard";
-                mainContent.style.opacity = 1;
-            },200);
+                    <div class="d-flex justify-content-end mb-3">
+                        <button class="btn" id="editProfileBtn" style="background-color: #0d6efd; color: white; border: none; padding: 8px 25px; font-weight: 500;">
+                            <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                        </button>
+                    </div>
+
+                    <div class="card shadow-sm p-4" style="max-width:1200px;">
+                        <div class="flex-grow-1 w-100">
+                            <!-- Row 1 -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="fullName" class="form-label fw-bold">Full Name</label>
+                                    <input type="text" id="fullName" class="form-control" value="${escapeHtml(userData.fullName) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="facebook" class="form-label fw-bold">Facebook</label>
+                                    <input type="text" id="facebook" class="form-control" value="${escapeHtml(userData.facebook) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="company" class="form-label fw-bold">Company</label>
+                                    <input type="text" id="company" class="form-control" value="${escapeHtml(userData.company) || ''}" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Row 2 -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="mobileNumber" class="form-label fw-bold">Mobile Number</label>
+                                    <input type="text" id="mobileNumber" class="form-control" value="${escapeHtml(userData.mobileNumber) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="address" class="form-label fw-bold">Address</label>
+                                    <input type="text" id="address" class="form-control" value="${escapeHtml(userData.address) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="password" class="form-label fw-bold">Password</label>
+                                    <div class="input-group">
+                                        <input type="password" id="password" class="form-control" value="********" readonly />
+                                        <span class="input-group-text" id="togglePassword" style="background:transparent; border-left:0; cursor:pointer;">
+                                            <i class="bi bi-eye-slash"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Row 3 -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="contactPerson" class="form-label fw-bold">Contact Person</label>
+                                    <input type="text" id="contactPerson" class="form-control" value="${escapeHtml(userData.contact) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="studentId" class="form-label fw-bold">Student ID</label>
+                                    <input type="text" id="studentId" class="form-control" value="${escapeHtml(userData.studentId) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="program" class="form-label fw-bold">Program</label>
+                                    <input type="text" id="program" class="form-control" value="${escapeHtml(userData.program) || ''}" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Row 4 -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="birthdate" class="form-label fw-bold">Birthdate</label>
+                                    <input type="date" id="birthdate" class="form-control" value="${userData.birthDate || '2000-01-01'}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="email" class="form-label fw-bold">Email</label>
+                                    <input type="email" id="email" class="form-control" value="${escapeHtml(userData.email) || ''}" readonly>
+                                </div>
+                                <div class="col-md-4">
+                                    <!-- Empty for spacing -->
+                                </div>
+                            </div>
+
+                            <!-- Save Changes Button -->
+                            <div class="text-end" id="saveButtonContainer" style="display: none;">
+                                <button class="btn" id="saveProfileBtn" style="background-color: #07B618; border-color: #07B618; color: white; padding: 8px 30px; font-weight: 500;">
+                                    <i class="bi bi-check-circle me-2"></i>Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return text;
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Profile SPA
+        function openProfileSPA() {
+            // Show loading
+            mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            document.querySelector(".topbar-title").textContent = "Profile";
+
+            setTimeout(async () => {
+                try {
+                    // Fetch fresh data
+                    const freshUserData = await fetchFreshUserData();
+
+                    // Update current data
+                    if (freshUserData) {
+                        currentUserData = freshUserData;
+                    }
+
+                    // Generate and set HTML
+                    mainContent.innerHTML = getProfileHTML(currentUserData);
+
+                    // Initialize all event listeners
+                    initializeProfileEvents();
+
+                } catch (error) {
+                    console.error('Error loading profile:', error);
+                    mainContent.innerHTML = '<div class="alert alert-danger m-3">Error loading profile. Please try again.</div>';
+                }
+            }, 100);
+        }
+
+        // Initialize all profile events
+        function initializeProfileEvents() {
+            // Profile picture upload
+            const profileImage = document.getElementById("profileImage");
+            const profileOverlay = document.querySelector(".profile-pic-overlay");
+            const changePicIcon = document.querySelector(".change-pic-icon");
+            const profilePicInput = document.getElementById("profilePicInput");
+
+            if (profileOverlay) {
+                profileOverlay.addEventListener("click", () => profilePicInput?.click());
+            }
+            if (changePicIcon) {
+                changePicIcon.addEventListener("click", () => profilePicInput?.click());
+            }
+
+            if (profilePicInput) {
+                profilePicInput.addEventListener("change", async (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        const formData = new FormData();
+                        formData.append('profileImage', e.target.files[0]);
+
+                        try {
+                            const token = document.getElementById('antiForgeryToken')?.value;
+                            const response = await fetch('/Student/UploadProfileImage', {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'RequestVerificationToken': token
+                                }
+                            });
+
+                            const data = await response.json();
+                            if (data.success) {
+                                const reader = new FileReader();
+                                reader.onload = function(evt) {
+                                    if (profileImage) profileImage.src = evt.target.result;
+                                    if (topbarProfilePic) topbarProfilePic.src = evt.target.result;
+                                    currentUserData.profileImage = evt.target.result;
+                                }
+                                reader.readAsDataURL(e.target.files[0]);
+                                showToast('Profile picture updated successfully!', 'success');
+                            } else {
+                                showToast(data.message || 'Failed to upload image', 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error uploading image:', error);
+                            showToast('Error uploading image', 'error');
+                        }
+                    }
+                });
+            }
+
+            // Password toggle
+            const passwordInput = document.getElementById('password');
+            const togglePassword = document.getElementById('togglePassword');
+
+            if (togglePassword && passwordInput) {
+                // Remove old event listeners by cloning
+                const newToggle = togglePassword.cloneNode(true);
+                togglePassword.parentNode.replaceChild(newToggle, togglePassword);
+
+                newToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const type = passwordInput.type === 'password' ? 'text' : 'password';
+                    passwordInput.type = type;
+
+                    const icon = this.querySelector('i');
+                    if (icon) {
+                        if (type === 'text') {
+                            icon.classList.remove('bi-eye-slash');
+                            icon.classList.add('bi-eye');
+                        } else {
+                            icon.classList.remove('bi-eye');
+                            icon.classList.add('bi-eye-slash');
+                        }
+                    }
+                });
+            }
+
+            // Edit Profile button
+            const editProfileBtn = document.getElementById('editProfileBtn');
+            const saveButtonContainer = document.getElementById('saveButtonContainer');
+
+            if (editProfileBtn) {
+                editProfileBtn.addEventListener('click', function() {
+                    document.querySelectorAll('#fullName, #facebook, #company, #mobileNumber, #address, #contactPerson, #studentId, #program, #birthdate, #email').forEach(input => {
+                        if (input) {
+                            input.removeAttribute('readonly');
+                            input.classList.add('border-primary');
+                        }
+                    });
+
+                    editProfileBtn.style.display = 'none';
+                    if (saveButtonContainer) saveButtonContainer.style.display = 'block';
+                });
+            }
+
+            // Save Changes button - WITH TOAST NOTIFICATION
+            const saveProfileBtn = document.getElementById('saveProfileBtn');
+            if (saveProfileBtn) {
+                saveProfileBtn.addEventListener('click', async function() {
+                    // Disable button to prevent double-click
+                    saveProfileBtn.disabled = true;
+                    const originalText = saveProfileBtn.innerHTML;
+                    saveProfileBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                    const updatedData = {
+                        FullName: document.getElementById('fullName')?.value || '',
+                        Facebook: document.getElementById('facebook')?.value || '',
+                        Company: document.getElementById('company')?.value || '',
+                        MobileNumber: document.getElementById('mobileNumber')?.value || '',
+                        Address: document.getElementById('address')?.value || '',
+                        Contact: document.getElementById('contactPerson')?.value || '',
+                        StudentId: document.getElementById('studentId')?.value || '',
+                        Program: document.getElementById('program')?.value || '',
+                        BirthDate: document.getElementById('birthdate')?.value || '',
+                        Email: document.getElementById('email')?.value || ''
+                    };
+
+                    console.log('Sending data:', updatedData);
+
+                    try {
+                        // Get token value inside the function
+                        const token = document.getElementById('antiForgeryToken')?.value;
+                        console.log('Token being sent:', token);
+
+                        const response = await fetch('/Student/UpdateProfile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'RequestVerificationToken': token
+                            },
+                            body: JSON.stringify(updatedData)
+                        });
+
+                        // Check if response is OK
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Server returned ${response.status}: ${errorText || 'No error message'}`);
+                        }
+
+                        const data = await response.json();
+                        console.log('Save response:', data);
+
+                        if (data.success) {
+                            showToast('Profile updated successfully!', 'success');
+
+                            // Make fields readonly again
+                            document.querySelectorAll('#fullName, #facebook, #company, #mobileNumber, #address, #contactPerson, #studentId, #program, #birthdate, #email').forEach(input => {
+                                if (input) {
+                                    input.setAttribute('readonly', true);
+                                    input.classList.remove('border-primary');
+                                }
+                            });
+
+                            if (saveButtonContainer) saveButtonContainer.style.display = 'none';
+                            if (editProfileBtn) editProfileBtn.style.display = 'block';
+
+                            // Update currentUserData
+                            currentUserData = {
+                                ...currentUserData,
+                                fullName: updatedData.FullName,
+                                facebook: updatedData.Facebook,
+                                company: updatedData.Company,
+                                mobileNumber: updatedData.MobileNumber,
+                                address: updatedData.Address,
+                                contact: updatedData.Contact,
+                                studentId: updatedData.StudentId,
+                                program: updatedData.Program,
+                                birthDate: updatedData.BirthDate,
+                                email: updatedData.Email
+                            };
+
+                            // Update topbar name
+                            if (updatedData.FullName) {
+                                const nameElement = document.querySelector('.dropdown strong');
+                                if (nameElement) {
+                                    nameElement.textContent = updatedData.FullName;
+                                }
+                            }
+                        } else {
+                            showToast(data.message || 'Failed to save changes', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error saving profile:', error);
+                        showToast('Error: ' + error.message, 'error');
+                    } finally {
+                        // Re-enable button
+                        saveProfileBtn.disabled = false;
+                        saveProfileBtn.innerHTML = originalText;
+                    }
+                });
+            }
+        }
+
+        // Event listeners
+        viewProfileBtn?.addEventListener("click", (e) => {
+            e.preventDefault();
+            openProfileSPA();
         });
 
-        // ========== Notifications SPA ==========
-        const notifBell = document.getElementById("notifBell");
-        notifBell?.addEventListener("click", function() {
+        // Dashboard button
+        document.getElementById("dashboardBtn")?.addEventListener("click", (e) => {
+            e.preventDefault();
             mainContent.style.opacity = 0;
             setTimeout(() => {
-                mainContent.innerHTML = document.getElementById("notifTemplate").innerHTML;
-                document.querySelector(".topbar-title").textContent = "Notifications";
-
-                // Attach click handlers to the "view" buttons inside the template
-                document.querySelectorAll(".viewNotifBtn").forEach(btn => {
-                    btn.addEventListener("click", function () {
-                        document.getElementById("modalTitle").textContent = this.dataset.title;
-                        document.getElementById("modalMessage").textContent = this.dataset.message;
-                    });
-                });
-
+                mainContent.innerHTML = originalDashboardHTML;
+                document.querySelector(".topbar-title").textContent = "Dashboard";
                 mainContent.style.opacity = 1;
             }, 200);
         });
 
-        // ========== Dark Mode ==========
+        // Notifications
+        const notifBell = document.getElementById("notifBell");
+        notifBell?.addEventListener("click", function() {
+            mainContent.style.opacity = 0;
+            setTimeout(() => {
+                mainContent.innerHTML = `
+                    <div class="container py-4">
+                        <h4 class="mb-4">Notification History</h4>
+                        <div class="card shadow-sm mb-4 p-4">
+                            <p class="text-muted">No notifications yet.</p>
+                        </div>
+                    </div>
+                `;
+                document.querySelector(".topbar-title").textContent = "Notifications";
+                mainContent.style.opacity = 1;
+            }, 200);
+        });
+
+        // Dark Mode
         const themeToggle = document.getElementById("themeToggle");
         const themeIcon = document.getElementById("themeIcon");
-        if(localStorage.getItem("darkMode")==="true"){
+        if (localStorage.getItem("darkMode") === "true") {
             document.body.classList.add("dark-mode");
-            themeIcon.classList.replace("bi-moon-fill","bi-sun-fill");
+            themeIcon.classList.replace("bi-moon-fill", "bi-sun-fill");
         }
-        themeToggle?.addEventListener("click", ()=>{
+        themeToggle?.addEventListener("click", () => {
             document.body.classList.toggle("dark-mode");
             const isDark = document.body.classList.contains("dark-mode");
-            themeIcon.classList.toggle("bi-moon-fill",!isDark);
-            themeIcon.classList.toggle("bi-sun-fill",isDark);
-            localStorage.setItem("darkMode",isDark);
+            themeIcon.classList.toggle("bi-moon-fill", !isDark);
+            themeIcon.classList.toggle("bi-sun-fill", isDark);
+            localStorage.setItem("darkMode", isDark);
         });
     </script>
 

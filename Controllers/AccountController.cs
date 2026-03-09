@@ -334,17 +334,24 @@ namespace MonitoringSystem.Controllers
             return View();
         }
 
-        // POST: /Account/Register - UPDATED to allow declined users to re-register
+        // POST: /Account/Register - UPDATED with PROGRAM field
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(string studentId, string email, int birthMonth, int birthDay, int birthYear)
+        public async Task<IActionResult> Register(string studentId, string email, string program, int birthMonth, int birthDay, int birthYear)
         {
             try
             {
-                // Validate required fields
-                if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(email))
+                // Validate required fields (including program)
+                if (string.IsNullOrEmpty(studentId) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(program))
                 {
                     ViewBag.Error = "All fields are required";
+                    return View();
+                }
+
+                // Validate program values
+                if (program != "BIT" && program != "BSIT")
+                {
+                    ViewBag.Error = "Please select a valid program (BIT or BSIT)";
                     return View();
                 }
 
@@ -378,9 +385,10 @@ namespace MonitoringSystem.Controllers
                             return View();
                         }
 
-                        // Update the existing user's information
+                        // Update the existing user's information (INCLUDE PROGRAM)
                         existingUser.StudentId = studentId;
                         existingUser.BirthDate = birthDate;
+                        existingUser.Program = program;
                         existingUser.Status = "Pending";
                         existingUser.UpdatedAt = DateTime.Now;
 
@@ -437,7 +445,7 @@ namespace MonitoringSystem.Controllers
                     return View();
                 }
 
-                // Create new user
+                // Create new user (INCLUDE PROGRAM)
                 var user = new ApplicationUser
                 {
                     UserName = email,
@@ -445,6 +453,7 @@ namespace MonitoringSystem.Controllers
                     FullName = "",
                     Role = "Student",
                     StudentId = studentId,
+                    Program = program,
                     BirthDate = birthDate,
                     CreatedAt = DateTime.Now,
                     Status = "Pending",

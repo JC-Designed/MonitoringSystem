@@ -17,7 +17,7 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px 20px;
+        padding: 15px 25px; /* Increased horizontal padding */
         border: 1px solid #dee2e6;
         border-radius: 10px;
         margin-bottom: 8px;
@@ -34,8 +34,8 @@
     .student-section {
         display: flex;
         align-items: center;
-        gap: 12px;
-        width: 40%;
+        gap: 15px; /* Increased gap */
+        width: 32%; /* Slightly reduced */
         cursor: pointer;
     }
 
@@ -61,15 +61,31 @@
             color: #6c757d;
         }
 
-    /* Action buttons – larger, less rounded */
+    /* ID Number column - with more breathing room */
+    .id-column {
+        width: 18%; /* Increased width */
+        text-align: left;
+        padding-left: 5px; /* Add some left padding */
+    }
+
+    /* Program column - with more breathing room */
+    .program-column {
+        width: 18%; /* Increased width */
+        font-weight: 400;
+        text-align: left;
+        padding-left: 5px; /* Add some left padding */
+    }
+
+    /* Action buttons – adjusted width */
     .action-buttons {
         display: flex;
-        gap: 8px;
+        gap: 12px; /* Increased gap between buttons */
         justify-content: flex-end;
+        width: 32%; /* Adjusted width */
     }
 
     .btn-action {
-        padding: 8px 20px;
+        padding: 8px 25px; /* Wider buttons */
         font-size: 1rem;
         border-radius: 6px;
         border: none;
@@ -102,7 +118,7 @@
     .filter-row {
         display: flex;
         gap: 1rem;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem; /* Increased bottom margin */
         flex-wrap: wrap;
     }
 
@@ -116,15 +132,43 @@
         font-size: 0.9rem;
     }
 
-    /* Header labels – bold and dark */
+    /* Header labels – matching card padding exactly */
     .header-labels {
         display: flex;
         justify-content: space-between;
-        padding: 0 10px;
-        margin-bottom: 8px;
+        padding: 0 25px; /* Match card padding exactly */
+        margin-bottom: 12px; /* Slightly increased */
         color: #212529;
         font-weight: 700;
         font-size: 0.95rem;
+    }
+
+        .header-labels div {
+            padding: 0;
+        }
+
+    /* Header column widths - exactly match card columns */
+    .header-email {
+        width: 32%;
+    }
+
+    .header-id {
+        width: 18%;
+    }
+
+    .header-program {
+        width: 18%;
+    }
+
+    .header-action {
+        width: 32%;
+        text-align: right;
+    }
+
+    /* Container spacing */
+    .container-fluid.py-3 {
+        padding-left: 20px;
+        padding-right: 20px;
     }
 
     /* Preview section */
@@ -222,6 +266,14 @@
             <input type="text" id="searchEmail" class="form-control form-control-sm" placeholder="Type email...">
         </div>
         <div class="filter-item">
+            <label class="filter-label">Filter by Program</label>
+            <select id="programFilter" class="form-select form-select-sm">
+                <option value="">All Programs</option>
+                <option value="BIT">BIT</option>
+                <option value="BSIT">BSIT</option>
+            </select>
+        </div>
+        <div class="filter-item">
             <label class="filter-label">Academic Year</label>
             <select id="yearFilter" class="form-select form-select-sm">
                 <option value="">All Years</option>
@@ -238,11 +290,12 @@
         </div>
     </div>
 
-    <!-- HEADER LABELS -->
+    <!-- HEADER LABELS - Now with exact padding match and better spacing -->
     <div class="header-labels">
-        <div style="width:40%;">Email</div>
-        <div style="width:30%;">ID Number</div>
-        <div style="width:30%;" class="text-end">Action</div>
+        <div class="header-email">Email</div>
+        <div class="header-id">ID Number</div>
+        <div class="header-program">Program</div>
+        <div class="header-action">Action</div>
     </div>
 
     <!-- CARDS CONTAINER -->
@@ -269,7 +322,7 @@
                      data-program="@user.Program"
                      data-birthdate="@(user.BirthDate?.ToString("yyyy-MM-dd") ?? "")">
 
-                    <!-- Clickable student section -->
+                    <!-- Clickable student section - 32% width -->
                     <div class="student-section preview-trigger">
                         <img src="@(user.ProfileImage ?? "/images/defaultpicture.jpg")"
                              class="profile-thumb"
@@ -284,13 +337,25 @@
                         </div>
                     </div>
 
-                    <!-- ID Number column -->
-                    <div style="width:30%;">
+                    <!-- ID Number column - 18% width with spacing -->
+                    <div class="id-column">
                         @user.StudentId
                     </div>
 
-                    <!-- ACTION BUTTONS -->
-                    <div style="width:30%;" class="text-end action-buttons">
+                    <!-- PROGRAM column - 18% width with spacing -->
+                    <div class="program-column">
+                        @if (!string.IsNullOrEmpty(user.Program))
+                        {
+                            <span>@user.Program</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">—</span>
+                        }
+                    </div>
+
+                    <!-- ACTION BUTTONS - 32% width with better spacing -->
+                    <div class="action-buttons">
                         <button class="btn-action btn-approve approve-btn" data-userid="@user.Id">Approve</button>
                         <button class="btn-action btn-decline decline-btn" data-userid="@user.Id">Decline</button>
                     </div>
@@ -359,6 +424,7 @@
         // Get initial cards
         let cards = document.querySelectorAll(".report-card");
         const yearFilter = document.getElementById("yearFilter");
+        const programFilter = document.getElementById("programFilter");
         const statusFilter = document.getElementById("statusFilter");
         const searchEmail = document.getElementById("searchEmail");
 
@@ -396,20 +462,23 @@
         }
         populateYearFilter();
 
-        // Filter function
+        // Filter function (updated to include program filter)
         function filterCards() {
             const searchTerm = searchEmail.value.toLowerCase();
             const selectedYear = yearFilter.value;
+            const selectedProgram = programFilter.value;
             const selectedStatus = statusFilter.value;
 
             document.querySelectorAll(".report-card").forEach(card => {
                 const email = card.dataset.email.toLowerCase();
                 const year = card.dataset.year;
+                const program = card.dataset.program;
                 const status = card.dataset.status;
 
                 let show = true;
                 if (searchTerm && !email.includes(searchTerm)) show = false;
                 if (selectedYear && year !== selectedYear) show = false;
+                if (selectedProgram && program !== selectedProgram) show = false;
                 if (selectedStatus && status !== selectedStatus) show = false;
 
                 card.style.display = show ? "flex" : "none";
@@ -419,6 +488,7 @@
         // Event listeners for filters
         searchEmail.addEventListener("input", filterCards);
         yearFilter.addEventListener("change", filterCards);
+        programFilter.addEventListener("change", filterCards);
         statusFilter.addEventListener("change", filterCards);
 
         // Preview trigger
