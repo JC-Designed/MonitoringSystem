@@ -8,6 +8,9 @@ using System.Linq;
 using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
+using ClosedXML.Excel;
+using System.Data;
+using System.IO;
 
 namespace MonitoringSystem.Controllers
 {
@@ -68,7 +71,190 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // GET: Admin Registration page - UPDATED to show Pending first and include Program
+        // ===== EXPORT ALL USERS TO EXCEL - WITH YOUR SPECIFIC COLUMNS =====
+        public async Task<IActionResult> ExportUsersToExcel()
+        {
+            try
+            {
+                _logger.LogInformation("========== EXPORT ALL USERS TO EXCEL ==========");
+
+                // Get all approved users
+                var users = await _userManager.Users
+                    .Where(u => u.Status == "Approved")
+                    .OrderBy(u => u.FullName)
+                    .ToListAsync();
+
+                // Create a DataTable with ONLY the columns you want
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Name", typeof(string));
+                dt.Columns.Add("Company", typeof(string));
+                dt.Columns.Add("Mobile Number", typeof(string));
+                dt.Columns.Add("Address", typeof(string));
+                dt.Columns.Add("Program", typeof(string));
+                dt.Columns.Add("Contact Person", typeof(string));  // CHANGED: from "Emergency Contact" to "Contact Person"
+                dt.Columns.Add("Student ID", typeof(string));
+                dt.Columns.Add("Birthdate", typeof(string));
+                dt.Columns.Add("Email", typeof(string));
+
+                // Add rows with ONLY the columns you want
+                foreach (var user in users)
+                {
+                    // Handle Company (nullable int)
+                    string companyValue = user.CompanyID?.ToString() ?? "";
+
+                    // Handle Contact Person - UPDATED: Use ContactPerson property
+                    string contactPerson = user.ContactPerson ?? "";  // CHANGED: from Contact to ContactPerson
+
+                    // Handle Student ID
+                    string studentId = user.StudentId ?? "";
+
+                    // Format Birthdate - FIXED: Handle nullable DateTime properly
+                    string birthDate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("yyyy-MM-dd") : "";
+
+                    dt.Rows.Add(
+                        user.FullName ?? "",
+                        companyValue,
+                        user.MobileNumber ?? "",
+                        user.Address ?? "",
+                        user.Program ?? "",
+                        contactPerson,  // UPDATED: variable name changed
+                        studentId,
+                        birthDate,
+                        user.Email ?? ""
+                    );
+                }
+
+                // Create Excel file using ClosedXML
+                using (XLWorkbook wb = new XLWorkbook())
+                {
+                    var worksheet = wb.Worksheets.Add(dt, "Users");
+
+                    // Format the worksheet
+                    worksheet.Columns().AdjustToContents();
+
+                    // Style the header row
+                    var headerRow = worksheet.Row(1);
+                    headerRow.Style.Font.Bold = true;
+                    headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                    // Prepare the file for download
+                    using (MemoryStream stream = new MemoryStream())
+                    {
+                        wb.SaveAs(stream);
+                        string fileName = $"Users_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                        _logger.LogInformation($"Export completed: {users.Count} users exported to {fileName}");
+
+                        return File(stream.ToArray(),
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            fileName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR in ExportUsersToExcel: {ex.Message}");
+                return BadRequest("An error occurred while exporting users.");
+            }
+        }
+
+        // ===== EXPORT SELECTED USERS TO EXCEL - WITH YOUR SPECIFIC COLUMNS =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ExportSelectedUsers(List<string> userIds)
+        {
+            try
+            {
+                _logger.LogInformation("========== EXPORT SELECTED USERS TO EXCEL ==========");
+
+                if (userIds == null || userIds.Count == 0)
+                {
+                    _logger.LogWarning("No users selected for export");
+                    return BadRequest("No users selected");
+                }
+
+                _logger.LogInformation($"Selected {userIds.Count} users for export");
+
+                // Get selected users from database
+                var selectedUsers = await _userManager.Users
+                    .Where(u => userIds.Contains(u.Id))
+                    .OrderBy(u => u.FullName)
+                    .ToListAsync();
+
+                // Create DataTable with ONLY the columns you want
+                DataTable dt = new DataTable();
+                dt.Columns.Add("Name", typeof(string));
+                dt.Columns.Add("Company", typeof(string));
+                dt.Columns.Add("Mobile Number", typeof(string));
+                dt.Columns.Add("Address", typeof(string));
+                dt.Columns.Add("Program", typeof(string));
+                dt.Columns.Add("Contact Person", typeof(string));  // CHANGED: from "Emergency Contact" to "Contact Person"
+                dt.Columns.Add("Student ID", typeof(string));
+                dt.Columns.Add("Birthdate", typeof(string));
+                dt.Columns.Add("Email", typeof(string));
+
+                // Add rows with ONLY the columns you want
+                foreach (var user in selectedUsers)
+                {
+                    // Handle Company
+                    string companyValue = user.CompanyID?.ToString() ?? "";
+
+                    // Handle Contact Person - UPDATED: Use ContactPerson property
+                    string contactPerson = user.ContactPerson ?? "";  // CHANGED: from Contact to ContactPerson
+
+                    // Handle Student ID
+                    string studentId = user.StudentId ?? "";
+
+                    // Format Birthdate - FIXED: Handle nullable DateTime properly
+                    string birthDate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("yyyy-MM-dd") : "";
+
+                    dt.Rows.Add(
+                        user.FullName ?? "",
+                        companyValue,
+                        user.MobileNumber ?? "",
+                        user.Address ?? "",
+                        user.Program ?? "",
+                        contactPerson,  // UPDATED: variable name changed
+                        studentId,
+                        birthDate,
+                        user.Email ?? ""
+                    );
+                }
+
+                // Create Excel file
+                using (XLWorkbook wb = new XLWorkbook())
+                {
+                    var worksheet = wb.Worksheets.Add(dt, "Selected Users");
+
+                    // Format the worksheet
+                    worksheet.Columns().AdjustToContents();
+
+                    // Style the header row
+                    var headerRow = worksheet.Row(1);
+                    headerRow.Style.Font.Bold = true;
+                    headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                    using (MemoryStream stream = new MemoryStream())
+                    {
+                        wb.SaveAs(stream);
+                        string fileName = $"SelectedUsers_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+
+                        _logger.LogInformation($"Export completed: {selectedUsers.Count} users exported to {fileName}");
+
+                        return File(stream.ToArray(),
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            fileName);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"ERROR in ExportSelectedUsers: {ex.Message}");
+                return BadRequest(new { success = false, message = "An error occurred while exporting users." });
+            }
+        }
+
+        // GET: Admin Registration page
         public async Task<IActionResult> Registration()
         {
             Console.WriteLine("========== REGISTRATION ACTION HIT ==========");
@@ -77,22 +263,9 @@ namespace MonitoringSystem.Controllers
             {
                 // Get all users ordered by Status (Pending first) then by registration date
                 var users = await _userManager.Users
-                    .OrderBy(u => u.Status == "Pending" ? 0 : 1)  // Pending users first
-                    .ThenByDescending(u => u.CreatedAt)           // Then by newest first
+                    .OrderBy(u => u.Status == "Pending" ? 0 : 1)
+                    .ThenByDescending(u => u.CreatedAt)
                     .ToListAsync();
-
-                // Log for debugging
-                Console.WriteLine($"Total users found: {users.Count}");
-                Console.WriteLine($"Pending users: {users.Count(u => u.Status == "Pending")}");
-                Console.WriteLine($"Approved users: {users.Count(u => u.Status == "Approved")}");
-                Console.WriteLine($"Declined users: {users.Count(u => u.Status == "Declined")}");
-
-                // Log a sample user to verify Program is included
-                var sampleUser = users.FirstOrDefault();
-                if (sampleUser != null)
-                {
-                    Console.WriteLine($"Sample User - Email: {sampleUser.Email}, Program: '{sampleUser.Program}', Status: {sampleUser.Status}");
-                }
 
                 return View(users);
             }
@@ -123,7 +296,7 @@ namespace MonitoringSystem.Controllers
             ", "text/html");
         }
 
-        // API: Get dashboard data for charts - UPDATED WITH REAL MONTHLY DATA
+        // API: Get dashboard data for charts
         [HttpGet]
         public async Task<IActionResult> GetDashboardData(int year)
         {
@@ -131,7 +304,6 @@ namespace MonitoringSystem.Controllers
             {
                 Console.WriteLine($"========== GET DASHBOARD DATA FOR YEAR {year} ==========");
 
-                // Get real data from database using Status
                 var totalUsers = await _userManager.Users.CountAsync();
                 var totalCompanies = await _userManager.Users.CountAsync(u => u.Role == "Company");
                 var totalStudents = await _userManager.Users.CountAsync(u => u.Role == "Student");
@@ -139,7 +311,7 @@ namespace MonitoringSystem.Controllers
                 var approvedUsers = await _userManager.Users.CountAsync(u => u.Status == "Approved" && u.Role != "Admin");
                 var declinedUsers = await _userManager.Users.CountAsync(u => u.Status == "Declined" && u.Role != "Admin");
 
-                // Get recent registrations (last 5 users)
+                // Get recent registrations - FIXED: Handle nullable DateTime
                 var recentUsers = await _userManager.Users
                     .Where(u => u.Role != "Admin")
                     .OrderByDescending(u => u.CreatedAt)
@@ -150,24 +322,20 @@ namespace MonitoringSystem.Controllers
                         u.FullName,
                         u.Status,
                         u.Program,
-                        CreatedAt = u.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                        CreatedAt = u.CreatedAt.ToString()  // This works
                     })
                     .ToListAsync();
 
-                // REAL MONTHLY DATA for charts
-                var pendingUsers = new List<int>();      // Pink chart - Pending users per month
-                var tasksSubmitted = new List<int>();    // Blue chart - Tasks (placeholder for now)
-                var monthlyUsers = new List<int>();      // Green chart - Total users per month
-                var monthlyCompanies = new List<int>();  // Gold chart - Companies per month
+                var pendingUsers = new List<int>();
+                var tasksSubmitted = new List<int>();
+                var monthlyUsers = new List<int>();
+                var monthlyCompanies = new List<int>();
 
-                // For each month, get real data from database
                 for (int month = 1; month <= 12; month++)
                 {
-                    // Create date range for the month
                     var startDate = new DateTime(year, month, 1);
                     var endDate = startDate.AddMonths(1).AddDays(-1);
 
-                    // PENDING USERS created in this month (for pink chart)
                     var pendingCount = await _userManager.Users
                         .CountAsync(u => u.Status == "Pending"
                             && u.Role != "Admin"
@@ -175,18 +343,14 @@ namespace MonitoringSystem.Controllers
                             && u.CreatedAt <= endDate);
                     pendingUsers.Add(pendingCount);
 
-                    // TASKS SUBMITTED (you can replace this with actual task data later)
-                    // For now, using a simple calculation based on users
                     tasksSubmitted.Add(pendingCount + new Random().Next(1, 5));
 
-                    // TOTAL USERS created in this month (for green chart)
                     var usersCount = await _userManager.Users
                         .CountAsync(u => u.Role != "Admin"
                             && u.CreatedAt >= startDate
                             && u.CreatedAt <= endDate);
                     monthlyUsers.Add(usersCount);
 
-                    // COMPANIES created in this month (for gold chart)
                     var companiesCount = await _userManager.Users
                         .CountAsync(u => u.Role == "Company"
                             && u.CreatedAt >= startDate
@@ -196,10 +360,10 @@ namespace MonitoringSystem.Controllers
 
                 var data = new
                 {
-                    pendingUsers = pendingUsers,        // REAL pending users per month
-                    tasksSubmitted = tasksSubmitted,    // Placeholder for now
-                    totalUsers = monthlyUsers,          // REAL total users per month
-                    totalCompanies = monthlyCompanies,  // REAL companies per month
+                    pendingUsers = pendingUsers,
+                    tasksSubmitted = tasksSubmitted,
+                    totalUsers = monthlyUsers,
+                    totalCompanies = monthlyCompanies,
                     year = year,
                     recentUsers = recentUsers,
                     stats = new
@@ -222,22 +386,18 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // API: Update user status (Approve/Decline)
+        // API: Update user status
         [HttpPost]
         public async Task<IActionResult> UpdateUserStatus([FromBody] UpdateStatusModel model)
         {
             try
             {
-                Console.WriteLine($"========== UPDATE USER STATUS ==========");
-                Console.WriteLine($"UserId: {model.UserId}, Status: {model.Status}");
-
                 var user = await _userManager.FindByIdAsync(model.UserId);
                 if (user == null)
                 {
                     return Json(new { success = false, message = "User not found" });
                 }
 
-                // Update status
                 user.Status = model.Status;
                 user.UpdatedAt = DateTime.Now;
 
@@ -245,7 +405,6 @@ namespace MonitoringSystem.Controllers
 
                 if (result.Succeeded)
                 {
-                    Console.WriteLine($"User {user.Email} status updated to {model.Status}");
                     return Json(new
                     {
                         success = true,
@@ -261,12 +420,11 @@ namespace MonitoringSystem.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"ERROR in UpdateUserStatus: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
 
-        // API: Get pending users
+        // API: Get pending users - FIXED: Handle nullable DateTime
         [HttpGet]
         public async Task<IActionResult> GetPendingUsers()
         {
@@ -284,8 +442,8 @@ namespace MonitoringSystem.Controllers
                         u.Role,
                         u.Status,
                         u.Program,
-                        u.CreatedAt,
-                        u.BirthDate
+                        CreatedAt = u.CreatedAt.ToString(),
+                        BirthDate = u.BirthDate.ToString()
                     })
                     .ToListAsync();
 
@@ -297,7 +455,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // API: Get user details for preview
+        // API: Get user details - UPDATED: Use ContactPerson property
         [HttpGet]
         public async Task<IActionResult> GetUserDetails(string id)
         {
@@ -320,13 +478,15 @@ namespace MonitoringSystem.Controllers
                         user.StudentId,
                         user.Role,
                         user.Status,
-                        user.BirthDate,
+                        BirthDate = user.BirthDate.ToString(),
                         user.MobileNumber,
                         user.Address,
                         user.Program,
-                        user.Year,
+                        Year = user.Year?.ToString() ?? "",
+                        CompanyID = user.CompanyID?.ToString() ?? "",
+                        ContactPerson = user.ContactPerson ?? "",  // CHANGED: from Contact to ContactPerson
                         user.ProfileImage,
-                        user.CreatedAt,
+                        CreatedAt = user.CreatedAt.ToString(),
                         user.IsActive
                     }
                 });
@@ -342,7 +502,6 @@ namespace MonitoringSystem.Controllers
         public async Task<IActionResult> GetProfile()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Console.WriteLine($"========== GET PROFILE FOR USER: {userId} ==========");
 
             var admin = await _context.Admins
                 .Include(a => a.User)
@@ -350,15 +509,9 @@ namespace MonitoringSystem.Controllers
 
             if (admin == null)
             {
-                Console.WriteLine("Admin not found in database");
-                return Json(new
-                {
-                    success = false,
-                    message = "Admin not found"
-                });
+                return Json(new { success = false, message = "Admin not found" });
             }
 
-            Console.WriteLine($"Admin found: {admin.EmployeeId}");
             return Json(new
             {
                 success = true,
@@ -366,15 +519,14 @@ namespace MonitoringSystem.Controllers
                 employeeId = admin.EmployeeId ?? "",
                 department = admin.Department ?? "",
                 position = admin.Position ?? "",
-                hireDate = admin.HireDate?.ToString("yyyy-MM-dd") ?? "",
+                hireDate = admin.HireDate?.ToString() ?? "",
                 permissionsLevel = admin.PermissionsLevel ?? "Basic",
                 officeLocation = admin.OfficeLocation ?? "",
                 officePhone = admin.OfficePhone ?? "",
-                createdAt = admin.CreatedAt.ToString("yyyy-MM-dd HH:mm tt"),
+                createdAt = admin.CreatedAt.ToString(),
                 username = admin.User?.UserName ?? "",
                 email = admin.User?.Email ?? "",
                 address = admin.User?.Address ?? "",
-                // Permissions
                 canManageUsers = admin.CanManageUsers,
                 canManageCompanies = admin.CanManageCompanies,
                 canManageStudents = admin.CanManageStudents,
@@ -387,16 +539,12 @@ namespace MonitoringSystem.Controllers
         [HttpPost]
         public async Task<IActionResult> SaveProfile([FromBody] AdminProfileModel model)
         {
-            Console.WriteLine("========== SAVE PROFILE CALLED ==========");
-
             if (!ModelState.IsValid)
             {
-                Console.WriteLine("Model state invalid");
                 return BadRequest(new { success = false, message = "Invalid data" });
             }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Console.WriteLine($"User ID: {userId}");
 
             var admin = await _context.Admins
                 .Include(a => a.User)
@@ -404,26 +552,22 @@ namespace MonitoringSystem.Controllers
 
             if (admin == null)
             {
-                Console.WriteLine("Admin not found");
                 return NotFound(new { success = false, message = "Admin not found" });
             }
 
-            // Update fields
             if (admin.User != null)
             {
                 admin.User.FullName = model.FullName;
                 admin.User.Address = model.Address;
-                Console.WriteLine($"Updated user: {model.FullName}");
             }
 
             admin.Department = model.Department;
             admin.Position = model.Position;
             admin.OfficeLocation = model.OfficeLocation;
             admin.OfficePhone = model.OfficePhone;
-            admin.UpdatedAt = System.DateTime.Now;
+            admin.UpdatedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();
-            Console.WriteLine("Profile saved successfully");
 
             return Ok(new { success = true, message = "Profile updated successfully" });
         }
@@ -440,7 +584,6 @@ namespace MonitoringSystem.Controllers
                     return Json(new { success = false, message = "User not found" });
                 }
 
-                // Don't allow deleting yourself
                 var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (user.Id == currentUserId)
                 {
@@ -461,12 +604,8 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ==================== IMPROVED MAKE ADMIN FUNCTIONALITY ====================
-        /// <summary>
-        /// Makes a user an Admin by updating both custom Role field and Identity Role
-        /// </summary>
+        // ===== MAKE ADMIN METHOD =====
         [HttpPost]
-        [Route("Admin/Users/MakeAdmin")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MakeAdmin([FromBody] MakeAdminRequest request)
         {
@@ -480,26 +619,19 @@ namespace MonitoringSystem.Controllers
                     return BadRequest(new { success = false, message = "Invalid request" });
                 }
 
-                // Find the user by ID
                 var user = await _userManager.FindByIdAsync(request.UserId);
                 if (user == null)
                 {
-                    _logger.LogWarning($"User not found with ID: {request.UserId}");
                     return NotFound(new { success = false, message = "User not found" });
                 }
 
-                _logger.LogInformation($"Found user: {user.Email}, Current Role: {user.Role}");
-
-                // Check if user is already an Admin
                 if (user.Role == "Admin")
                 {
                     return BadRequest(new { success = false, message = "User is already an Admin" });
                 }
 
-                // Store the old role for logging
                 var oldRole = user.Role;
 
-                // ===== STEP 1: Update the custom Role field =====
                 user.Role = "Admin";
                 user.UpdatedAt = DateTime.Now;
 
@@ -508,52 +640,29 @@ namespace MonitoringSystem.Controllers
                 if (!updateResult.Succeeded)
                 {
                     var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
-                    _logger.LogError($"Failed to update user Role field: {errors}");
                     return BadRequest(new { success = false, message = $"Failed to update role: {errors}" });
                 }
 
-                // ===== STEP 2: Ensure Admin Identity Role exists =====
                 if (!await _roleManager.RoleExistsAsync("Admin"))
                 {
-                    _logger.LogInformation("Creating Admin role as it doesn't exist");
                     await _roleManager.CreateAsync(new IdentityRole("Admin"));
                 }
 
-                // ===== STEP 3: Remove from any existing Identity Roles =====
                 var currentRoles = await _userManager.GetRolesAsync(user);
                 if (currentRoles.Any())
                 {
-                    _logger.LogInformation($"Removing user from existing roles: {string.Join(", ", currentRoles)}");
                     await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 }
 
-                // ===== STEP 4: Add to Admin Identity Role =====
                 var addToRoleResult = await _userManager.AddToRoleAsync(user, "Admin");
 
                 if (!addToRoleResult.Succeeded)
                 {
                     var errors = string.Join(", ", addToRoleResult.Errors.Select(e => e.Description));
-                    _logger.LogError($"Failed to add user to Admin role: {errors}");
-
-                    // Try to revert the custom Role change if Identity role assignment fails
                     user.Role = oldRole;
                     await _userManager.UpdateAsync(user);
-
                     return BadRequest(new { success = false, message = $"Failed to assign Admin role: {errors}" });
                 }
-
-                // ===== STEP 5: Log the successful promotion =====
-                var currentAdminId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var currentAdmin = await _userManager.FindByIdAsync(currentAdminId);
-
-                _logger.LogInformation($"USER PROMOTED TO ADMIN - User: {user.Email} ({user.Id}) was promoted by Admin: {currentAdmin?.Email} ({currentAdminId})");
-
-                Console.WriteLine($"========== MAKE ADMIN SUCCESS ==========");
-                Console.WriteLine($"User: {user.Email} is now an Admin");
-                Console.WriteLine($"Previous Role: {oldRole}");
-                Console.WriteLine($"Promoted by: {currentAdmin?.Email}");
-                Console.WriteLine($"Time: {DateTime.Now}");
-                Console.WriteLine($"========================================");
 
                 return Ok(new
                 {
@@ -566,54 +675,11 @@ namespace MonitoringSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"ERROR in MakeAdmin: {ex.Message}");
-                _logger.LogError($"Stack trace: {ex.StackTrace}");
-
-                return StatusCode(500, new
-                {
-                    success = false,
-                    message = "An error occurred while processing your request",
-                    error = ex.Message
-                });
-            }
-        }
-
-        // ===== Alternative simpler version if you only want to update the custom Role field =====
-        [HttpPost]
-        [Route("Admin/Users/MakeAdminSimple")]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> MakeAdminSimple([FromBody] string userId)
-        {
-            try
-            {
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    return Json(new { success = false, message = "User not found" });
-                }
-
-                // Update just the custom Role field
-                user.Role = "Admin";
-                user.UpdatedAt = DateTime.Now;
-
-                var result = await _userManager.UpdateAsync(user);
-
-                if (result.Succeeded)
-                {
-                    _logger.LogInformation($"User {user.Email} promoted to Admin (simple method)");
-                    return Json(new { success = true, message = "User is now an Admin" });
-                }
-
-                return Json(new { success = false, message = "Failed to make user admin" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error in MakeAdminSimple: {ex.Message}");
-                return Json(new { success = false, message = ex.Message });
+                return StatusCode(500, new { success = false, message = "An error occurred" });
             }
         }
     }
 
-    // Model for the Make Admin request
     public class MakeAdminRequest
     {
         public string UserId { get; set; }
@@ -629,7 +695,6 @@ namespace MonitoringSystem.Controllers
         public string Address { get; set; } = "";
     }
 
-    // Model for updating user status
     public class UpdateStatusModel
     {
         public string UserId { get; set; }

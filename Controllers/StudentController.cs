@@ -78,7 +78,7 @@ namespace MonitoringSystem.Controllers
                 Console.WriteLine($"  Company: {model.Company}");
                 Console.WriteLine($"  MobileNumber: {model.MobileNumber}");
                 Console.WriteLine($"  Address: {model.Address}");
-                Console.WriteLine($"  Contact: {model.Contact}");
+                Console.WriteLine($"  ContactPerson: {model.ContactPerson}");  // CHANGED: from Contact to ContactPerson
                 Console.WriteLine($"  StudentId: {model.StudentId}");
                 Console.WriteLine($"  Program: {model.Program}");
                 Console.WriteLine($"  BirthDate: {model.BirthDate}");
@@ -134,10 +134,10 @@ namespace MonitoringSystem.Controllers
                     Console.WriteLine($"Updated Address to: {model.Address}");
                 }
 
-                if (!string.IsNullOrEmpty(model.Contact))
+                if (!string.IsNullOrEmpty(model.ContactPerson))  // CHANGED: from model.Contact to model.ContactPerson
                 {
-                    user.Contact = model.Contact;
-                    Console.WriteLine($"Updated Contact to: {model.Contact}");
+                    user.ContactPerson = model.ContactPerson;  // CHANGED: from user.Contact to user.ContactPerson
+                    Console.WriteLine($"Updated ContactPerson to: {model.ContactPerson}");  // CHANGED: log message
                 }
 
                 if (!string.IsNullOrEmpty(model.StudentId))
@@ -283,7 +283,7 @@ namespace MonitoringSystem.Controllers
                         user.Role,
                         user.Gender,
                         birthDate = user.BirthDate?.ToString("yyyy-MM-dd"),
-                        user.Contact,
+                        contactPerson = user.ContactPerson,  // CHANGED: from Contact to ContactPerson
                         user.MobileNumber,
                         user.Address,
                         user.ProfileImage,
@@ -317,7 +317,7 @@ namespace MonitoringSystem.Controllers
         public string Company { get; set; }
         public string MobileNumber { get; set; }
         public string Address { get; set; }
-        public string Contact { get; set; }
+        public string ContactPerson { get; set; }  // CHANGED: from Contact to ContactPerson
         public string StudentId { get; set; }
         public string Program { get; set; }
         public string BirthDate { get; set; }

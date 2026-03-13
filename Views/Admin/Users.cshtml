@@ -14,10 +14,16 @@
     <div id="usersSection">
         <div class="card shadow-sm rounded-4 p-4">
 
-            <!-- HEADER + CREATE COMPANY BUTTON -->
+            <!-- HEADER + CREATE COMPANY BUTTON + EXPORT BUTTON -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Users</h5>
-                <button id="showCreateCompanyForm" class="btn btn-primary">Create Company</button>
+                <div>
+                    <!-- EXPORT ALL BUTTON - Exports all users organized by program -->
+                    <a href="/Admin/ExportUsersToExcel" class="btn btn-success me-2">
+                        <i class="bi bi-file-excel"></i> Export Excel
+                    </a>
+                    <button id="showCreateCompanyForm" class="btn btn-primary">Create Company</button>
+                </div>
             </div>
 
             <!-- FILTERS (now with Program) -->
@@ -79,7 +85,8 @@
                                 data-address="@user.Address"
                                 data-companyid="@user.CompanyID"
                                 data-program="@user.Program"
-                                data-birthdate="@(user.BirthDate?.ToString("yyyy-MM-dd") ?? "")"
+                                data-birthdate="@(user.BirthDate.HasValue? user.BirthDate.Value.ToString("yyyy-MM-dd") : "")"
+                                data-contactperson="@user.ContactPerson"
                                 data-task="Complete the monthly report and submit to manager."
                                 data-learning="Learned how to summarize data and meet deadlines.">
                                 <td>@user.FullName</td>
@@ -100,9 +107,6 @@
                     </tbody>
                 </table>
             </div>
-
-        </div>
-    </div>
 
     <!-- ================= CREATE COMPANY WRAPPER ================= -->
     <div id="createCompanyWrapper" style="display: none;">
@@ -231,8 +235,8 @@
 
                 <div class="row g-3 mt-2">
                     <div class="col-md-4">
-                        <label class="form-label">Emergency Contact</label>
-                        <input type="text" class="form-control" id="editStudentEmergencyContact">
+                        <label class="form-label">Contact Person</label>  <!-- CHANGED: from "Emergency Contact" to "Contact Person" -->
+                        <input type="text" class="form-control" id="editStudentContactPerson">  <!-- CHANGED: id from editStudentEmergencyContact to editStudentContactPerson -->
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Student ID</label>
@@ -452,18 +456,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Example row -->
-                        <tr>
-                            <td>STU001</td>
-                            <td>Juan Dela Cruz</td>
-                            <td>juan@example.com</td>
-                            <td>IT Program</td>
-                            <td class="text-end">
-                                <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">
-                                    Remove
-                                </button>
-                            </td>
-                        </tr>
+                        <!-- No example data - will be populated dynamically -->
                     </tbody>
                 </table>
             </div>
@@ -576,26 +569,27 @@
         </div>
     </div>
 </div>
+
 <!-- ================= MAKE ADMIN CONFIRMATION MODAL ================= -->
 <div class="modal fade" id="makeAdminConfirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
+        <div class="modal-content" style="background-color: #8B0000; color: white; border: none; min-height: 160px;">
             <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="makeAdminConfirmModalLabel" style="color: white; font-size: 1.1rem;">Confirm Make Admin</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.9rem;"></button>
             </div>
-            <div class="modal-body py-2">
-                <p class="mb-1" style="font-size: 0.95rem;">Are you sure you want to make</p>
-                <p class="fw-bold text-center mb-1" id="makeAdminUserInfo" style="color: white; word-break: break-word; font-size: 1.1rem;"></p>
-                <p class="text-center mb-0" style="font-size: 0.95rem;">an Administrator?</p>
+            <div class="modal-body py-3">
+                <p class="mb-0" style="font-size: 1rem; text-align: center; line-height: 1.4; white-space: nowrap;">
+                    Are you sure you want to make <strong id="makeAdminUserInfo" style="color: white; font-weight: 700;"></strong> an Administrator?
+                </p>
             </div>
-            <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
+            <div class="modal-footer border-0 justify-content-end gap-3 pt-0 pb-3">
                 <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmMakeAdminBtn">YES</button>
                 <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
             </div>
         </div>
     </div>
 </div>
+
 <!-- ================= SCRIPT ================= -->
 <script>
     const tbody = document.querySelector("#usersTable tbody");
@@ -691,6 +685,7 @@
                 document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
                 document.getElementById("editStudentID").value = rowToEdit.dataset.studentid || "";
                 document.getElementById("editStudentBirthdate").value = rowToEdit.dataset.birthdate || "";
+                document.getElementById("editStudentContactPerson").value = rowToEdit.dataset.contactperson || "";  // CHANGED: from editStudentEmergencyContact to editStudentContactPerson, and from dataset.contact to dataset.contactperson
                 profilePic.src = "/images/defaultpicture.jpg";
                 editStudentWrapper.style.display = "block";
                 tasksWrapper.style.display = "block";
@@ -911,8 +906,14 @@
         if (!userToMakeAdmin) return;
 
         const token = document.getElementById('__RequestVerificationToken').value;
+        const confirmBtn = this;
+        const originalText = confirmBtn.textContent;
 
-        fetch('/Admin/Users/MakeAdmin', {
+        // Disable button to prevent double submission
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing...';
+
+        fetch('/Admin/MakeAdmin', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -920,7 +921,19 @@
             },
             body: JSON.stringify({ userId: userToMakeAdmin.id })
         })
-        .then(response => response.json())
+        .then(async response => {
+            if (!response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Server error: ${response.status}`);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+                }
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 // Update the role in the table
@@ -930,20 +943,24 @@
                     userToMakeAdmin.row.dataset.role = 'Admin';
                 }
                 alert('User is now an Admin.');
+
+                // Hide modal
+                const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
+                if (makeAdminModal) {
+                    makeAdminModal.hide();
+                }
             } else {
                 alert('Failed to make user Admin: ' + (data.message || 'Unknown error'));
             }
         })
         .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred.');
+            console.error('Make Admin Error:', error);
+            let errorMessage = 'An error occurred. ' + error.message;
+            alert(errorMessage);
         })
         .finally(() => {
-            // Hide modal
-            const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
-            if (makeAdminModal) {
-                makeAdminModal.hide();
-            }
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = originalText;
             userToMakeAdmin = null;
         });
     });
