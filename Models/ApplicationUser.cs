@@ -37,6 +37,9 @@ namespace MonitoringSystem.Models
         // Student ID field for registration
         public string? StudentId { get; set; } = string.Empty;
 
+        // ============== ADD THIS NEW PROPERTY FOR OJT HOURS ==============
+        public int TotalAllottedHours { get; set; } = 0;  // Required OJT hours based on program
+
         // ===================== NAVIGATION PROPERTIES =====================
         public Student? Student { get; set; }
         public Company? Company { get; set; }

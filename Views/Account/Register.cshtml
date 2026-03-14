@@ -27,13 +27,11 @@
                 <input name="email" type="email" class="form-control" placeholder="Email" required />
             </div>
 
-            <!-- PROGRAM (New) -->
+            <!-- PROGRAM (Dynamic from Admin Configuration) -->
             <div class="mb-3">
                 <label class="form-label small">Program</label>
-                <select name="program" class="form-select" required>
-                    <option value="">Select Program</option>
-                    <option value="BIT">Bachelor in Industrial Technology (BIT)</option>
-                    <option value="BSIT">Bachelor of Science in Information Technology (BSIT)</option>
+                <select name="program" class="form-select" id="programSelect" required>
+                    <option value="">Loading programs...</option>
                 </select>
             </div>
 
@@ -91,3 +89,35 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            loadPrograms();
+        });
+
+        async function loadPrograms() {
+            const select = document.getElementById('programSelect');
+            select.innerHTML = '<option value="">Loading programs...</option>';
+
+            try {
+                const response = await fetch('/Admin/GetProgramsList');
+                const programs = await response.json();
+
+                select.innerHTML = '<option value="">Select Program</option>';
+
+                if (programs && programs.length > 0) {
+                    programs.forEach(program => {
+                        const option = document.createElement('option');
+                        option.value = program.code;
+                        option.textContent = program.displayName;
+                        select.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading programs:', error);
+                select.innerHTML = '<option value="">Error loading programs</option>';
+            }
+        }
+    </script>
+}

@@ -15,6 +15,10 @@ namespace MonitoringSystem.Models
         public DbSet<Company> Companies { get; set; }
         public DbSet<Admin> Admins { get; set; }
 
+        // ===== ADD THESE NEW DbSets FOR PROGRAM HOURS AND DOCUMENTS =====
+        public DbSet<ProgramHour> ProgramHours { get; set; }
+        public DbSet<Document> Documents { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -33,6 +37,13 @@ namespace MonitoringSystem.Models
 
             builder.Entity<Admin>()
                 .ToTable(tb => tb.HasTrigger("Admins_Trigger"));
+
+            // ===== ADD TRIGGER CONFIGURATION FOR NEW TABLES =====
+            builder.Entity<ProgramHour>()
+                .ToTable(tb => tb.HasTrigger("ProgramHours_Trigger"));
+
+            builder.Entity<Document>()
+                .ToTable(tb => tb.HasTrigger("Documents_Trigger"));
 
             // ===================== CONFIGURE ONE-TO-ONE RELATIONSHIPS =====================
 
@@ -62,6 +73,10 @@ namespace MonitoringSystem.Models
             builder.Entity<Company>().ToTable("Companies");
             builder.Entity<Admin>().ToTable("Admins");
 
+            // ===== CONFIGURE TABLE NAMES FOR NEW TABLES =====
+            builder.Entity<ProgramHour>().ToTable("ProgramHours");
+            builder.Entity<Document>().ToTable("Documents");
+
             // ===================== CONFIGURE INDEXES =====================
             builder.Entity<Student>()
                 .HasIndex(s => s.StudentId)
@@ -70,6 +85,16 @@ namespace MonitoringSystem.Models
             builder.Entity<Company>()
                 .HasIndex(c => c.CompanyName)
                 .HasDatabaseName("IX_Companies_CompanyName");
+
+            // ===== ADD INDEXES FOR NEW TABLES =====
+            builder.Entity<ProgramHour>()
+                .HasIndex(p => p.Code)
+                .IsUnique()
+                .HasDatabaseName("IX_ProgramHours_Code");
+
+            builder.Entity<Document>()
+                .HasIndex(d => d.UploadedAt)
+                .HasDatabaseName("IX_Documents_UploadedAt");
         }
     }
 }

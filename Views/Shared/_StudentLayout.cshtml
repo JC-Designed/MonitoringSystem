@@ -120,6 +120,26 @@
         .dark-mode .toast-close:hover {
             color: #fff;
         }
+
+        /* Hours input styling - same as other fields */
+        .hours-input {
+            background-color: #e9ecef;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 6px 12px;
+            width: 100%;
+            height: 38px;
+            font-size: 1rem;
+            font-weight: 400;
+            line-height: 1.5;
+            color: #495057;
+        }
+
+        .dark-mode .hours-input {
+            background-color: #2d2d2d;
+            border-color: #444;
+            color: #e2e8f0;
+        }
     </style>
 
     @RenderSection("Styles", required: false)
@@ -321,6 +341,13 @@
             profileImage: '@Html.Raw(userProfileImage)'
         };
 
+        // Hours data for profile view
+        let profileHours = {
+            rendered: 0,
+            remaining: 0,
+            total: 0
+        };
+
         // Function to fetch fresh user data
         async function fetchFreshUserData() {
             try {
@@ -345,8 +372,37 @@
             }
         }
 
-        // Function to create profile HTML with data
-        function getProfileHTML(userData) {
+        // Function to load student hours (rendered, remaining, total) for profile
+        async function loadProfileHours() {
+            try {
+                // First get user data to get total allotted
+                const userResponse = await fetch('/Student/GetCurrentUser');
+                const userData = await userResponse.json();
+                const total = userData.user?.totalAllottedHours || 0;
+
+                // Then get time logs to calculate rendered
+                const logsResponse = await fetch('/Student/GetTimeLogs');
+                let rendered = 0;
+                if (logsResponse.ok) {
+                    const logs = await logsResponse.json();
+                    rendered = logs
+                        .filter(log => log.type === 'regular')
+                        .reduce((sum, log) => sum + (log.totalHours || 0), 0);
+                }
+
+                profileHours = {
+                    rendered: rendered,
+                    remaining: total - rendered,
+                    total: total
+                };
+            } catch (error) {
+                console.error('Error loading profile hours:', error);
+                profileHours = { rendered: 0, remaining: 0, total: 0 };
+            }
+        }
+
+        // Function to create profile HTML with data and hours
+        function getProfileHTML(userData, hours) {
             return `
                 <div class="container py-4">
                     <!-- Profile Picture with upload -->
@@ -424,7 +480,23 @@
                                 </div>
                             </div>
 
-                            <!-- Row 4 -->
+                            <!-- Row 4 - Hours fields (now using real data) -->
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Rendered Hours</label>
+                                    <input type="text" class="form-control" value="${hours.rendered.toFixed(1)} hrs" readonly style="background-color: #e9ecef;">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Remaining Hours</label>
+                                    <input type="text" class="form-control" value="${hours.remaining.toFixed(1)} hrs" readonly style="background-color: #e9ecef;">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Total Allotted</label>
+                                    <input type="text" class="form-control" value="${hours.total} hrs" readonly style="background-color: #e9ecef;">
+                                </div>
+                            </div>
+
+                            <!-- Row 5 -->
                             <div class="row mb-3">
                                 <div class="col-md-4">
                                     <label for="birthdate" class="form-label fw-bold">Birthdate</label>
@@ -462,33 +534,26 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Profile SPA
-        function openProfileSPA() {
+        // Profile SPA (updated to load real hours)
+        async function openProfileSPA() {
             // Show loading
             mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
             document.querySelector(".topbar-title").textContent = "Profile";
 
-            setTimeout(async () => {
-                try {
-                    // Fetch fresh data
-                    const freshUserData = await fetchFreshUserData();
+            // Fetch fresh user data and hours
+            const freshUserData = await fetchFreshUserData();
+            await loadProfileHours(); // This sets profileHours
 
-                    // Update current data
-                    if (freshUserData) {
-                        currentUserData = freshUserData;
-                    }
+            // Update current data
+            if (freshUserData) {
+                currentUserData = freshUserData;
+            }
 
-                    // Generate and set HTML
-                    mainContent.innerHTML = getProfileHTML(currentUserData);
+            // Generate and set HTML using real hours
+            mainContent.innerHTML = getProfileHTML(currentUserData, profileHours);
 
-                    // Initialize all event listeners
-                    initializeProfileEvents();
-
-                } catch (error) {
-                    console.error('Error loading profile:', error);
-                    mainContent.innerHTML = '<div class="alert alert-danger m-3">Error loading profile. Please try again.</div>';
-                }
-            }, 100);
+            // Initialize all event listeners
+            initializeProfileEvents();
         }
 
         // Initialize all profile events

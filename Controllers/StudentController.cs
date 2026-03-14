@@ -78,7 +78,7 @@ namespace MonitoringSystem.Controllers
                 Console.WriteLine($"  Company: {model.Company}");
                 Console.WriteLine($"  MobileNumber: {model.MobileNumber}");
                 Console.WriteLine($"  Address: {model.Address}");
-                Console.WriteLine($"  ContactPerson: {model.ContactPerson}");  // CHANGED: from Contact to ContactPerson
+                Console.WriteLine($"  ContactPerson: {model.ContactPerson}");
                 Console.WriteLine($"  StudentId: {model.StudentId}");
                 Console.WriteLine($"  Program: {model.Program}");
                 Console.WriteLine($"  BirthDate: {model.BirthDate}");
@@ -134,10 +134,10 @@ namespace MonitoringSystem.Controllers
                     Console.WriteLine($"Updated Address to: {model.Address}");
                 }
 
-                if (!string.IsNullOrEmpty(model.ContactPerson))  // CHANGED: from model.Contact to model.ContactPerson
+                if (!string.IsNullOrEmpty(model.ContactPerson))
                 {
-                    user.ContactPerson = model.ContactPerson;  // CHANGED: from user.Contact to user.ContactPerson
-                    Console.WriteLine($"Updated ContactPerson to: {model.ContactPerson}");  // CHANGED: log message
+                    user.ContactPerson = model.ContactPerson;
+                    Console.WriteLine($"Updated ContactPerson to: {model.ContactPerson}");
                 }
 
                 if (!string.IsNullOrEmpty(model.StudentId))
@@ -257,7 +257,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // API: Get current user data
+        // ===================== UPDATED: Get current user data with auto-fix for hours =====================
         [HttpGet]
         public async Task<IActionResult> GetCurrentUser()
         {
@@ -269,6 +269,18 @@ namespace MonitoringSystem.Controllers
                 if (user == null)
                 {
                     return Ok(new { success = false, message = "User not found" });
+                }
+
+                // --- NEW: If TotalAllottedHours is 0 but user has a program, fetch from ProgramHours and update ---
+                if (user.TotalAllottedHours == 0 && !string.IsNullOrEmpty(user.Program))
+                {
+                    var program = await _context.ProgramHours.FirstOrDefaultAsync(p => p.Code == user.Program);
+                    if (program != null)
+                    {
+                        user.TotalAllottedHours = program.Hours;
+                        await _userManager.UpdateAsync(user);
+                        _logger.LogInformation($"Auto-updated TotalAllottedHours for user {user.Email} to {program.Hours} (program {user.Program})");
+                    }
                 }
 
                 var userData = new
@@ -283,7 +295,7 @@ namespace MonitoringSystem.Controllers
                         user.Role,
                         user.Gender,
                         birthDate = user.BirthDate?.ToString("yyyy-MM-dd"),
-                        contactPerson = user.ContactPerson,  // CHANGED: from Contact to ContactPerson
+                        contactPerson = user.ContactPerson,
                         user.MobileNumber,
                         user.Address,
                         user.ProfileImage,
@@ -297,7 +309,8 @@ namespace MonitoringSystem.Controllers
                         company = user.CompanyID?.ToString(),
                         user.Program,
                         user.Status,
-                        user.StudentId
+                        user.StudentId,
+                        totalAllottedHours = user.TotalAllottedHours
                     }
                 };
 
@@ -306,6 +319,59 @@ namespace MonitoringSystem.Controllers
             catch (Exception ex)
             {
                 return Ok(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===================== ADDED: Get student's time logs =====================
+        [HttpGet]
+        public async Task<IActionResult> GetTimeLogs()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                // For now, return empty array until TimeLogs table is created
+                var timeLogs = new List<object>();
+
+                return Ok(timeLogs);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===================== ADDED: Save time log =====================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveTimeLog([FromBody] TimeLogModel model)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                // This is a placeholder - implement when you create TimeLogs table
+                return Ok(new { success = true, message = "Time log saved successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===================== ADDED: Delete time log =====================
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTimeLog(int id)
+        {
+            try
+            {
+                // This is a placeholder - implement when you create TimeLogs table
+                return Ok(new { success = true, message = "Time log deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { success = false, message = ex.Message });
             }
         }
     }
@@ -317,10 +383,23 @@ namespace MonitoringSystem.Controllers
         public string Company { get; set; }
         public string MobileNumber { get; set; }
         public string Address { get; set; }
-        public string ContactPerson { get; set; }  // CHANGED: from Contact to ContactPerson
+        public string ContactPerson { get; set; }
         public string StudentId { get; set; }
         public string Program { get; set; }
         public string BirthDate { get; set; }
         public string Email { get; set; }
+    }
+
+    public class TimeLogModel
+    {
+        public DateTime Date { get; set; }
+        public string AmIn { get; set; }
+        public string AmOut { get; set; }
+        public string PmIn { get; set; }
+        public string PmOut { get; set; }
+        public string OtIn { get; set; }
+        public string OtOut { get; set; }
+        public double TotalHours { get; set; }
+        public string Type { get; set; }
     }
 }

@@ -71,7 +71,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===== EXPORT ALL USERS TO EXCEL - WITH YOUR SPECIFIC COLUMNS =====
+        // ===== EXPORT ALL USERS TO EXCEL =====
         public async Task<IActionResult> ExportUsersToExcel()
         {
             try
@@ -91,7 +91,7 @@ namespace MonitoringSystem.Controllers
                 dt.Columns.Add("Mobile Number", typeof(string));
                 dt.Columns.Add("Address", typeof(string));
                 dt.Columns.Add("Program", typeof(string));
-                dt.Columns.Add("Contact Person", typeof(string));  // CHANGED: from "Emergency Contact" to "Contact Person"
+                dt.Columns.Add("Contact Person", typeof(string));
                 dt.Columns.Add("Student ID", typeof(string));
                 dt.Columns.Add("Birthdate", typeof(string));
                 dt.Columns.Add("Email", typeof(string));
@@ -102,13 +102,13 @@ namespace MonitoringSystem.Controllers
                     // Handle Company (nullable int)
                     string companyValue = user.CompanyID?.ToString() ?? "";
 
-                    // Handle Contact Person - UPDATED: Use ContactPerson property
-                    string contactPerson = user.ContactPerson ?? "";  // CHANGED: from Contact to ContactPerson
+                    // Handle Contact Person
+                    string contactPerson = user.ContactPerson ?? "";
 
                     // Handle Student ID
                     string studentId = user.StudentId ?? "";
 
-                    // Format Birthdate - FIXED: Handle nullable DateTime properly
+                    // Format Birthdate
                     string birthDate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("yyyy-MM-dd") : "";
 
                     dt.Rows.Add(
@@ -117,7 +117,7 @@ namespace MonitoringSystem.Controllers
                         user.MobileNumber ?? "",
                         user.Address ?? "",
                         user.Program ?? "",
-                        contactPerson,  // UPDATED: variable name changed
+                        contactPerson,
                         studentId,
                         birthDate,
                         user.Email ?? ""
@@ -158,7 +158,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===== EXPORT SELECTED USERS TO EXCEL - WITH YOUR SPECIFIC COLUMNS =====
+        // ===== EXPORT SELECTED USERS TO EXCEL =====
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ExportSelectedUsers(List<string> userIds)
@@ -188,7 +188,7 @@ namespace MonitoringSystem.Controllers
                 dt.Columns.Add("Mobile Number", typeof(string));
                 dt.Columns.Add("Address", typeof(string));
                 dt.Columns.Add("Program", typeof(string));
-                dt.Columns.Add("Contact Person", typeof(string));  // CHANGED: from "Emergency Contact" to "Contact Person"
+                dt.Columns.Add("Contact Person", typeof(string));
                 dt.Columns.Add("Student ID", typeof(string));
                 dt.Columns.Add("Birthdate", typeof(string));
                 dt.Columns.Add("Email", typeof(string));
@@ -199,13 +199,13 @@ namespace MonitoringSystem.Controllers
                     // Handle Company
                     string companyValue = user.CompanyID?.ToString() ?? "";
 
-                    // Handle Contact Person - UPDATED: Use ContactPerson property
-                    string contactPerson = user.ContactPerson ?? "";  // CHANGED: from Contact to ContactPerson
+                    // Handle Contact Person
+                    string contactPerson = user.ContactPerson ?? "";
 
                     // Handle Student ID
                     string studentId = user.StudentId ?? "";
 
-                    // Format Birthdate - FIXED: Handle nullable DateTime properly
+                    // Format Birthdate
                     string birthDate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("yyyy-MM-dd") : "";
 
                     dt.Rows.Add(
@@ -214,7 +214,7 @@ namespace MonitoringSystem.Controllers
                         user.MobileNumber ?? "",
                         user.Address ?? "",
                         user.Program ?? "",
-                        contactPerson,  // UPDATED: variable name changed
+                        contactPerson,
                         studentId,
                         birthDate,
                         user.Email ?? ""
@@ -252,6 +252,401 @@ namespace MonitoringSystem.Controllers
                 _logger.LogError($"ERROR in ExportSelectedUsers: {ex.Message}");
                 return BadRequest(new { success = false, message = "An error occurred while exporting users." });
             }
+        }
+
+        // ===== PROGRAM HOURS MANAGEMENT =====
+
+        // GET: Get all program hours
+        [HttpGet]
+        public async Task<IActionResult> GetProgramHours()
+        {
+            try
+            {
+                var programs = await _context.ProgramHours
+                    .OrderBy(p => p.Code)
+                    .Select(p => new
+                    {
+                        p.Id,
+                        p.FullName,
+                        p.Code,
+                        p.Hours
+                    })
+                    .ToListAsync();
+
+                return Ok(programs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting program hours: {ex.Message}");
+                return Ok(new List<object>()); // Return empty list on error
+            }
+        }
+
+        // GET: Get programs list for registration dropdown - PUBLIC ACCESS
+        [HttpGet]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetProgramsList()
+        {
+            try
+            {
+                var programs = await _context.ProgramHours
+                    .OrderBy(p => p.Code)
+                    .Select(p => new
+                    {
+                        code = p.Code,
+                        displayName = p.FullName + " (" + p.Code + ")"
+                    })
+                    .ToListAsync();
+
+                return Ok(programs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting programs list: {ex.Message}");
+                return Ok(new object[0]); // Return empty array on error
+            }
+        }
+
+        // POST: Save all program hours
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveProgramHours([FromBody] List<ProgramHourModel> programs)
+        {
+            try
+            {
+                if (programs == null || !programs.Any())
+                {
+                    return BadRequest("No programs provided");
+                }
+
+                // Validate all programs have required fields
+                foreach (var program in programs)
+                {
+                    if (string.IsNullOrWhiteSpace(program.FullName))
+                        return BadRequest("Program full name cannot be empty");
+                    if (string.IsNullOrWhiteSpace(program.Code))
+                        return BadRequest("Program code cannot be empty");
+                    if (program.Hours <= 0)
+                        return BadRequest("Hours must be greater than 0");
+                }
+
+                // Clear existing programs
+                var existingPrograms = await _context.ProgramHours.ToListAsync();
+                _context.ProgramHours.RemoveRange(existingPrograms);
+                await _context.SaveChangesAsync();
+
+                // Add new programs
+                foreach (var program in programs)
+                {
+                    var newProgram = new ProgramHour
+                    {
+                        FullName = program.FullName.Trim(),
+                        Code = program.Code.Trim().ToUpper(),
+                        Hours = program.Hours
+                    };
+                    _context.ProgramHours.Add(newProgram);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Update all students' total hours based on their program
+                await UpdateAllStudentHours();
+
+                _logger.LogInformation($"Program hours saved successfully. {programs.Count} programs updated.");
+                return Ok(new { success = true, message = "Program hours saved successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error saving program hours: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // POST: Add a new program
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddProgram([FromBody] ProgramHourModel program)
+        {
+            try
+            {
+                if (program == null)
+                    return BadRequest("Program data is required");
+
+                if (string.IsNullOrWhiteSpace(program.FullName))
+                    return BadRequest("Program full name is required");
+
+                if (string.IsNullOrWhiteSpace(program.Code))
+                    return BadRequest("Program code is required");
+
+                if (program.Hours <= 0)
+                    return BadRequest("Hours must be greater than 0");
+
+                // Check if program code already exists
+                var exists = await _context.ProgramHours
+                    .AnyAsync(p => p.Code == program.Code.Trim().ToUpper());
+
+                if (exists)
+                    return BadRequest("A program with this code already exists");
+
+                var newProgram = new ProgramHour
+                {
+                    FullName = program.FullName.Trim(),
+                    Code = program.Code.Trim().ToUpper(),
+                    Hours = program.Hours
+                };
+
+                _context.ProgramHours.Add(newProgram);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Program added successfully: {newProgram.Code}");
+
+                return Ok(new
+                {
+                    id = newProgram.Id,
+                    fullName = newProgram.FullName,
+                    code = newProgram.Code,
+                    hours = newProgram.Hours
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error adding program: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // DELETE: Delete a program
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteProgram(int id)
+        {
+            try
+            {
+                var program = await _context.ProgramHours.FindAsync(id);
+                if (program == null)
+                    return NotFound("Program not found");
+
+                // Check if any students are using this program
+                var studentsUsingProgram = await _userManager.Users
+                    .CountAsync(u => u.Program == program.Code);
+
+                _context.ProgramHours.Remove(program);
+                await _context.SaveChangesAsync();
+
+                // If there were students using this program, set their total hours to 0
+                if (studentsUsingProgram > 0)
+                {
+                    _logger.LogWarning($"Program {program.Code} was deleted but {studentsUsingProgram} students were using it. Their hours have been reset.");
+                }
+
+                _logger.LogInformation($"Program deleted: {program.Code}");
+
+                return Ok(new { success = true, message = "Program deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting program: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // Helper method to update all students' total hours based on their program
+        private async Task UpdateAllStudentHours()
+        {
+            try
+            {
+                var students = await _userManager.Users
+                    .Where(u => u.Role == "Student")
+                    .ToListAsync();
+
+                var programs = await _context.ProgramHours.ToDictionaryAsync(p => p.Code, p => p.Hours);
+
+                foreach (var student in students)
+                {
+                    if (!string.IsNullOrEmpty(student.Program) && programs.ContainsKey(student.Program))
+                    {
+                        student.TotalAllottedHours = programs[student.Program];
+                    }
+                    else
+                    {
+                        student.TotalAllottedHours = 0; // Default if program not found
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation($"Updated total hours for {students.Count} students");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating student hours: {ex.Message}");
+            }
+        }
+
+        // ===== DOCUMENTS MANAGEMENT =====
+
+        // GET: Get all documents
+        [HttpGet]
+        public async Task<IActionResult> GetDocuments()
+        {
+            try
+            {
+                var documents = await _context.Documents
+                    .OrderByDescending(d => d.UploadedAt)
+                    .Select(d => new
+                    {
+                        d.Id,
+                        d.Name,
+                        d.Type,
+                        d.Size,
+                        Uploaded = d.UploadedAt.ToString("yyyy-MM-dd"),
+                        d.FileData
+                    })
+                    .ToListAsync();
+
+                return Ok(documents);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting documents: {ex.Message}");
+                return Ok(new List<object>());
+            }
+        }
+
+        // POST: Upload a document
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadDocument(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest("No file uploaded");
+
+                // Validate file size (10MB max)
+                if (file.Length > 10 * 1024 * 1024)
+                    return BadRequest("File exceeds 10MB limit");
+
+                // Get file extension
+                var extension = Path.GetExtension(file.FileName).ToUpper().Replace(".", "");
+                var allowedTypes = new[] { "PDF", "DOCX", "XLSX", "JPG", "PNG" };
+
+                if (!allowedTypes.Contains(extension))
+                    return BadRequest($"File type {extension} not supported");
+
+                // Read file data
+                using (var memoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(memoryStream);
+                    var fileData = memoryStream.ToArray();
+
+                    var document = new Document
+                    {
+                        Name = file.FileName,
+                        Type = extension,
+                        Size = FormatFileSize(file.Length),
+                        FileData = Convert.ToBase64String(fileData),
+                        UploadedAt = DateTime.Now,
+                        UploadedBy = User.Identity.Name ?? "Admin"
+                    };
+
+                    _context.Documents.Add(document);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation($"Document uploaded: {document.Name}");
+
+                    return Ok(new
+                    {
+                        id = document.Id,
+                        name = document.Name,
+                        type = document.Type,
+                        size = document.Size,
+                        uploaded = document.UploadedAt.ToString("yyyy-MM-dd")
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error uploading document: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // GET: Download a document
+        [HttpGet]
+        public async Task<IActionResult> DownloadDocument(int id)
+        {
+            try
+            {
+                var document = await _context.Documents.FindAsync(id);
+                if (document == null)
+                    return NotFound("Document not found");
+
+                if (string.IsNullOrEmpty(document.FileData))
+                    return NotFound("File data not found");
+
+                var fileBytes = Convert.FromBase64String(document.FileData);
+                var contentType = GetContentType(document.Type);
+
+                return File(fileBytes, contentType, document.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error downloading document: {ex.Message}");
+                return BadRequest("Error downloading document");
+            }
+        }
+
+        // DELETE: Delete a document
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteDocument(int id)
+        {
+            try
+            {
+                var document = await _context.Documents.FindAsync(id);
+                if (document == null)
+                    return NotFound("Document not found");
+
+                _context.Documents.Remove(document);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Document deleted: {document.Name}");
+
+                return Ok(new { success = true, message = "Document deleted successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting document: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // Helper method to format file size
+        private string FormatFileSize(long bytes)
+        {
+            string[] sizes = { "Bytes", "KB", "MB", "GB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return $"{len:0.##} {sizes[order]}";
+        }
+
+        // Helper method to get content type
+        private string GetContentType(string extension)
+        {
+            return extension.ToUpper() switch
+            {
+                "PDF" => "application/pdf",
+                "DOCX" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "XLSX" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "JPG" or "JPEG" => "image/jpeg",
+                "PNG" => "image/png",
+                _ => "application/octet-stream"
+            };
         }
 
         // GET: Admin Registration page
@@ -311,7 +706,7 @@ namespace MonitoringSystem.Controllers
                 var approvedUsers = await _userManager.Users.CountAsync(u => u.Status == "Approved" && u.Role != "Admin");
                 var declinedUsers = await _userManager.Users.CountAsync(u => u.Status == "Declined" && u.Role != "Admin");
 
-                // Get recent registrations - FIXED: Handle nullable DateTime
+                // Get recent registrations
                 var recentUsers = await _userManager.Users
                     .Where(u => u.Role != "Admin")
                     .OrderByDescending(u => u.CreatedAt)
@@ -322,7 +717,7 @@ namespace MonitoringSystem.Controllers
                         u.FullName,
                         u.Status,
                         u.Program,
-                        CreatedAt = u.CreatedAt.ToString()  // This works
+                        CreatedAt = u.CreatedAt.ToString()
                     })
                     .ToListAsync();
 
@@ -424,7 +819,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // API: Get pending users - FIXED: Handle nullable DateTime
+        // API: Get pending users
         [HttpGet]
         public async Task<IActionResult> GetPendingUsers()
         {
@@ -455,7 +850,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // API: Get user details - UPDATED: Use ContactPerson property
+        // API: Get user details
         [HttpGet]
         public async Task<IActionResult> GetUserDetails(string id)
         {
@@ -484,7 +879,7 @@ namespace MonitoringSystem.Controllers
                         user.Program,
                         Year = user.Year?.ToString() ?? "",
                         CompanyID = user.CompanyID?.ToString() ?? "",
-                        ContactPerson = user.ContactPerson ?? "",  // CHANGED: from Contact to ContactPerson
+                        ContactPerson = user.ContactPerson ?? "",
                         user.ProfileImage,
                         CreatedAt = user.CreatedAt.ToString(),
                         user.IsActive
@@ -494,6 +889,40 @@ namespace MonitoringSystem.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ========== NEW: Get student hours summary ==========
+        [HttpGet]
+        public async Task<IActionResult> GetStudentHoursSummary(string userId)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                    return NotFound(new { success = false, message = "User not found" });
+
+                // Get total allotted hours from user
+                int total = user.TotalAllottedHours;
+
+                // Get rendered hours from TimeLogs (if table exists)
+                // For now, we'll return 0 for rendered until you have TimeLogs table
+                // You can implement actual time log fetching later
+                double rendered = 0; // Replace with actual calculation from TimeLogs when ready
+
+                double remaining = total - rendered;
+
+                return Ok(new
+                {
+                    success = true,
+                    rendered = rendered,
+                    remaining = remaining,
+                    total = total
+                });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { success = false, message = ex.Message });
             }
         }
 
@@ -604,7 +1033,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===== MAKE ADMIN METHOD =====
+        // ===== MAKE ADMIN METHOD (ORIGINAL VERSION) =====
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MakeAdmin([FromBody] MakeAdminRequest request)
@@ -699,5 +1128,13 @@ namespace MonitoringSystem.Controllers
     {
         public string UserId { get; set; }
         public string Status { get; set; }
+    }
+
+    public class ProgramHourModel
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; }
+        public string Code { get; set; }
+        public int Hours { get; set; }
     }
 }

@@ -107,6 +107,8 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
 
     <!-- ================= CREATE COMPANY WRAPPER ================= -->
     <div id="createCompanyWrapper" style="display: none;">
@@ -235,8 +237,8 @@
 
                 <div class="row g-3 mt-2">
                     <div class="col-md-4">
-                        <label class="form-label">Contact Person</label>  <!-- CHANGED: from "Emergency Contact" to "Contact Person" -->
-                        <input type="text" class="form-control" id="editStudentContactPerson">  <!-- CHANGED: id from editStudentEmergencyContact to editStudentContactPerson -->
+                        <label class="form-label">Contact Person</label>
+                        <input type="text" class="form-control" id="editStudentContactPerson">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Student ID</label>
@@ -245,6 +247,22 @@
                     <div class="col-md-4">
                         <label class="form-label">Birthdate</label>
                         <input type="date" class="form-control" id="editStudentBirthdate">
+                    </div>
+                </div>
+
+                <!-- NEW ROW: Hours Summary (read-only) -->
+                <div class="row g-3 mt-2">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Rendered Hours</label>
+                        <input type="text" class="form-control" id="editStudentRenderedHours" readonly style="background-color: #e9ecef;">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Remaining Hours</label>
+                        <input type="text" class="form-control" id="editStudentRemainingHours" readonly style="background-color: #e9ecef;">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Total Allotted Hours</label>
+                        <input type="text" class="form-control" id="editStudentTotalHours" readonly style="background-color: #e9ecef;">
                     </div>
                 </div>
 
@@ -267,12 +285,10 @@
 
     <!-- FULL-WIDTH COMPANY BANNER -->
     <div id="editCompanyWrapper" style="display:none; margin:0; padding:0;">
-
         <div style="position:relative; width:100%; height:240px; margin:0; padding:0; overflow:hidden;">
             <img id="editCompanyBanner"
                  src="/images/banner-placeholder.jpg"
                  style="width:100%; height:100%; object-fit:cover; display:block; margin:0; padding:0; border-radius:0;">
-
             <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0 m-3"
                     onclick="document.getElementById('companyBannerInput').click()">
                 <i class="bi bi-camera-fill"></i> Edit Cover Photo
@@ -286,7 +302,6 @@
                  src="/images/defaultpicture.jpg"
                  class="rounded-circle border border-4 border-white shadow"
                  style="width:170px; height:170px; object-fit:cover;">
-
             <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0"
                     onclick="document.getElementById('companyPicInput').click()">
                 <i class="bi bi-camera-fill"></i>
@@ -323,20 +338,17 @@
         </div>
 
         <style>
-            /* REMOVE ALL BODY & HTML MARGIN/PADDING */
             html, body {
                 margin: 0;
                 padding: 0;
                 width: 100%;
             }
 
-            /* REMOVE PADDING FROM PARENT CONTAINER */
             .users-page.container-fluid {
                 padding: 0 !important;
                 margin: 0;
             }
 
-            /* REMOVE CARD TOP SPACING */
             .company-banner-wrapper img {
                 border-radius: 0 !important;
             }
@@ -356,7 +368,6 @@
                         <input type="text" class="form-control" id="contactPersonDepartment" required>
                     </div>
                 </div>
-
                 <div class="row g-3 mt-2">
                     <div class="col-md-6">
                         <label class="form-label">Facebook</label>
@@ -411,7 +422,6 @@
         </div>
 
         <style>
-            /* Increase row height and padding */
             #modalStudentsTable tbody tr {
                 height: 55px;
             }
@@ -422,18 +432,15 @@
                 vertical-align: middle;
             }
 
-            /* Add hover effect */
             #modalStudentsTable tbody tr:hover {
                 background-color: #f5f5f5;
             }
 
-            /* Center the checkbox column */
             #modalStudentsTable tbody tr td:first-child,
             #modalStudentsTable thead th:first-child {
                 text-align: center;
             }
 
-            /* Make table more compact horizontally */
             #modalStudentsTable {
                 width: 100%;
                 border-collapse: separate;
@@ -501,467 +508,490 @@
             </div>
         </div>
     </div>
-</div>
 
-<!-- ================= VIEW TASK MODAL ================= -->
-<div class="modal fade" id="viewTaskModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content rounded-4">
-            <div class="modal-header">
-                <h5 class="modal-title fw-bold">Task Details</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Task Title</label>
-                        <input type="text" id="modalTaskTitle" class="form-control" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Status</label>
-                        <select id="modalTaskStatus" class="form-select">
-                            <option value="Ongoing">Ongoing</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Aborted">Aborted</option>
-                        </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Date From</label>
-                        <input type="date" id="modalTaskFrom" class="form-control" readonly>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label fw-semibold">Date To</label>
-                        <input type="date" id="modalTaskTo" class="form-control" readonly>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Task</label>
-                        <textarea id="modalTaskTask" class="form-control" rows="3" readonly></textarea>
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Learning</label>
-                        <textarea id="modalTaskLearning" class="form-control" rows="3" readonly></textarea>
+    <!-- ================= VIEW TASK MODAL ================= -->
+    <div class="modal fade" id="viewTaskModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Task Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Task Title</label>
+                            <input type="text" id="modalTaskTitle" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select id="modalTaskStatus" class="form-select">
+                                <option value="Ongoing">Ongoing</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Aborted">Aborted</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date From</label>
+                            <input type="date" id="modalTaskFrom" class="form-control" readonly>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Date To</label>
+                            <input type="date" id="modalTaskTo" class="form-control" readonly>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Task</label>
+                            <textarea id="modalTaskTask" class="form-control" rows="3" readonly></textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Learning</label>
+                            <textarea id="modalTaskLearning" class="form-control" rows="3" readonly></textarea>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- ================= DELETE CONFIRMATION MODAL ================= -->
-<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
-            <div class="modal-header border-0 pb-0">
-                <h5 class="modal-title fw-bold" id="deleteConfirmModalLabel" style="color: white; font-size: 1.1rem;">Confirm Delete</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
-            </div>
-            <div class="modal-body py-2">
-                <p class="mb-1" style="font-size: 0.95rem;">Are you sure you want to delete?</p>
-                <p class="fw-bold text-center mb-0" id="deleteUserInfo" style="color: white; word-break: break-word; font-size: 1.1rem;"></p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
-                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmDeleteBtn">YES</button>
-                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ================= MAKE ADMIN CONFIRMATION MODAL ================= -->
-<div class="modal fade" id="makeAdminConfirmModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
-        <div class="modal-content" style="background-color: #8B0000; color: white; border: none; min-height: 160px;">
-            <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.9rem;"></button>
-            </div>
-            <div class="modal-body py-3">
-                <p class="mb-0" style="font-size: 1rem; text-align: center; line-height: 1.4; white-space: nowrap;">
-                    Are you sure you want to make <strong id="makeAdminUserInfo" style="color: white; font-weight: 700;"></strong> an Administrator?
-                </p>
-            </div>
-            <div class="modal-footer border-0 justify-content-end gap-3 pt-0 pb-3">
-                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmMakeAdminBtn">YES</button>
-                <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+    <!-- ================= DELETE CONFIRMATION MODAL ================= -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold" id="deleteConfirmModalLabel" style="color: white; font-size: 1.1rem;">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
+                </div>
+                <div class="modal-body py-2">
+                    <p class="mb-1" style="font-size: 0.95rem;">Are you sure you want to delete?</p>
+                    <p class="fw-bold text-center mb-0" id="deleteUserInfo" style="color: white; word-break: break-word; font-size: 1.1rem;"></p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmDeleteBtn">YES</button>
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- ================= SCRIPT ================= -->
-<script>
-    const tbody = document.querySelector("#usersTable tbody");
-    let rowToEdit = null;
-    const yearFilter = document.getElementById("yearFilter");
-    const searchName = document.getElementById("searchName");
-    const roleFilter = document.getElementById("roleFilter");
-    const programFilter = document.getElementById("programFilter");
+    <!-- ================= MAKE ADMIN CONFIRMATION MODAL ================= -->
+    <div class="modal fade" id="makeAdminConfirmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
+            <div class="modal-content" style="background-color: #8B0000; color: white; border: none; min-height: 160px;">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.9rem;"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <p class="mb-0" style="font-size: 1rem; text-align: center; line-height: 1.4; white-space: nowrap;">
+                        Are you sure you want to make <strong id="makeAdminUserInfo" style="color: white; font-weight: 700;"></strong> an Administrator?
+                    </p>
+                </div>
+                <div class="modal-footer border-0 justify-content-end gap-3 pt-0 pb-3">
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmMakeAdminBtn">YES</button>
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    const usersSection = document.getElementById("usersSection");
-    const createCompanyWrapper = document.getElementById("createCompanyWrapper");
-    const editStudentWrapper = document.getElementById("editStudentWrapper");
-    const editCompanyWrapper = document.getElementById("editCompanyWrapper");
-    const tasksWrapper = document.getElementById("tasksWrapper");
-    const showCreateBtn = document.getElementById("showCreateCompanyForm");
-    const profilePic = document.getElementById("editStudentProfilePic");
-    const profileOverlay = document.querySelector(".profile-pic-overlay");
-    const miniCamera = document.querySelector(".change-pic-icon");
-    const profileInput = document.getElementById("editStudentPicInput");
+    <!-- ================= SCRIPT ================= -->
+    <script>
+        const tbody = document.querySelector("#usersTable tbody");
+        let rowToEdit = null;
+        const yearFilter = document.getElementById("yearFilter");
+        const searchName = document.getElementById("searchName");
+        const roleFilter = document.getElementById("roleFilter");
+        const programFilter = document.getElementById("programFilter");
 
-    // ===== POPULATE PROGRAM FILTER =====
-    function populateProgramFilter() {
-        const programSet = new Set();
-        [...tbody.rows].forEach(row => {
-            const prog = row.dataset.program;
-            if (prog && prog.trim() !== '') {
-                programSet.add(prog.trim());
-            }
-        });
-        const sortedPrograms = Array.from(programSet).sort();
-        programFilter.innerHTML = '<option value="">All</option>';
-        sortedPrograms.forEach(prog => {
-            const option = document.createElement('option');
-            option.value = prog;
-            option.textContent = prog;
-            programFilter.appendChild(option);
-        });
-    }
-    populateProgramFilter();
+        const usersSection = document.getElementById("usersSection");
+        const createCompanyWrapper = document.getElementById("createCompanyWrapper");
+        const editStudentWrapper = document.getElementById("editStudentWrapper");
+        const editCompanyWrapper = document.getElementById("editCompanyWrapper");
+        const tasksWrapper = document.getElementById("tasksWrapper");
+        const showCreateBtn = document.getElementById("showCreateCompanyForm");
+        const profilePic = document.getElementById("editStudentProfilePic");
+        const profileOverlay = document.querySelector(".profile-pic-overlay");
+        const miniCamera = document.querySelector(".change-pic-icon");
+        const profileInput = document.getElementById("editStudentPicInput");
 
-    // ===== FILTER TABLE =====
-    function filterTable() {
-        const yearVal = yearFilter.value;
-        const nameVal = searchName.value.toLowerCase();
-        const roleVal = roleFilter.value;
-        const programVal = programFilter.value;
+        // ===== POPULATE PROGRAM FILTER =====
+        function populateProgramFilter() {
+            const programSet = new Set();
+            [...tbody.rows].forEach(row => {
+                const prog = row.dataset.program;
+                if (prog && prog.trim() !== '') {
+                    programSet.add(prog.trim());
+                }
+            });
+            const sortedPrograms = Array.from(programSet).sort();
+            programFilter.innerHTML = '<option value="">All</option>';
+            sortedPrograms.forEach(prog => {
+                const option = document.createElement('option');
+                option.value = prog;
+                option.textContent = prog;
+                programFilter.appendChild(option);
+            });
+        }
+        populateProgramFilter();
 
-        [...tbody.rows].forEach(row => {
-            let show = true;
-            const fullName = row.dataset.fullname.toLowerCase();
-            if (yearVal && row.dataset.year !== yearVal) show = false;
-            if (nameVal && !fullName.includes(nameVal)) show = false;
-            if (roleVal && row.dataset.role !== roleVal) show = false;
-            if (programVal && row.dataset.program !== programVal) show = false;
-            row.style.display = show ? "" : "none";
-        });
-    }
-    [yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
+        // ===== FILTER TABLE =====
+        function filterTable() {
+            const yearVal = yearFilter.value;
+            const nameVal = searchName.value.toLowerCase();
+            const roleVal = roleFilter.value;
+            const programVal = programFilter.value;
 
-    // ===== SHOW CREATE COMPANY =====
-    showCreateBtn.addEventListener("click", () => {
-        usersSection.style.display = "none";
-        createCompanyWrapper.style.display = "block";
-        editStudentWrapper.style.display = "none";
-        editCompanyWrapper.style.display = "none";
-        tasksWrapper.style.display = "none";
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-    document.getElementById("cancelCreateCompany").addEventListener("click", () => {
-        createCompanyWrapper.style.display = "none";
-        usersSection.style.display = "block";
-    });
+            [...tbody.rows].forEach(row => {
+                let show = true;
+                const fullName = row.dataset.fullname.toLowerCase();
+                if (yearVal && row.dataset.year !== yearVal) show = false;
+                if (nameVal && !fullName.includes(nameVal)) show = false;
+                if (roleVal && row.dataset.role !== roleVal) show = false;
+                if (programVal && row.dataset.program !== programVal) show = false;
+                row.style.display = show ? "" : "none";
+            });
+        }
+        [yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
 
-    // ===== EDIT USER =====
-    document.querySelectorAll(".edit-btn").forEach(btn => {
-        btn.addEventListener("click", e => {
-            e.preventDefault();
-            rowToEdit = btn.closest("tr");
-            const role = rowToEdit.dataset.role;
-
+        // ===== SHOW CREATE COMPANY =====
+        showCreateBtn.addEventListener("click", () => {
             usersSection.style.display = "none";
-            createCompanyWrapper.style.display = "none";
+            createCompanyWrapper.style.display = "block";
             editStudentWrapper.style.display = "none";
             editCompanyWrapper.style.display = "none";
             tasksWrapper.style.display = "none";
-
-            if(role === "Student"){
-                document.getElementById("editStudentFullName").value = rowToEdit.dataset.fullname;
-                document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
-                document.getElementById("editStudentRole").value = role;
-                document.getElementById("editStudentMobile").value = rowToEdit.dataset.mobile || "";
-                document.getElementById("editStudentAddress").value = rowToEdit.dataset.address || "";
-                document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
-                document.getElementById("editStudentID").value = rowToEdit.dataset.studentid || "";
-                document.getElementById("editStudentBirthdate").value = rowToEdit.dataset.birthdate || "";
-                document.getElementById("editStudentContactPerson").value = rowToEdit.dataset.contactperson || "";  // CHANGED: from editStudentEmergencyContact to editStudentContactPerson, and from dataset.contact to dataset.contactperson
-                profilePic.src = "/images/defaultpicture.jpg";
-                editStudentWrapper.style.display = "block";
-                tasksWrapper.style.display = "block";
-            } else if(role === "Company"){
-                document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
-                document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
-                document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
-                document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
-                editCompanyWrapper.style.display = "block";
-            }
-
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
-    });
-
-    document.getElementById("topRightEditBtn").addEventListener("click", () => {
-        const form = document.getElementById("editStudentForm");
-        [...form.elements].forEach(el => {
-            if(el.id !== "editStudentRole") el.removeAttribute("readonly");
-        });
-    });
-
-    // ===== PROFILE PICTURE CHANGE =====
-    profileOverlay.addEventListener("click", ()=> profileInput.click());
-    miniCamera.addEventListener("click", ()=> profileInput.click());
-    profileInput.addEventListener("change", (e)=>{
-        if(e.target.files && e.target.files[0]){
-            const reader = new FileReader();
-            reader.onload = function(evt){ profilePic.src = evt.target.result; }
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    });
-
-    // ===== VIEW TASK MODAL =====
-    document.querySelectorAll(".view-task-btn").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const row = btn.closest("tr");
-            document.getElementById("modalTaskTitle").value = row.cells[0].textContent;
-            document.getElementById("modalTaskFrom").value = row.cells[1].textContent;
-            document.getElementById("modalTaskTo").value = row.cells[2].textContent;
-            document.getElementById("modalTaskTask").value = row.dataset.task || "No task provided.";
-            document.getElementById("modalTaskLearning").value = row.dataset.learning || "No learning provided.";
-            document.getElementById("modalTaskStatus").value = row.dataset.status || "Ongoing";
-        });
-    });
-
-    // ===== COMPANY IMAGE PREVIEW =====
-    document.getElementById("companyPicInput").addEventListener("change", e => {
-        if (e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = ev => document.getElementById("editCompanyProfilePic").src = ev.target.result;
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    });
-
-    // Remove trainee row when clicking "Remove"
-    document.getElementById("traineesTable").addEventListener("click", function(e) {
-        if(e.target && e.target.classList.contains("remove-trainee-btn")) {
-            const row = e.target.closest("tr");
-            row.remove();
-        }
-    });
-
-    document.getElementById("companyBannerInput").addEventListener("change", e => {
-        if (e.target.files[0]) {
-            const reader = new FileReader();
-            reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
-            reader.readAsDataURL(e.target.files[0]);
-        }
-    });
-
-    const addTraineeBtn = document.getElementById("addTraineeBtn");
-    const modalStudentsTbody = document.querySelector("#modalStudentsTable tbody");
-
-    // Open modal and populate with student users
-    addTraineeBtn.addEventListener("click", () => {
-        modalStudentsTbody.innerHTML = "";
-
-        [...tbody.rows].forEach(row => {
-            if(row.dataset.role === "Student") {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td><input type="checkbox" class="select-trainee-checkbox" data-id="${row.dataset.id}" data-studentid="${row.dataset.studentid || ''}" data-fullname="${row.dataset.fullname}" data-email="${row.dataset.email}" data-program="${row.dataset.program || ''}"></td>
-                    <td>${row.dataset.studentid || row.dataset.id || ''}</td>
-                    <td>${row.dataset.fullname}</td>
-                    <td>${row.dataset.email}</td>
-                    <td>${row.dataset.program || ''}</td>
-                `;
-                modalStudentsTbody.appendChild(tr);
-            }
+        document.getElementById("cancelCreateCompany").addEventListener("click", () => {
+            createCompanyWrapper.style.display = "none";
+            usersSection.style.display = "block";
         });
 
-        const modal = new bootstrap.Modal(document.getElementById('addTraineeModal'));
-        modal.show();
-    });
+        // ===== EDIT USER =====
+        document.querySelectorAll(".edit-btn").forEach(btn => {
+            btn.addEventListener("click", e => {
+                e.preventDefault();
+                rowToEdit = btn.closest("tr");
+                const role = rowToEdit.dataset.role;
 
-    // ===== Add Selected Trainees to Trainees Table =====
-    document.getElementById("addSelectedTrainees").addEventListener("click", () => {
-        const checkboxes = document.querySelectorAll(".select-trainee-checkbox:checked");
-        const traineesTableBody = document.querySelector("#traineesTable tbody");
+                usersSection.style.display = "none";
+                createCompanyWrapper.style.display = "none";
+                editStudentWrapper.style.display = "none";
+                editCompanyWrapper.style.display = "none";
+                tasksWrapper.style.display = "none";
 
-        checkboxes.forEach(cb => {
-            if(![...traineesTableBody.rows].some(r => r.cells[1].textContent === cb.dataset.fullname)) {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${cb.dataset.studentid || cb.dataset.id || ''}</td>
-                    <td>${cb.dataset.fullname}</td>
-                    <td>${cb.dataset.email}</td>
-                    <td>${cb.dataset.program || ''}</td>
-                    <td class="text-end">
-                        <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">Remove</button>
-                    </td>
-                `;
-                traineesTableBody.appendChild(tr);
-            }
-        });
+                if(role === "Student"){
+                    document.getElementById("editStudentFullName").value = rowToEdit.dataset.fullname;
+                    document.getElementById("editStudentEmail").value = rowToEdit.dataset.email;
+                    document.getElementById("editStudentRole").value = role;
+                    document.getElementById("editStudentMobile").value = rowToEdit.dataset.mobile || "";
+                    document.getElementById("editStudentAddress").value = rowToEdit.dataset.address || "";
+                    document.getElementById("editStudentProgram").value = rowToEdit.dataset.program || "";
+                    document.getElementById("editStudentID").value = rowToEdit.dataset.studentid || "";
+                    document.getElementById("editStudentBirthdate").value = rowToEdit.dataset.birthdate || "";
+                    document.getElementById("editStudentContactPerson").value = rowToEdit.dataset.contactperson || "";
+                    profilePic.src = "/images/defaultpicture.jpg";
 
-        const modalEl = document.getElementById('addTraineeModal');
-        const modalInstance = bootstrap.Modal.getInstance(modalEl);
-        modalInstance.hide();
-    });
+                    // Fetch hours summary for the student
+                    fetch(`/Admin/GetStudentHoursSummary?userId=${rowToEdit.dataset.id}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.getElementById('editStudentRenderedHours').value = data.rendered.toFixed(1) + ' hrs';
+                                document.getElementById('editStudentRemainingHours').value = data.remaining.toFixed(1) + ' hrs';
+                                document.getElementById('editStudentTotalHours').value = data.total + ' hrs';
+                            } else {
+                                // Set defaults
+                                document.getElementById('editStudentRenderedHours').value = '0 hrs';
+                                document.getElementById('editStudentRemainingHours').value = '0 hrs';
+                                document.getElementById('editStudentTotalHours').value = '0 hrs';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error fetching hours:', error);
+                            document.getElementById('editStudentRenderedHours').value = 'Error';
+                            document.getElementById('editStudentRemainingHours').value = 'Error';
+                            document.getElementById('editStudentTotalHours').value = 'Error';
+                        });
 
-    // ===== DELETE USER MODAL FUNCTIONALITY =====
-    let userToDelete = null;
-
-    // Open delete modal when delete button is clicked
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('delete-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            const row = e.target.closest('tr');
-            userToDelete = {
-                id: row.dataset.id,
-                fullName: row.dataset.fullname,
-                row: row
-            };
-
-            // Display user fullname in modal
-            document.getElementById('deleteUserInfo').textContent = `${userToDelete.fullName}`;
-
-            // Show the modal
-            const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-            deleteModal.show();
-        }
-    });
-
-    // Handle confirm delete button
-    document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
-        if (!userToDelete) return;
-
-        const token = document.getElementById('__RequestVerificationToken').value;
-
-        fetch('/Admin/DeleteUser', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': token
-            },
-            body: JSON.stringify(userToDelete.id)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Remove the row from table
-                if (userToDelete.row) {
-                    userToDelete.row.remove();
-                    // Reprogram filter after deletion
-                    populateProgramFilter();
-                    filterTable();
+                    editStudentWrapper.style.display = "block";
+                    tasksWrapper.style.display = "block";
+                } else if(role === "Company"){
+                    document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
+                    document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
+                    document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
+                    document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                    editCompanyWrapper.style.display = "block";
                 }
-                alert('User deleted successfully');
-            } else {
-                alert('Failed to delete user: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('An error occurred while deleting');
-        })
-        .finally(() => {
-            // Hide modal
-            const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
-            if (deleteModal) {
-                deleteModal.hide();
-            }
-            userToDelete = null;
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
         });
-    });
 
-    // ===== MAKE ADMIN MODAL FUNCTIONALITY =====
-    let userToMakeAdmin = null;
+        document.getElementById("topRightEditBtn").addEventListener("click", () => {
+            const form = document.getElementById("editStudentForm");
+            [...form.elements].forEach(el => {
+                if(el.id !== "editStudentRole") el.removeAttribute("readonly");
+            });
+        });
 
-    // Open make admin modal when make-admin button is clicked
-    document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('make-admin-btn')) {
-            e.preventDefault();
-            e.stopPropagation();
+        // ===== PROFILE PICTURE CHANGE =====
+        profileOverlay.addEventListener("click", ()=> profileInput.click());
+        miniCamera.addEventListener("click", ()=> profileInput.click());
+        profileInput.addEventListener("change", (e)=>{
+            if(e.target.files && e.target.files[0]){
+                const reader = new FileReader();
+                reader.onload = function(evt){ profilePic.src = evt.target.result; }
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
 
-            const row = e.target.closest('tr');
-            userToMakeAdmin = {
-                id: row.dataset.id,
-                fullName: row.dataset.fullname,
-                row: row
-            };
+        // ===== VIEW TASK MODAL =====
+        document.querySelectorAll(".view-task-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const row = btn.closest("tr");
+                document.getElementById("modalTaskTitle").value = row.cells[0].textContent;
+                document.getElementById("modalTaskFrom").value = row.cells[1].textContent;
+                document.getElementById("modalTaskTo").value = row.cells[2].textContent;
+                document.getElementById("modalTaskTask").value = row.dataset.task || "No task provided.";
+                document.getElementById("modalTaskLearning").value = row.dataset.learning || "No learning provided.";
+                document.getElementById("modalTaskStatus").value = row.dataset.status || "Ongoing";
+            });
+        });
 
-            // Display user fullname in modal
-            document.getElementById('makeAdminUserInfo').textContent = `${userToMakeAdmin.fullName}`;
+        // ===== COMPANY IMAGE PREVIEW =====
+        document.getElementById("companyPicInput").addEventListener("change", e => {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = ev => document.getElementById("editCompanyProfilePic").src = ev.target.result;
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
 
-            // Show the modal
-            const makeAdminModal = new bootstrap.Modal(document.getElementById('makeAdminConfirmModal'));
-            makeAdminModal.show();
-        }
-    });
+        // Remove trainee row when clicking "Remove"
+        document.getElementById("traineesTable").addEventListener("click", function(e) {
+            if(e.target && e.target.classList.contains("remove-trainee-btn")) {
+                const row = e.target.closest("tr");
+                row.remove();
+            }
+        });
 
-    // Handle confirm make admin button
-    document.getElementById('confirmMakeAdminBtn').addEventListener('click', function() {
-        if (!userToMakeAdmin) return;
+        document.getElementById("companyBannerInput").addEventListener("change", e => {
+            if (e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        });
 
-        const token = document.getElementById('__RequestVerificationToken').value;
-        const confirmBtn = this;
-        const originalText = confirmBtn.textContent;
+        const addTraineeBtn = document.getElementById("addTraineeBtn");
+        const modalStudentsTbody = document.querySelector("#modalStudentsTable tbody");
 
-        // Disable button to prevent double submission
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Processing...';
+        // Open modal and populate with student users
+        addTraineeBtn.addEventListener("click", () => {
+            modalStudentsTbody.innerHTML = "";
 
-        fetch('/Admin/MakeAdmin', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'RequestVerificationToken': token
-            },
-            body: JSON.stringify({ userId: userToMakeAdmin.id })
-        })
-        .then(async response => {
-            if (!response.ok) {
-                const contentType = response.headers.get('content-type');
-                if (contentType && contentType.includes('application/json')) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || `Server error: ${response.status}`);
+            [...tbody.rows].forEach(row => {
+                if(row.dataset.role === "Student") {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td><input type="checkbox" class="select-trainee-checkbox" data-id="${row.dataset.id}" data-studentid="${row.dataset.studentid || ''}" data-fullname="${row.dataset.fullname}" data-email="${row.dataset.email}" data-program="${row.dataset.program || ''}"></td>
+                        <td>${row.dataset.studentid || row.dataset.id || ''}</td>
+                        <td>${row.dataset.fullname}</td>
+                        <td>${row.dataset.email}</td>
+                        <td>${row.dataset.program || ''}</td>
+                    `;
+                    modalStudentsTbody.appendChild(tr);
+                }
+            });
+
+            const modal = new bootstrap.Modal(document.getElementById('addTraineeModal'));
+            modal.show();
+        });
+
+        // ===== Add Selected Trainees to Trainees Table =====
+        document.getElementById("addSelectedTrainees").addEventListener("click", () => {
+            const checkboxes = document.querySelectorAll(".select-trainee-checkbox:checked");
+            const traineesTableBody = document.querySelector("#traineesTable tbody");
+
+            checkboxes.forEach(cb => {
+                if(![...traineesTableBody.rows].some(r => r.cells[1].textContent === cb.dataset.fullname)) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td>${cb.dataset.studentid || cb.dataset.id || ''}</td>
+                        <td>${cb.dataset.fullname}</td>
+                        <td>${cb.dataset.email}</td>
+                        <td>${cb.dataset.program || ''}</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">Remove</button>
+                        </td>
+                    `;
+                    traineesTableBody.appendChild(tr);
+                }
+            });
+
+            const modalEl = document.getElementById('addTraineeModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+        });
+
+        // ===== DELETE USER MODAL FUNCTIONALITY =====
+        let userToDelete = null;
+
+        // Open delete modal when delete button is clicked
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('delete-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const row = e.target.closest('tr');
+                userToDelete = {
+                    id: row.dataset.id,
+                    fullName: row.dataset.fullname,
+                    row: row
+                };
+
+                // Display user fullname in modal
+                document.getElementById('deleteUserInfo').textContent = `${userToDelete.fullName}`;
+
+                // Show the modal
+                const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+                deleteModal.show();
+            }
+        });
+
+        // Handle confirm delete button
+        document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+            if (!userToDelete) return;
+
+            const token = document.getElementById('__RequestVerificationToken').value;
+
+            fetch('/Admin/DeleteUser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify(userToDelete.id)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the row from table
+                    if (userToDelete.row) {
+                        userToDelete.row.remove();
+                        // Reprogram filter after deletion
+                        populateProgramFilter();
+                        filterTable();
+                    }
+                    alert('User deleted successfully');
                 } else {
-                    const errorText = await response.text();
-                    throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+                    alert('Failed to delete user: ' + (data.message || 'Unknown error'));
                 }
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.success) {
-                // Update the role in the table
-                if (userToMakeAdmin.row) {
-                    const roleCell = userToMakeAdmin.row.cells[2];
-                    roleCell.textContent = 'Admin';
-                    userToMakeAdmin.row.dataset.role = 'Admin';
-                }
-                alert('User is now an Admin.');
-
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while deleting');
+            })
+            .finally(() => {
                 // Hide modal
-                const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
-                if (makeAdminModal) {
-                    makeAdminModal.hide();
+                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
+                if (deleteModal) {
+                    deleteModal.hide();
                 }
-            } else {
-                alert('Failed to make user Admin: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Make Admin Error:', error);
-            let errorMessage = 'An error occurred. ' + error.message;
-            alert(errorMessage);
-        })
-        .finally(() => {
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = originalText;
-            userToMakeAdmin = null;
+                userToDelete = null;
+            });
         });
-    });
-</script>
+
+        // ===== MAKE ADMIN MODAL FUNCTIONALITY =====
+        let userToMakeAdmin = null;
+
+        // Open make admin modal when make-admin button is clicked
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('make-admin-btn')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const row = e.target.closest('tr');
+                userToMakeAdmin = {
+                    id: row.dataset.id,
+                    fullName: row.dataset.fullname,
+                    row: row
+                };
+
+                // Display user fullname in modal
+                document.getElementById('makeAdminUserInfo').textContent = `${userToMakeAdmin.fullName}`;
+
+                // Show the modal
+                const makeAdminModal = new bootstrap.Modal(document.getElementById('makeAdminConfirmModal'));
+                makeAdminModal.show();
+            }
+        });
+
+        // Handle confirm make admin button
+        document.getElementById('confirmMakeAdminBtn').addEventListener('click', function() {
+            if (!userToMakeAdmin) return;
+
+            const token = document.getElementById('__RequestVerificationToken').value;
+            const confirmBtn = this;
+            const originalText = confirmBtn.textContent;
+
+            // Disable button to prevent double submission
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Processing...';
+
+            fetch('/Admin/MakeAdmin', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': token
+                },
+                body: JSON.stringify({ userId: userToMakeAdmin.id })
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || `Server error: ${response.status}`);
+                    } else {
+                        const errorText = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
+                    }
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Update the role in the table
+                    if (userToMakeAdmin.row) {
+                        const roleCell = userToMakeAdmin.row.cells[2];
+                        roleCell.textContent = 'Admin';
+                        userToMakeAdmin.row.dataset.role = 'Admin';
+                    }
+                    alert('User is now an Admin.');
+
+                    // Hide modal
+                    const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
+                    if (makeAdminModal) {
+                        makeAdminModal.hide();
+                    }
+                } else {
+                    alert('Failed to make user Admin: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Make Admin Error:', error);
+                let errorMessage = 'An error occurred. ' + error.message;
+                alert(errorMessage);
+            })
+            .finally(() => {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = originalText;
+                userToMakeAdmin = null;
+            });
+        });
+    </script>
+</div>
