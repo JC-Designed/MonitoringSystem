@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MonitoringSystem.Controllers
 {
@@ -14,15 +15,18 @@ namespace MonitoringSystem.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationDbContext _context;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
         public AccountController(
             UserManager<ApplicationUser> userManager,
             SignInManager<ApplicationUser> signInManager,
-            ApplicationDbContext context)
+            ApplicationDbContext context,
+            RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _context = context;
+            _roleManager = roleManager;
         }
 
         // GET: /Account/Login
@@ -498,6 +502,120 @@ namespace MonitoringSystem.Controllers
                 ViewBag.Error = "Registration failed: " + ex.Message;
                 return View();
             }
+        }
+
+        // POST: /Account/RegisterCompany - FIXED FOREIGN KEY ISSUE
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RegisterCompany([FromBody] RegisterCompanyViewModel model)
+        {
+            try
+            {
+                Console.WriteLine("========== REGISTER COMPANY CALLED ==========");
+                Console.WriteLine($"CompanyName: {model?.CompanyName}");
+                Console.WriteLine($"Email: {model?.Email}");
+
+                if (!ModelState.IsValid)
+                {
+                    var errors = ModelState.Values.SelectMany(v => v.Errors)
+                                                  .Select(e => e.ErrorMessage)
+                                                  .ToList();
+                    return Json(new { success = false, message = string.Join(", ", errors) });
+                }
+
+                // Check if email already exists
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
+                {
+                    return Json(new { success = false, message = "Email already registered" });
+                }
+
+                // Generate new Company ID
+                int newCompanyId = await GenerateCompanyId();
+
+                // Create new company user
+                var user = new ApplicationUser
+                {
+                    UserName = model.Email,
+                    Email = model.Email,
+                    FullName = model.CompanyName,
+                    Role = "Company",
+                    Status = "Approved",
+                    MobileNumber = model.MobileNumber,
+                    Address = model.Address,
+                    CompanyID = newCompanyId,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
+                    IsActive = true
+                };
+
+                var result = await _userManager.CreateAsync(user, model.Password);
+
+                if (result.Succeeded)
+                {
+                    // Assign to Company role
+                    if (!await _roleManager.RoleExistsAsync("Company"))
+                    {
+                        await _roleManager.CreateAsync(new IdentityRole("Company"));
+                    }
+                    await _userManager.AddToRoleAsync(user, "Company");
+
+                    // Create Company record - FIXED FOREIGN KEY ISSUE
+                    var company = new Company
+                    {
+                        UserId = user.Id,
+                        CompanyId = newCompanyId.ToString(),
+                        CompanyName = model.CompanyName,
+                        CompanyDescription = model.Description,
+                        Industry = model.Type,
+                        Website = model.Website,
+                        TaxId = model.TinId,
+                        SecId = model.SecId,
+                        YearEstablished = DateTime.Now.Year,
+                        IsVerified = true,
+                        VerifiedBy = null, // Set to null to avoid foreign key constraint
+                        VerifiedDate = DateTime.Now,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.Companies.Add(company);
+                    await _context.SaveChangesAsync();
+
+                    Console.WriteLine("Company created successfully with ID: " + company.Id);
+
+                    return Json(new
+                    {
+                        success = true,
+                        message = "Company created successfully",
+                        companyId = company.Id,
+                        userId = user.Id
+                    });
+                }
+                else
+                {
+                    var errorsList = string.Join(", ", result.Errors.Select(e => e.Description));
+                    return Json(new { success = false, message = errorsList });
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"EXCEPTION: {ex.Message}");
+                Console.WriteLine($"Inner exception: {ex.InnerException?.Message}");
+
+                var errorMessage = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                return Json(new { success = false, message = "An error occurred while creating the company: " + errorMessage });
+            }
+        }
+
+        private async Task<int> GenerateCompanyId()
+        {
+            // Get the last company ID and increment
+            var lastCompany = await _context.Companies
+                .OrderByDescending(c => c.Id)
+                .FirstOrDefaultAsync();
+
+            return (lastCompany?.Id ?? 0) + 1;
         }
 
         // POST: /Account/ForgotPassword

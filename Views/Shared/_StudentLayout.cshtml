@@ -184,13 +184,13 @@
 
             <!-- Menu -->
             <nav class="admin-menu">
-                <a asp-action="Dashboard" asp-controller="StudentPanel" class="menu-link" id="dashboardBtn">
+                <a asp-action="Dashboard" asp-controller="Student" class="menu-link" id="dashboardBtn">
                     <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
                 </a>
-                <a asp-action="Tasks" asp-controller="StudentPanel" class="menu-link">
+                <a asp-action="Tasks" asp-controller="Student" class="menu-link">
                     <i class="bi bi-clipboard-check-fill"></i> <span>Tasks</span>
                 </a>
-                <a asp-action="Report" asp-controller="StudentPanel" class="menu-link">
+                <a asp-action="Report" asp-controller="Student" class="menu-link">
                     <i class="bi bi-file-earmark-text-fill"></i> <span>Report</span>
                 </a>
                 <hr />
@@ -324,7 +324,6 @@
         const mainContent = document.getElementById("adminMainContent");
         const viewProfileBtn = document.getElementById("viewProfileBtn");
         const topbarProfilePic = document.getElementById("topbarProfilePic");
-        const originalDashboardHTML = mainContent.innerHTML;
 
         // Store original user data from Razor
         let currentUserData = {
@@ -757,15 +756,45 @@
             openProfileSPA();
         });
 
-        // Dashboard button
-        document.getElementById("dashboardBtn")?.addEventListener("click", (e) => {
+        // ========== FIXED DASHBOARD BUTTON - Now fetches from server ==========
+        document.getElementById("dashboardBtn")?.addEventListener("click", async (e) => {
             e.preventDefault();
-            mainContent.style.opacity = 0;
-            setTimeout(() => {
-                mainContent.innerHTML = originalDashboardHTML;
-                document.querySelector(".topbar-title").textContent = "Dashboard";
-                mainContent.style.opacity = 1;
-            }, 200);
+
+            // Show loading
+            mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+            document.querySelector(".topbar-title").textContent = "Dashboard";
+
+            try {
+                // Fetch the Dashboard page from the server
+                const response = await fetch('/Student/Dashboard');
+                const html = await response.text();
+
+                // Extract only the content inside adminMainContent
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.getElementById('adminMainContent');
+
+                if (newContent) {
+                    mainContent.innerHTML = newContent.innerHTML;
+                } else {
+                    mainContent.innerHTML = html;
+                }
+
+                // Re-run any scripts if needed
+                const scripts = mainContent.getElementsByTagName('script');
+                for (let script of scripts) {
+                    if (script.src) {
+                        const newScript = document.createElement('script');
+                        newScript.src = script.src;
+                        document.body.appendChild(newScript);
+                    } else {
+                        eval(script.innerHTML);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+                mainContent.innerHTML = '<div class="alert alert-danger">Error loading dashboard</div>';
+            }
         });
 
         // Notifications

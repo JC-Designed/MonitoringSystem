@@ -8,6 +8,29 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 <input type="hidden" id="__RequestVerificationToken" value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
+<!-- Toast Container for Notifications -->
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span id="toastMessage">Operation completed successfully!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+
+    <div id="errorToast" class="toast align-items-center text-white bg-danger border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <span id="errorToastMessage">An error occurred</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <div class="users-page container-fluid py-4">
 
     <!-- ================= USERS SECTION ================= -->
@@ -71,7 +94,7 @@
                             <th class="text-end">Action</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="usersTableBody">
                         @foreach (var user in Model)
                         {
                             var role = user.Role ?? "No Role";
@@ -110,67 +133,46 @@
         </div>
     </div>
 
-    <!-- ================= CREATE COMPANY WRAPPER ================= -->
+    <!-- ================= SIMPLIFIED CREATE COMPANY WRAPPER ================= -->
     <div id="createCompanyWrapper" style="display: none;">
         <div class="card shadow-sm rounded-4 p-4 mb-4">
             <h5>Create Company</h5>
             <form id="createCompanyFormPage">
                 <div class="row g-3">
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Company Name</label>
                         <input type="text" class="form-control" id="companyNamePage" required>
                     </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Type</label>
-                        <select class="form-select" id="companyTypePage" required>
-                            <option value="">Select Type</option>
-                            <option value="Commercial">Commercial</option>
-                            <option value="Industrial">Industrial</option>
-                            <option value="Manufacturing">Manufacturing</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">SEC ID</label>
-                        <input type="text" class="form-control" id="companySecIdPage">
-                    </div>
-                </div>
-
-                <div class="row g-3 mt-2">
-                    <div class="col-md-4">
-                        <label class="form-label">Mobile Number</label>
-                        <input type="text" class="form-control" id="companyMobilePage">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Website</label>
-                        <input type="text" class="form-control" id="companyWebsitePage">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">TIN ID</label>
-                        <input type="text" class="form-control" id="companyTinPage">
-                    </div>
-                </div>
-
-                <div class="row g-3 mt-2">
-                    <div class="col-md-4">
-                        <label class="form-label">Address</label>
-                        <input type="text" class="form-control" id="companyAddressPage">
-                    </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <label class="form-label">Email</label>
                         <input type="email" class="form-control" id="companyEmailPage" required>
                     </div>
-                    <div class="col-md-4">
+                </div>
+
+                <div class="row g-3 mt-2">
+                    <div class="col-md-6">
                         <label class="form-label">Password</label>
                         <input type="password" class="form-control" id="companyPasswordPage" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Mobile Number</label>
+                        <input type="text" class="form-control" id="companyMobilePage">
                     </div>
                 </div>
 
                 <div class="row g-3 mt-2">
                     <div class="col-md-12">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" id="companyDescriptionPage" rows="2"></textarea>
+                        <label class="form-label">Address</label>
+                        <input type="text" class="form-control" id="companyAddressPage">
                     </div>
                 </div>
+
+                <!-- Hidden fields with default values -->
+                <input type="hidden" id="companyTypePage" value="Commercial">
+                <input type="hidden" id="companySecIdPage" value="">
+                <input type="hidden" id="companyWebsitePage" value="">
+                <input type="hidden" id="companyTinPage" value="">
+                <input type="hidden" id="companyDescriptionPage" value="">
             </form>
         </div>
 
@@ -283,112 +285,129 @@
         </div>
     </div>
 
-    <!-- FULL-WIDTH COMPANY BANNER -->
+    <!-- ================= REDESIGNED EDIT COMPANY WRAPPER (MATCHING COMPANY LAYOUT) ================= -->
     <div id="editCompanyWrapper" style="display:none; margin:0; padding:0;">
-        <div style="position:relative; width:100%; height:240px; margin:0; padding:0; overflow:hidden;">
+
+        <!-- FULL-WIDTH COVER PHOTO WITH CAMERA ICON -->
+        <div style="position:relative; width:100%; height:240px; overflow:hidden;">
             <img id="editCompanyBanner"
                  src="/images/banner-placeholder.jpg"
-                 style="width:100%; height:100%; object-fit:cover; display:block; margin:0; padding:0; border-radius:0;">
-            <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0 m-3"
-                    onclick="document.getElementById('companyBannerInput').click()">
-                <i class="bi bi-camera-fill"></i> Edit Cover Photo
-            </button>
+                 style="width:100%; height:100%; object-fit:cover; display:block;">
+            <div class="banner-camera" onclick="document.getElementById('companyBannerInput').click()">
+                <i class="bi bi-camera-fill"></i> Change Cover
+            </div>
             <input type="file" id="companyBannerInput" hidden accept="image/*">
         </div>
 
-        <!-- PROFILE IMAGE OVERLAP -->
-        <div class="position-relative" style="margin-top:-90px; margin-left:40px; width:170px;">
+        <!-- PROFILE IMAGE OVER BANNER WITH CAMERA ICON -->
+        <div class="position-relative" style="margin-top:-85px; margin-left:40px; width:170px; z-index:10;">
             <img id="editCompanyProfilePic"
                  src="/images/defaultpicture.jpg"
                  class="rounded-circle border border-4 border-white shadow"
                  style="width:170px; height:170px; object-fit:cover;">
-            <button class="btn btn-light btn-sm shadow position-absolute bottom-0 end-0"
-                    onclick="document.getElementById('companyPicInput').click()">
+            <div class="camera-overlay" onclick="document.getElementById('companyPicInput').click()">
                 <i class="bi bi-camera-fill"></i>
-            </button>
+            </div>
             <input type="file" id="companyPicInput" hidden accept="image/*">
         </div>
 
-        <!-- COMPANY INFO CARD -->
-        <div class="card shadow-sm rounded-4 p-4 mt-3" style="margin:0;">
-            <h5 class="mb-3">Company Information</h5>
-            <form id="editCompanyForm">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Company Name</label>
-                        <input type="text" class="form-control" id="editCompanyName" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Mobile Number</label>
-                        <input type="text" class="form-control" id="editCompanyMobile">
-                    </div>
-                </div>
-
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label class="form-label">Address</label>
-                        <input type="text" class="form-control" id="editCompanyAddress">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Company ID</label>
-                        <input type="text" class="form-control" id="editCompanyID">
-                    </div>
-                </div>
-            </form>
+        <!-- EDIT BUTTON AT THE TOP RIGHT -->
+        <div class="container mt-3">
+            <div class="d-flex justify-content-end">
+                <button id="editCompanyInfoBtn" class="btn" style="background-color:#0d6efd; color:white;">
+                    <i class="bi bi-pencil"></i> Edit Profile
+                </button>
+            </div>
         </div>
 
-        <style>
-            html, body {
-                margin: 0;
-                padding: 0;
-                width: 100%;
-            }
-
-            .users-page.container-fluid {
-                padding: 0 !important;
-                margin: 0;
-            }
-
-            .company-banner-wrapper img {
-                border-radius: 0 !important;
-            }
-        </style>
-
-        <!-- ================= CONTACT PERSON CARD ================= -->
-        <div class="card shadow-sm rounded-4 p-4 mt-3" style="margin:0;">
-            <h5 class="mb-3">Contact Person</h5>
-            <form id="editCompanyContactForm">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" id="contactPersonName" required>
+        <!-- COMPANY INFORMATION CARD -->
+        <div class="container mt-3">
+            <h4 class="fw-bold mb-3">COMPANY INFORMATION</h4>
+            <div class="card shadow-sm p-4 mb-4">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label fw-bold">Company Name</label>
+                        <input type="text" id="editCompanyName" class="form-control" value="" readonly>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Department</label>
-                        <input type="text" class="form-control" id="contactPersonDepartment" required>
+                        <label class="form-label fw-bold">Contact Number</label>
+                        <input type="text" id="editCompanyMobile" class="form-control" value="" readonly>
                     </div>
                 </div>
-                <div class="row g-3 mt-2">
-                    <div class="col-md-6">
-                        <label class="form-label">Facebook</label>
-                        <input type="text" class="form-control" id="contactPersonFacebook">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label fw-bold">Address</label>
+                        <input type="text" id="editCompanyAddress" class="form-control" value="" readonly>
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">Mobile Number</label>
-                        <input type="text" class="form-control" id="contactPersonMobile">
+                        <label class="form-label fw-bold">Company ID</label>
+                        <input type="text" id="editCompanyID" class="form-control" value="" readonly>
                     </div>
                 </div>
-            </form>
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label fw-bold">Industry</label>
+                        <input type="text" id="editCompanyIndustry" class="form-control" value="" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Website</label>
+                        <input type="text" id="editCompanyWebsite" class="form-control" value="" readonly>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Description</label>
+                        <textarea id="editCompanyDescription" class="form-control" rows="2" readonly></textarea>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- ================= ADD TRAINEE BUTTON ================= -->
+        <!-- CONTACT PERSON CARD (Combined with User Information) -->
+        <div class="container mt-4">
+            <h4 class="fw-bold mb-3">CONTACT PERSON</h4>
+            <div class="card shadow-sm p-4">
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label fw-bold">Name</label>
+                        <input type="text" id="contactPersonName" class="form-control" value="" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Email</label>
+                        <input type="email" id="contactPersonEmail" class="form-control" value="" readonly>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label fw-bold">Mobile Number</label>
+                        <input type="text" id="contactPersonMobile" class="form-control" value="" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Role</label>
+                        <input type="text" id="contactPersonRole" class="form-control" value="Company" readonly>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <label class="form-label fw-bold">Department</label>
+                        <input type="text" id="contactPersonDepartment" class="form-control" value="" readonly>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Facebook</label>
+                        <input type="text" id="contactPersonFacebook" class="form-control" value="" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ADD TRAINEE BUTTON -->
         <div class="d-flex justify-content-start mt-3 mb-4" style="margin-left: 10px;">
             <button id="addTraineeBtn" class="btn" style="background-color: #2A91FF; color: #fff;">
                 + Add Trainee
             </button>
         </div>
 
-        <!-- ================= ADD TRAINEE MODAL ================= -->
+        <!-- ADD TRAINEE MODAL -->
         <div class="modal fade" id="addTraineeModal" tabindex="-1">
             <div class="modal-dialog modal-xl modal-dialog-centered">
                 <div class="modal-content rounded-4">
@@ -421,34 +440,7 @@
             </div>
         </div>
 
-        <style>
-            #modalStudentsTable tbody tr {
-                height: 55px;
-            }
-
-            #modalStudentsTable th,
-            #modalStudentsTable td {
-                padding: 12px 15px;
-                vertical-align: middle;
-            }
-
-            #modalStudentsTable tbody tr:hover {
-                background-color: #f5f5f5;
-            }
-
-            #modalStudentsTable tbody tr td:first-child,
-            #modalStudentsTable thead th:first-child {
-                text-align: center;
-            }
-
-            #modalStudentsTable {
-                width: 100%;
-                border-collapse: separate;
-                border-spacing: 0 6px;
-            }
-        </style>
-
-        <!-- ================= TRAINEES TABLE ================= -->
+        <!-- TRAINEES TABLE -->
         <div class="card shadow-sm rounded-4 p-4 mt-3">
             <h5 class="mb-3">Trainees</h5>
             <div class="table-responsive">
@@ -474,7 +466,66 @@
             <button id="saveTraineesChanges" class="btn btn-success">Save Changes</button>
             <button id="resetTraineesPassword" class="btn btn-warning">Reset Password</button>
         </div>
+
+        <!-- SAVE CHANGES BUTTON AT BOTTOM RIGHT -->
+        <div class="container mt-4 mb-4">
+            <div class="d-flex justify-content-end">
+                <button id="saveCompanyChangesBtn" class="btn" style="background-color:#07B618; color:white; display:none; padding: 10px 30px;">
+                    <i class="bi bi-check-circle"></i> Save Changes
+                </button>
+            </div>
+        </div>
     </div>
+
+    <!-- Styles for camera icons -->
+    <style>
+        .camera-overlay {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: 2px solid white;
+            transition: all 0.2s;
+            z-index: 20;
+        }
+
+            .camera-overlay:hover {
+                background-color: rgba(0, 0, 0, 0.8);
+                transform: scale(1.1);
+            }
+
+        .banner-camera {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            z-index: 20;
+        }
+
+            .banner-camera:hover {
+                background-color: white;
+                transform: scale(1.05);
+            }
+
+            .banner-camera i {
+                margin-right: 5px;
+            }
+    </style>
 
     <!-- ================= TASKS TABLE WRAPPER ================= -->
     <div id="tasksWrapper" style="display: none; margin-top:20px;">
@@ -598,6 +649,7 @@
 
     <!-- ================= SCRIPT ================= -->
     <script>
+        // Global variables
         const tbody = document.querySelector("#usersTable tbody");
         let rowToEdit = null;
         const yearFilter = document.getElementById("yearFilter");
@@ -615,6 +667,9 @@
         const profileOverlay = document.querySelector(".profile-pic-overlay");
         const miniCamera = document.querySelector(".change-pic-icon");
         const profileInput = document.getElementById("editStudentPicInput");
+
+        // Toast elements - will be initialized after DOM is loaded
+        let successToast, errorToast, toastMessage, errorToastMessage;
 
         // ===== POPULATE PROGRAM FILTER =====
         function populateProgramFilter() {
@@ -654,6 +709,15 @@
             });
         }
         [yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
+
+        // ===== CLEAR ALL FILTERS FUNCTION =====
+        function clearAllFilters() {
+            yearFilter.value = "";
+            searchName.value = "";
+            roleFilter.value = "";
+            programFilter.value = "";
+            filterTable();
+        }
 
         // ===== SHOW CREATE COMPANY =====
         showCreateBtn.addEventListener("click", () => {
@@ -719,10 +783,49 @@
                     editStudentWrapper.style.display = "block";
                     tasksWrapper.style.display = "block";
                 } else if(role === "Company"){
-                    document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
-                    document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
-                    document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
-                    document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                    // Load company data from database
+                    fetch(`/Admin/GetCompanyDetails?userId=${rowToEdit.dataset.id}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            console.log("Company data received:", data);
+                            if (data.success) {
+                                // Company Information
+                                document.getElementById("editCompanyName").value = data.companyName || '';
+                                document.getElementById("editCompanyMobile").value = data.mobileNumber || '';
+                                document.getElementById("editCompanyAddress").value = data.address || '';
+                                document.getElementById("editCompanyID").value = data.companyId || '';
+                                document.getElementById("editCompanyIndustry").value = data.industry || '';
+                                document.getElementById("editCompanyWebsite").value = data.website || '';
+                                document.getElementById("editCompanyDescription").value = data.companyDescription || '';
+
+                                // Contact Person (Combined)
+                                document.getElementById("contactPersonName").value = data.fullName || data.contactPersonName || '';
+                                document.getElementById("contactPersonEmail").value = data.email || '';
+                                document.getElementById("contactPersonMobile").value = data.mobileNumber || data.contactPersonMobile || '';
+                                document.getElementById("contactPersonRole").value = 'Company';
+                                document.getElementById("contactPersonDepartment").value = data.contactPersonPosition || '';
+                                document.getElementById("contactPersonFacebook").value = data.contactPersonFacebook || '';
+
+                                // Images
+                                document.getElementById("editCompanyProfilePic").src = data.profileImage || '/images/defaultpicture.jpg';
+                                document.getElementById("editCompanyBanner").src = data.bannerImage || '/images/banner-placeholder.jpg';
+                            } else {
+                                // Fallback to dataset values
+                                document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
+                                document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
+                                document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
+                                document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error loading company details:', error);
+                            // Fallback to dataset values
+                            document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
+                            document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
+                            document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
+                            document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                        });
+
                     editCompanyWrapper.style.display = "block";
                 }
 
@@ -770,19 +873,78 @@
             }
         });
 
-        // Remove trainee row when clicking "Remove"
-        document.getElementById("traineesTable").addEventListener("click", function(e) {
-            if(e.target && e.target.classList.contains("remove-trainee-btn")) {
-                const row = e.target.closest("tr");
-                row.remove();
-            }
-        });
-
         document.getElementById("companyBannerInput").addEventListener("change", e => {
             if (e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
                 reader.readAsDataURL(e.target.files[0]);
+            }
+        });
+
+        // ===== EDIT COMPANY BUTTON FUNCTIONALITY =====
+        document.getElementById("editCompanyInfoBtn")?.addEventListener("click", function() {
+            // Make all inputs editable
+            const inputs = document.querySelectorAll('#editCompanyWrapper input, #editCompanyWrapper textarea');
+            inputs.forEach(input => input.removeAttribute('readonly'));
+
+            // Hide edit button, show save button
+            document.getElementById("editCompanyInfoBtn").style.display = 'none';
+            document.getElementById("saveCompanyChangesBtn").style.display = 'block';
+        });
+
+        // ===== SAVE COMPANY CHANGES BUTTON FUNCTIONALITY =====
+        document.getElementById("saveCompanyChangesBtn")?.addEventListener("click", async function() {
+            // Collect all updated data
+            const updatedData = {
+                companyName: document.getElementById("editCompanyName").value,
+                mobileNumber: document.getElementById("editCompanyMobile").value,
+                address: document.getElementById("editCompanyAddress").value,
+                companyId: document.getElementById("editCompanyID").value,
+                industry: document.getElementById("editCompanyIndustry").value,
+                website: document.getElementById("editCompanyWebsite").value,
+                companyDescription: document.getElementById("editCompanyDescription").value,
+                // Contact Person fields
+                fullName: document.getElementById("contactPersonName").value,
+                email: document.getElementById("contactPersonEmail").value,
+                contactPersonMobile: document.getElementById("contactPersonMobile").value,
+                contactPersonRole: document.getElementById("contactPersonRole").value,
+                contactPersonPosition: document.getElementById("contactPersonDepartment").value,
+                contactPersonFacebook: document.getElementById("contactPersonFacebook").value
+            };
+
+            try {
+                const token = document.getElementById('__RequestVerificationToken').value;
+
+                const response = await fetch('/Admin/UpdateCompany', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (toastMessage) toastMessage.textContent = 'Company updated successfully!';
+                    if (successToast) successToast.show();
+
+                    // Make inputs readonly again
+                    const inputs = document.querySelectorAll('#editCompanyWrapper input, #editCompanyWrapper textarea');
+                    inputs.forEach(input => input.setAttribute('readonly', true));
+
+                    // Hide save button, show edit button
+                    document.getElementById("editCompanyInfoBtn").style.display = 'block';
+                    document.getElementById("saveCompanyChangesBtn").style.display = 'none';
+                } else {
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to update company: ' + (result.message || 'Unknown error');
+                    if (errorToast) errorToast.show();
+                }
+            } catch (error) {
+                console.error('Error updating company:', error);
+                if (errorToastMessage) errorToastMessage.textContent = 'Error updating company: ' + error.message;
+                if (errorToast) errorToast.show();
             }
         });
 
@@ -886,14 +1048,17 @@
                         populateProgramFilter();
                         filterTable();
                     }
-                    alert('User deleted successfully');
+                    if (toastMessage) toastMessage.textContent = 'User deleted successfully';
+                    if (successToast) successToast.show();
                 } else {
-                    alert('Failed to delete user: ' + (data.message || 'Unknown error'));
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to delete user: ' + (data.message || 'Unknown error');
+                    if (errorToast) errorToast.show();
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('An error occurred while deleting');
+                if (errorToastMessage) errorToastMessage.textContent = 'An error occurred while deleting';
+                if (errorToast) errorToast.show();
             })
             .finally(() => {
                 // Hide modal
@@ -971,7 +1136,8 @@
                         roleCell.textContent = 'Admin';
                         userToMakeAdmin.row.dataset.role = 'Admin';
                     }
-                    alert('User is now an Admin.');
+                    if (toastMessage) toastMessage.textContent = 'User is now an Admin.';
+                    if (successToast) successToast.show();
 
                     // Hide modal
                     const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
@@ -979,19 +1145,247 @@
                         makeAdminModal.hide();
                     }
                 } else {
-                    alert('Failed to make user Admin: ' + (data.message || 'Unknown error'));
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to make user Admin: ' + (data.message || 'Unknown error');
+                    if (errorToast) errorToast.show();
                 }
             })
             .catch(error => {
                 console.error('Make Admin Error:', error);
-                let errorMessage = 'An error occurred. ' + error.message;
-                alert(errorMessage);
+                if (errorToastMessage) errorToastMessage.textContent = 'An error occurred. ' + error.message;
+                if (errorToast) errorToast.show();
             })
             .finally(() => {
                 confirmBtn.disabled = false;
                 confirmBtn.textContent = originalText;
                 userToMakeAdmin = null;
             });
+        });
+
+        // ===== FUNCTION TO ADD NEW COMPANY TO TABLE =====
+        function addNewCompanyToTable(company) {
+            const tbody = document.querySelector("#usersTable tbody");
+
+            const newRow = document.createElement("tr");
+            newRow.setAttribute("data-id", company.id);
+            newRow.setAttribute("data-fullname", company.fullName);
+            newRow.setAttribute("data-email", company.email);
+            newRow.setAttribute("data-role", "Company");
+            newRow.setAttribute("data-mobile", company.mobileNumber || "");
+            newRow.setAttribute("data-address", company.address || "");
+            newRow.setAttribute("data-companyid", company.companyId || "");
+            newRow.setAttribute("data-program", "");
+            newRow.setAttribute("data-birthdate", "");
+            newRow.setAttribute("data-contactperson", "");
+
+            newRow.innerHTML = `
+                <td>${company.fullName}</td>
+                <td>${company.email}</td>
+                <td>Company</td>
+                <td class="text-end">
+                    <div class="dropdown dropend d-inline-block">
+                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                        <ul class="dropdown-menu shadow-sm">
+                            <li><a class="dropdown-item edit-btn" href="javascript:void(0);">Edit</a></li>
+                            <li><a class="dropdown-item delete-btn" href="javascript:void(0);">Delete</a></li>
+                            <li><a class="dropdown-item make-admin-btn" href="javascript:void(0);">Make Admin</a></li>
+                        </ul>
+                    </div>
+                </td>
+            `;
+
+            tbody.appendChild(newRow);
+
+            // Re-attach event listeners for the new row
+            attachEventListenersToNewRow(newRow);
+
+            // Repopulate program filter if needed
+            populateProgramFilter();
+
+            // Apply current filters
+            filterTable();
+        }
+
+        // ===== ATTACH EVENT LISTENERS TO NEW ROW =====
+        function attachEventListenersToNewRow(row) {
+            const editBtn = row.querySelector('.edit-btn');
+            const deleteBtn = row.querySelector('.delete-btn');
+            const makeAdminBtn = row.querySelector('.make-admin-btn');
+
+            if (editBtn) {
+                editBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Trigger the same edit functionality
+                    // You can call the existing edit logic here
+                    // For now, we'll just log
+                    console.log('Edit clicked for new row');
+                });
+            }
+
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Trigger delete functionality
+                    const row = this.closest('tr');
+                    userToDelete = {
+                        id: row.dataset.id,
+                        fullName: row.dataset.fullname,
+                        row: row
+                    };
+                    document.getElementById('deleteUserInfo').textContent = `${userToDelete.fullName}`;
+                    new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
+                });
+            }
+
+            if (makeAdminBtn) {
+                makeAdminBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    // Trigger make admin functionality
+                    const row = this.closest('tr');
+                    userToMakeAdmin = {
+                        id: row.dataset.id,
+                        fullName: row.dataset.fullname,
+                        row: row
+                    };
+                    document.getElementById('makeAdminUserInfo').textContent = `${userToMakeAdmin.fullName}`;
+                    new bootstrap.Modal(document.getElementById('makeAdminConfirmModal')).show();
+                });
+            }
+        }
+
+        // ===== INITIALIZE TOASTS WHEN DOM IS LOADED =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if Bootstrap is available
+            if (typeof bootstrap !== 'undefined') {
+                const successToastEl = document.getElementById('successToast');
+                const errorToastEl = document.getElementById('errorToast');
+
+                if (successToastEl) {
+                    successToast = new bootstrap.Toast(successToastEl);
+                }
+                if (errorToastEl) {
+                    errorToast = new bootstrap.Toast(errorToastEl);
+                }
+
+                toastMessage = document.getElementById('toastMessage');
+                errorToastMessage = document.getElementById('errorToastMessage');
+
+                console.log('Toasts initialized successfully');
+            } else {
+                console.error('Bootstrap not loaded');
+            }
+        });
+
+        // ===== CREATE COMPANY FUNCTIONALITY WITH DYNAMIC ADD =====
+        document.getElementById("submitCreateCompany").addEventListener("click", async () => {
+            console.log("Create button clicked");
+
+            // Get form values
+            const companyData = {
+                companyName: document.getElementById("companyNamePage").value,
+                email: document.getElementById("companyEmailPage").value,
+                password: document.getElementById("companyPasswordPage").value,
+                mobileNumber: document.getElementById("companyMobilePage").value,
+                address: document.getElementById("companyAddressPage").value,
+                type: "Commercial",
+                secId: "",
+                website: "",
+                tinId: "",
+                description: ""
+            };
+
+            console.log("Company Data:", companyData);
+
+            // Validate required fields
+            if (!companyData.companyName || !companyData.email || !companyData.password) {
+                if (errorToastMessage) errorToastMessage.textContent = "Please fill in all required fields (Company Name, Email, and Password)";
+                if (errorToast) errorToast.show();
+                return;
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+            if (!emailRegex.test(companyData.email)) {
+                if (errorToastMessage) errorToastMessage.textContent = "Please enter a valid email address";
+                if (errorToast) errorToast.show();
+                return;
+            }
+
+            // Validate password length
+            if (companyData.password.length < 6) {
+                if (errorToastMessage) errorToastMessage.textContent = "Password must be at least 6 characters long";
+                if (errorToast) errorToast.show();
+                return;
+            }
+
+            const token = document.getElementById('__RequestVerificationToken').value;
+            console.log("Token:", token);
+
+            const submitBtn = document.getElementById("submitCreateCompany");
+            const originalText = submitBtn.textContent;
+
+            try {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Creating...';
+
+                console.log("Sending fetch request...");
+
+                const response = await fetch('/Account/RegisterCompany', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(companyData)
+                });
+
+                console.log("Response status:", response.status);
+
+                const result = await response.json();
+                console.log("Result:", result);
+
+                if (result.success) {
+                    // Create a new company object for the table
+                    const newCompany = {
+                        id: result.userId || 'temp-id-' + Date.now(),
+                        fullName: companyData.companyName,
+                        email: companyData.email,
+                        mobileNumber: companyData.mobileNumber,
+                        address: companyData.address,
+                        companyId: result.companyId || 'COMP' + Math.floor(Math.random() * 1000)
+                    };
+
+                    // Add the new company to the table
+                    addNewCompanyToTable(newCompany);
+
+                    // Clear the form
+                    document.getElementById("companyNamePage").value = '';
+                    document.getElementById("companyEmailPage").value = '';
+                    document.getElementById("companyPasswordPage").value = '';
+                    document.getElementById("companyMobilePage").value = '';
+                    document.getElementById("companyAddressPage").value = '';
+
+                    // Hide create company form and show users section
+                    createCompanyWrapper.style.display = "none";
+                    usersSection.style.display = "block";
+
+                    // Clear all filters
+                    clearAllFilters();
+
+                    // Show success toast
+                    if (toastMessage) toastMessage.textContent = 'Company created successfully!';
+                    if (successToast) successToast.show();
+                } else {
+                    if (errorToastMessage) errorToastMessage.textContent = 'Error creating company: ' + (result.message || 'Unknown error');
+                    if (errorToast) errorToast.show();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                if (errorToastMessage) errorToastMessage.textContent = 'An error occurred: ' + error.message;
+                if (errorToast) errorToast.show();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
         });
     </script>
 </div>

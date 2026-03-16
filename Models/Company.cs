@@ -28,9 +28,10 @@ namespace MonitoringSystem.Models
         public string? TaxId { get; set; }
         public int? YearEstablished { get; set; }
 
-        // Contact person (if different from main user)
+        // Contact person
         public string? ContactPersonName { get; set; }
         public string? ContactPersonPosition { get; set; }
+        // public string? ContactPersonMobile { get; set; }  // <-- MAKE SURE THIS IS DELETED OR COMMENTED OUT
 
         // Verification status
         public bool IsVerified { get; set; }
@@ -40,5 +41,8 @@ namespace MonitoringSystem.Models
         // System fields
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+
+        // Additional fields
+        public string? SecId { get; set; }
     }
 }

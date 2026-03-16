@@ -3,6 +3,8 @@
 @{
     Layout = "_StudentLayout";
     ViewData["Title"] = "TASK LIST";
+    // Fix: Create a local variable instead of trying to assign to Model
+    var taskList = Model ?? new List<MonitoringSystem.Models.StudentTask>();
 }
 
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
@@ -58,9 +60,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Any())
+                    @if (taskList.Any())
                     {
-                        foreach (var task in Model)
+                        foreach (var task in taskList)
                         {
                             var dateUploaded = task.Deadline.ToString("yyyy-MM-dd");
                             var adminStatus = "Unread"; // would come from model in real app
@@ -208,7 +210,7 @@
     const createModal = document.getElementById("createModal");
     const taskEditor = document.getElementById("taskEditor");
     const modalTitle = document.querySelector("#createModal .modal-title");
-    const actionBtn = document.getElementById("actionBtn"); // renamed from createBtn
+    const actionBtn = document.getElementById("actionBtn");
     const cancelBtn = document.getElementById("cancelBtn");
 
     let editingRow = null;

@@ -3,6 +3,8 @@
 @{
     Layout = "_StudentLayout";
     ViewData["Title"] = "Report";
+    // Fix: Create a local variable to handle null Model
+    var reportList = Model ?? new List<MonitoringSystem.Models.StudentTask>();
 }
 
 <div class="container-fluid py-5">
@@ -34,9 +36,9 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (Model.Any())
+                    @if (reportList.Any())
                     {
-                        foreach (var task in Model)
+                        foreach (var task in reportList)
                         {
                             <tr data-id="@task.Id" data-title="@task.Title" data-deadline="@task.Deadline.ToString("yyyy-MM-dd")" data-file="@task.AttachmentPath">
                                 <td class="py-3">@task.Title</td>

@@ -71,79 +71,107 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===== EXPORT ALL USERS TO EXCEL =====
+        // ===== EXPORT ALL STUDENTS TO EXCEL - GROUPED BY PROGRAM WITH HOURS =====
         public async Task<IActionResult> ExportUsersToExcel()
         {
             try
             {
-                _logger.LogInformation("========== EXPORT ALL USERS TO EXCEL ==========");
+                _logger.LogInformation("========== EXPORT STUDENTS GROUPED BY PROGRAM WITH HOURS ==========");
 
-                // Get all approved users
-                var users = await _userManager.Users
-                    .Where(u => u.Status == "Approved")
-                    .OrderBy(u => u.FullName)
+                // Get ONLY approved students
+                var students = await _userManager.Users
+                    .Where(u => u.Status == "Approved" && u.Role == "Student")
+                    .OrderBy(u => u.Program)
+                    .ThenBy(u => u.FullName)
                     .ToListAsync();
 
-                // Create a DataTable with ONLY the columns you want
-                DataTable dt = new DataTable();
-                dt.Columns.Add("Name", typeof(string));
-                dt.Columns.Add("Company", typeof(string));
-                dt.Columns.Add("Mobile Number", typeof(string));
-                dt.Columns.Add("Address", typeof(string));
-                dt.Columns.Add("Program", typeof(string));
-                dt.Columns.Add("Contact Person", typeof(string));
-                dt.Columns.Add("Student ID", typeof(string));
-                dt.Columns.Add("Birthdate", typeof(string));
-                dt.Columns.Add("Email", typeof(string));
+                _logger.LogInformation($"Found {students.Count} students to export");
 
-                // Add rows with ONLY the columns you want
-                foreach (var user in users)
-                {
-                    // Handle Company (nullable int)
-                    string companyValue = user.CompanyID?.ToString() ?? "";
+                // Group students by program
+                var studentsByProgram = students
+                    .GroupBy(s => s.Program ?? "No Program")
+                    .OrderBy(g => g.Key)
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
-                    // Handle Contact Person
-                    string contactPerson = user.ContactPerson ?? "";
-
-                    // Handle Student ID
-                    string studentId = user.StudentId ?? "";
-
-                    // Format Birthdate
-                    string birthDate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("yyyy-MM-dd") : "";
-
-                    dt.Rows.Add(
-                        user.FullName ?? "",
-                        companyValue,
-                        user.MobileNumber ?? "",
-                        user.Address ?? "",
-                        user.Program ?? "",
-                        contactPerson,
-                        studentId,
-                        birthDate,
-                        user.Email ?? ""
-                    );
-                }
-
-                // Create Excel file using ClosedXML
+                // Create Excel file
                 using (XLWorkbook wb = new XLWorkbook())
                 {
-                    var worksheet = wb.Worksheets.Add(dt, "Users");
+                    // Create a worksheet for each program
+                    foreach (var programGroup in studentsByProgram)
+                    {
+                        string programName = string.IsNullOrEmpty(programGroup.Key) ? "No Program" : programGroup.Key;
 
-                    // Format the worksheet
-                    worksheet.Columns().AdjustToContents();
+                        // Clean worksheet name (remove invalid characters for Excel sheet names)
+                        programName = string.Join("", programName.Split(Path.GetInvalidFileNameChars()));
+                        if (programName.Length > 31) programName = programName.Substring(0, 31); // Excel sheet name max length
 
-                    // Style the header row
-                    var headerRow = worksheet.Row(1);
-                    headerRow.Style.Font.Bold = true;
-                    headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+                        var worksheet = wb.Worksheets.Add(programName);
+
+                        // Add headers - NOW INCLUDING HOURS COLUMNS
+                        worksheet.Cell(1, 1).Value = "Name";
+                        worksheet.Cell(1, 2).Value = "Mobile Number";
+                        worksheet.Cell(1, 3).Value = "Address";
+                        worksheet.Cell(1, 4).Value = "Program";
+                        worksheet.Cell(1, 5).Value = "Contact Person";
+                        worksheet.Cell(1, 6).Value = "Student ID";
+                        worksheet.Cell(1, 7).Value = "Birthdate";
+                        worksheet.Cell(1, 8).Value = "Email";
+                        worksheet.Cell(1, 9).Value = "Total Allotted Hours";
+                        worksheet.Cell(1, 10).Value = "Rendered Hours";
+                        worksheet.Cell(1, 11).Value = "Remaining Hours";
+
+                        // Style header row
+                        var headerRow = worksheet.Row(1);
+                        headerRow.Style.Font.Bold = true;
+                        headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+                        // Add data rows
+                        int row = 2;
+
+                        foreach (var student in programGroup.Value)
+                        {
+                            // For now, rendered hours is 0 until you have TimeLogs table
+                            // You can replace this with actual calculation when ready
+                            double renderedHours = 0;
+                            double remainingHours = student.TotalAllottedHours - renderedHours;
+
+                            worksheet.Cell(row, 1).Value = student.FullName ?? "";
+                            worksheet.Cell(row, 2).Value = student.MobileNumber ?? "";
+                            worksheet.Cell(row, 3).Value = student.Address ?? "";
+                            worksheet.Cell(row, 4).Value = student.Program ?? "";
+                            worksheet.Cell(row, 5).Value = student.ContactPerson ?? "";
+                            worksheet.Cell(row, 6).Value = student.StudentId ?? "";
+                            worksheet.Cell(row, 7).Value = student.BirthDate.HasValue ? student.BirthDate.Value.ToString("yyyy-MM-dd") : "";
+                            worksheet.Cell(row, 8).Value = student.Email ?? "";
+                            worksheet.Cell(row, 9).Value = student.TotalAllottedHours;
+                            worksheet.Cell(row, 10).Value = renderedHours;
+                            worksheet.Cell(row, 11).Value = remainingHours;
+
+                            // Format hours columns as numbers
+                            worksheet.Cell(row, 9).Style.NumberFormat.Format = "#,##0";
+                            worksheet.Cell(row, 10).Style.NumberFormat.Format = "#,##0.0";
+                            worksheet.Cell(row, 11).Style.NumberFormat.Format = "#,##0.0";
+
+                            row++;
+                        }
+
+                        // Add ONLY total students count at the bottom (no other summary)
+                        row += 1; // Add a blank row
+                        worksheet.Cell(row, 1).Value = $"Total Students: {programGroup.Value.Count}";
+                        worksheet.Cell(row, 1).Style.Font.Bold = true;
+                        worksheet.Cell(row, 1).Style.Font.FontColor = XLColor.Blue;
+
+                        // Auto-fit columns
+                        worksheet.Columns().AdjustToContents();
+                    }
 
                     // Prepare the file for download
                     using (MemoryStream stream = new MemoryStream())
                     {
                         wb.SaveAs(stream);
-                        string fileName = $"Users_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        string fileName = $"Students_With_Hours_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
 
-                        _logger.LogInformation($"Export completed: {users.Count} users exported to {fileName}");
+                        _logger.LogInformation($"Export completed: {students.Count} students exported to {fileName}");
 
                         return File(stream.ToArray(),
                             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -154,7 +182,7 @@ namespace MonitoringSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"ERROR in ExportUsersToExcel: {ex.Message}");
-                return BadRequest("An error occurred while exporting users.");
+                return BadRequest("An error occurred while exporting students.");
             }
         }
 
@@ -165,26 +193,25 @@ namespace MonitoringSystem.Controllers
         {
             try
             {
-                _logger.LogInformation("========== EXPORT SELECTED USERS TO EXCEL ==========");
+                _logger.LogInformation("========== EXPORT SELECTED STUDENTS TO EXCEL ==========");
 
                 if (userIds == null || userIds.Count == 0)
                 {
-                    _logger.LogWarning("No users selected for export");
-                    return BadRequest("No users selected");
+                    _logger.LogWarning("No students selected for export");
+                    return BadRequest("No students selected");
                 }
 
-                _logger.LogInformation($"Selected {userIds.Count} users for export");
+                _logger.LogInformation($"Selected {userIds.Count} students for export");
 
-                // Get selected users from database
-                var selectedUsers = await _userManager.Users
-                    .Where(u => userIds.Contains(u.Id))
+                // Get selected students from database (only students)
+                var selectedStudents = await _userManager.Users
+                    .Where(u => userIds.Contains(u.Id) && u.Role == "Student") // Only students
                     .OrderBy(u => u.FullName)
                     .ToListAsync();
 
                 // Create DataTable with ONLY the columns you want
                 DataTable dt = new DataTable();
                 dt.Columns.Add("Name", typeof(string));
-                dt.Columns.Add("Company", typeof(string));
                 dt.Columns.Add("Mobile Number", typeof(string));
                 dt.Columns.Add("Address", typeof(string));
                 dt.Columns.Add("Program", typeof(string));
@@ -192,39 +219,45 @@ namespace MonitoringSystem.Controllers
                 dt.Columns.Add("Student ID", typeof(string));
                 dt.Columns.Add("Birthdate", typeof(string));
                 dt.Columns.Add("Email", typeof(string));
+                dt.Columns.Add("Total Allotted Hours", typeof(int));
+                dt.Columns.Add("Rendered Hours", typeof(double));
+                dt.Columns.Add("Remaining Hours", typeof(double));
 
                 // Add rows with ONLY the columns you want
-                foreach (var user in selectedUsers)
+                foreach (var student in selectedStudents)
                 {
-                    // Handle Company
-                    string companyValue = user.CompanyID?.ToString() ?? "";
-
                     // Handle Contact Person
-                    string contactPerson = user.ContactPerson ?? "";
+                    string contactPerson = student.ContactPerson ?? "";
 
                     // Handle Student ID
-                    string studentId = user.StudentId ?? "";
+                    string studentId = student.StudentId ?? "";
 
                     // Format Birthdate
-                    string birthDate = user.BirthDate.HasValue ? user.BirthDate.Value.ToString("yyyy-MM-dd") : "";
+                    string birthDate = student.BirthDate.HasValue ? student.BirthDate.Value.ToString("yyyy-MM-dd") : "";
+
+                    // Hours (rendered is 0 for now)
+                    double renderedHours = 0;
+                    double remainingHours = student.TotalAllottedHours - renderedHours;
 
                     dt.Rows.Add(
-                        user.FullName ?? "",
-                        companyValue,
-                        user.MobileNumber ?? "",
-                        user.Address ?? "",
-                        user.Program ?? "",
+                        student.FullName ?? "",
+                        student.MobileNumber ?? "",
+                        student.Address ?? "",
+                        student.Program ?? "",
                         contactPerson,
                         studentId,
                         birthDate,
-                        user.Email ?? ""
+                        student.Email ?? "",
+                        student.TotalAllottedHours,
+                        renderedHours,
+                        remainingHours
                     );
                 }
 
                 // Create Excel file
                 using (XLWorkbook wb = new XLWorkbook())
                 {
-                    var worksheet = wb.Worksheets.Add(dt, "Selected Users");
+                    var worksheet = wb.Worksheets.Add(dt, "Selected Students");
 
                     // Format the worksheet
                     worksheet.Columns().AdjustToContents();
@@ -237,9 +270,9 @@ namespace MonitoringSystem.Controllers
                     using (MemoryStream stream = new MemoryStream())
                     {
                         wb.SaveAs(stream);
-                        string fileName = $"SelectedUsers_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+                        string fileName = $"SelectedStudents_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
 
-                        _logger.LogInformation($"Export completed: {selectedUsers.Count} users exported to {fileName}");
+                        _logger.LogInformation($"Export completed: {selectedStudents.Count} students exported to {fileName}");
 
                         return File(stream.ToArray(),
                             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -250,7 +283,7 @@ namespace MonitoringSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError($"ERROR in ExportSelectedUsers: {ex.Message}");
-                return BadRequest(new { success = false, message = "An error occurred while exporting users." });
+                return BadRequest(new { success = false, message = "An error occurred while exporting students." });
             }
         }
 
@@ -892,7 +925,94 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ========== NEW: Get student hours summary ==========
+        // ===== GET COMPANY DETAILS FOR EDITING =====
+        [HttpGet]
+        public async Task<IActionResult> GetCompanyDetails(string userId)
+        {
+            try
+            {
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                    return Json(new { success = false, message = "User not found" });
+
+                var company = await _context.Companies
+                    .FirstOrDefaultAsync(c => c.UserId == user.Id);
+
+                return Json(new
+                {
+                    success = true,
+                    // User info
+                    fullName = user.FullName,
+                    email = user.Email,
+                    mobileNumber = user.MobileNumber,
+                    address = user.Address,
+                    profileImage = user.ProfileImage,
+                    bannerImage = user.BannerImage,
+
+                    // Company info
+                    companyName = company?.CompanyName,
+                    companyId = company?.CompanyId,
+                    companyDescription = company?.CompanyDescription,
+                    industry = company?.Industry,
+                    website = company?.Website,
+
+                    // Contact person
+                    contactPersonName = company?.ContactPersonName,
+                    contactPersonPosition = company?.ContactPersonPosition
+                });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===== UPDATE COMPANY DETAILS =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateCompany([FromBody] UpdateCompanyModel model)
+        {
+            try
+            {
+                // Find the user by email
+                var user = await _userManager.FindByEmailAsync(model.email);
+                if (user == null)
+                    return Json(new { success = false, message = "User not found" });
+
+                // Update user information
+                user.FullName = model.fullName ?? user.FullName;
+                user.MobileNumber = model.userMobile ?? user.MobileNumber;
+                user.Address = model.address ?? user.Address;
+                user.UpdatedAt = DateTime.Now;
+
+                await _userManager.UpdateAsync(user);
+
+                // Update company information
+                var company = await _context.Companies
+                    .FirstOrDefaultAsync(c => c.UserId == user.Id);
+
+                if (company != null)
+                {
+                    company.CompanyName = model.companyName ?? company.CompanyName;
+                    company.Industry = model.industry ?? company.Industry;
+                    company.Website = model.website ?? company.Website;
+                    company.CompanyDescription = model.companyDescription ?? company.CompanyDescription;
+                    company.ContactPersonName = model.contactPersonName ?? company.ContactPersonName;
+                    company.ContactPersonPosition = model.contactPersonPosition ?? company.ContactPersonPosition;
+                    company.UpdatedAt = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+                }
+
+                return Json(new { success = true, message = "Company updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ========== Get student hours summary ==========
         [HttpGet]
         public async Task<IActionResult> GetStudentHoursSummary(string userId)
         {
@@ -1033,7 +1153,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===== MAKE ADMIN METHOD (ORIGINAL VERSION) =====
+        // ===== MAKE ADMIN METHOD =====
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> MakeAdmin([FromBody] MakeAdminRequest request)
@@ -1136,5 +1256,22 @@ namespace MonitoringSystem.Controllers
         public string FullName { get; set; }
         public string Code { get; set; }
         public int Hours { get; set; }
+    }
+
+    // Model for updating company details - WITHOUT ContactPersonMobile
+    public class UpdateCompanyModel
+    {
+        public string companyName { get; set; }
+        public string mobileNumber { get; set; }
+        public string address { get; set; }
+        public string companyId { get; set; }
+        public string industry { get; set; }
+        public string website { get; set; }
+        public string companyDescription { get; set; }
+        public string contactPersonName { get; set; }
+        public string contactPersonPosition { get; set; }
+        public string fullName { get; set; }
+        public string email { get; set; }
+        public string userMobile { get; set; }
     }
 }

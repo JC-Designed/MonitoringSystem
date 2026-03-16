@@ -31,19 +31,19 @@ namespace MonitoringSystem.Controllers
             _logger = logger;
         }
 
-        // GET: Student Dashboard
+        // GET: /Student/Dashboard
         public IActionResult Dashboard()
         {
             return View();
         }
 
-        // GET: Student Tasks page
+        // GET: /Student/Tasks
         public IActionResult Tasks()
         {
             return View();
         }
 
-        // GET: Student Report page
+        // GET: /Student/Report
         public IActionResult Report()
         {
             return View();
@@ -257,7 +257,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===================== UPDATED: Get current user data with auto-fix for hours =====================
+        // ===================== Get current user data with auto-fix for hours =====================
         [HttpGet]
         public async Task<IActionResult> GetCurrentUser()
         {
@@ -271,7 +271,7 @@ namespace MonitoringSystem.Controllers
                     return Ok(new { success = false, message = "User not found" });
                 }
 
-                // --- NEW: If TotalAllottedHours is 0 but user has a program, fetch from ProgramHours and update ---
+                // If TotalAllottedHours is 0 but user has a program, fetch from ProgramHours and update
                 if (user.TotalAllottedHours == 0 && !string.IsNullOrEmpty(user.Program))
                 {
                     var program = await _context.ProgramHours.FirstOrDefaultAsync(p => p.Code == user.Program);
@@ -322,7 +322,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===================== ADDED: Get student's time logs =====================
+        // ===================== Get student's time logs =====================
         [HttpGet]
         public async Task<IActionResult> GetTimeLogs()
         {
@@ -341,7 +341,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===================== ADDED: Save time log =====================
+        // ===================== Save time log =====================
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SaveTimeLog([FromBody] TimeLogModel model)
@@ -359,7 +359,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===================== ADDED: Delete time log =====================
+        // ===================== Delete time log =====================
         [HttpDelete]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteTimeLog(int id)
