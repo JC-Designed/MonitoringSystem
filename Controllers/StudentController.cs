@@ -49,6 +49,308 @@ namespace MonitoringSystem.Controllers
             return View();
         }
 
+        // ===================== DOCUMENTS MANAGEMENT =====================
+
+        // GET: Student/GetDocuments
+        [HttpGet]
+        public async Task<IActionResult> GetDocuments()
+        {
+            try
+            {
+                var documents = await _context.Documents
+                    .OrderByDescending(d => d.UploadedAt)
+                    .Select(d => new
+                    {
+                        d.Id,
+                        d.Name,
+                        d.Type,
+                        d.Size,
+                        Uploaded = d.UploadedAt
+                    })
+                    .ToListAsync();
+
+                return Ok(documents);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting documents: {ex.Message}");
+                return Ok(new List<object>());
+            }
+        }
+
+        // GET: Student/DownloadDocument/5
+        [HttpGet]
+        public async Task<IActionResult> DownloadDocument(int id)
+        {
+            try
+            {
+                var document = await _context.Documents.FindAsync(id);
+                if (document == null)
+                    return NotFound("Document not found");
+
+                if (string.IsNullOrEmpty(document.FileData))
+                    return NotFound("File data not found");
+
+                // Convert Base64 string back to bytes
+                var fileBytes = Convert.FromBase64String(document.FileData);
+
+                // Determine content type
+                var contentType = GetContentType(document.Type);
+
+                return File(fileBytes, contentType, document.Name);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error downloading document: {ex.Message}");
+                return BadRequest("Error downloading document");
+            }
+        }
+
+        // Helper method to get content type
+        private string GetContentType(string extension)
+        {
+            return extension.ToUpper() switch
+            {
+                "PDF" => "application/pdf",
+                "DOCX" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                "XLSX" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "JPG" or "JPEG" => "image/jpeg",
+                "PNG" => "image/png",
+                _ => "application/octet-stream"
+            };
+        }
+
+        // ===================== TIME LOGS MANAGEMENT =====================
+
+        // GET: Student/GetTimeLogs
+        [HttpGet]
+        public async Task<IActionResult> GetTimeLogs()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var timeLogs = await _context.TimeLogs
+                    .Where(t => t.UserId == userId)
+                    .OrderByDescending(t => t.Date)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        Date = t.Date.ToString("yyyy-MM-dd"),
+                        t.AmIn,
+                        t.AmOut,
+                        t.PmIn,
+                        t.PmOut,
+                        t.OtIn,
+                        t.OtOut,
+                        t.TotalHours,
+                        t.Type
+                    })
+                    .ToListAsync();
+
+                return Ok(timeLogs);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting time logs: {ex.Message}");
+                return Ok(new List<object>());
+            }
+        }
+
+        // POST: Student/SaveTimeLog
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveTimeLog([FromBody] TimeLogModel model)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await _userManager.FindByIdAsync(userId);
+
+                if (user == null)
+                    return BadRequest(new { success = false, message = "User not found" });
+
+                // Parse the date
+                if (!DateTime.TryParse(model.Date, out DateTime logDate))
+                {
+                    return BadRequest(new { success = false, message = "Invalid date format" });
+                }
+
+                // Check if entry already exists for this date
+                var existingLog = await _context.TimeLogs
+                    .FirstOrDefaultAsync(t => t.UserId == userId && t.Date.Date == logDate.Date);
+
+                if (existingLog != null)
+                {
+                    // Update existing log
+                    existingLog.AmIn = model.AmIn;
+                    existingLog.AmOut = model.AmOut;
+                    existingLog.PmIn = model.PmIn;
+                    existingLog.PmOut = model.PmOut;
+                    existingLog.OtIn = model.OtIn;
+                    existingLog.OtOut = model.OtOut;
+                    existingLog.TotalHours = model.TotalHours;
+                    existingLog.Type = model.Type;
+                    existingLog.UpdatedAt = DateTime.Now;
+
+                    _context.TimeLogs.Update(existingLog);
+                }
+                else
+                {
+                    // Create new log
+                    var timeLog = new TimeLog
+                    {
+                        UserId = userId,
+                        Date = logDate,
+                        AmIn = model.AmIn,
+                        AmOut = model.AmOut,
+                        PmIn = model.PmIn,
+                        PmOut = model.PmOut,
+                        OtIn = model.OtIn,
+                        OtOut = model.OtOut,
+                        TotalHours = model.TotalHours,
+                        Type = model.Type,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.TimeLogs.Add(timeLog);
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Get updated total rendered hours
+                var totalRendered = await _context.TimeLogs
+                    .Where(t => t.UserId == userId && t.Type == "regular")
+                    .SumAsync(t => t.TotalHours);
+
+                // Also update user's total allotted hours if needed
+                var updatedUser = await _userManager.FindByIdAsync(userId);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = existingLog != null ? "Time log updated successfully" : "Time log saved successfully",
+                    totalRendered = totalRendered,
+                    totalAllotted = updatedUser?.TotalAllottedHours ?? 0
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error saving time log: {ex.Message}");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // DELETE: Student/DeleteTimeLog/5
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTimeLog(int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var timeLog = await _context.TimeLogs
+                    .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+
+                if (timeLog == null)
+                    return NotFound(new { success = false, message = "Time log not found" });
+
+                _context.TimeLogs.Remove(timeLog);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Time log deleted for user {userId}, id: {id}");
+
+                // Get updated total rendered hours
+                var totalRendered = await _context.TimeLogs
+                    .Where(t => t.UserId == userId && t.Type == "regular")
+                    .SumAsync(t => t.TotalHours);
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Time log deleted successfully",
+                    totalRendered = totalRendered
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting time log: {ex.Message}");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===================== Get current user data =====================
+        [HttpGet]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var user = await _userManager.FindByIdAsync(userId);
+
+                if (user == null)
+                {
+                    return Ok(new { success = false, message = "User not found" });
+                }
+
+                // If TotalAllottedHours is 0 but user has a program, fetch from ProgramHours and update
+                if (user.TotalAllottedHours == 0 && !string.IsNullOrEmpty(user.Program))
+                {
+                    var program = await _context.ProgramHours.FirstOrDefaultAsync(p => p.Code == user.Program);
+                    if (program != null)
+                    {
+                        user.TotalAllottedHours = program.Hours;
+                        await _userManager.UpdateAsync(user);
+                        _logger.LogInformation($"Auto-updated TotalAllottedHours for user {user.Email} to {program.Hours} (program {user.Program})");
+                    }
+                }
+
+                // Get total rendered hours
+                var totalRendered = await _context.TimeLogs
+                    .Where(t => t.UserId == userId && t.Type == "regular")
+                    .SumAsync(t => t.TotalHours);
+
+                var userData = new
+                {
+                    success = true,
+                    user = new
+                    {
+                        user.Id,
+                        user.UserName,
+                        user.Email,
+                        user.FullName,
+                        user.Role,
+                        user.Gender,
+                        birthDate = user.BirthDate?.ToString("yyyy-MM-dd"),
+                        contactPerson = user.ContactPerson,
+                        user.MobileNumber,
+                        user.Address,
+                        user.ProfileImage,
+                        user.BannerImage,
+                        user.IsActive,
+                        user.CreatedAt,
+                        user.UpdatedAt,
+                        user.LastLogin,
+                        user.Facebook,
+                        user.Year,
+                        company = user.CompanyID?.ToString(),
+                        user.Program,
+                        user.Status,
+                        user.StudentId,
+                        totalAllottedHours = user.TotalAllottedHours,
+                        totalRenderedHours = totalRendered
+                    }
+                };
+
+                return Ok(userData);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in GetCurrentUser: {ex.Message}");
+                return Ok(new { success = false, message = ex.Message });
+            }
+        }
+
         // API: Update student profile
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -257,121 +559,102 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===================== Get current user data with auto-fix for hours =====================
-        [HttpGet]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-                var user = await _userManager.FindByIdAsync(userId);
-
-                if (user == null)
-                {
-                    return Ok(new { success = false, message = "User not found" });
-                }
-
-                // If TotalAllottedHours is 0 but user has a program, fetch from ProgramHours and update
-                if (user.TotalAllottedHours == 0 && !string.IsNullOrEmpty(user.Program))
-                {
-                    var program = await _context.ProgramHours.FirstOrDefaultAsync(p => p.Code == user.Program);
-                    if (program != null)
-                    {
-                        user.TotalAllottedHours = program.Hours;
-                        await _userManager.UpdateAsync(user);
-                        _logger.LogInformation($"Auto-updated TotalAllottedHours for user {user.Email} to {program.Hours} (program {user.Program})");
-                    }
-                }
-
-                var userData = new
-                {
-                    success = true,
-                    user = new
-                    {
-                        user.Id,
-                        user.UserName,
-                        user.Email,
-                        user.FullName,
-                        user.Role,
-                        user.Gender,
-                        birthDate = user.BirthDate?.ToString("yyyy-MM-dd"),
-                        contactPerson = user.ContactPerson,
-                        user.MobileNumber,
-                        user.Address,
-                        user.ProfileImage,
-                        user.BannerImage,
-                        user.IsActive,
-                        user.CreatedAt,
-                        user.UpdatedAt,
-                        user.LastLogin,
-                        user.Facebook,
-                        user.Year,
-                        company = user.CompanyID?.ToString(),
-                        user.Program,
-                        user.Status,
-                        user.StudentId,
-                        totalAllottedHours = user.TotalAllottedHours
-                    }
-                };
-
-                return Ok(userData);
-            }
-            catch (Exception ex)
-            {
-                return Ok(new { success = false, message = ex.Message });
-            }
-        }
-
-        // ===================== Get student's time logs =====================
-        [HttpGet]
-        public async Task<IActionResult> GetTimeLogs()
-        {
-            try
-            {
-                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-                // For now, return empty array until TimeLogs table is created
-                var timeLogs = new List<object>();
-
-                return Ok(timeLogs);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { success = false, message = ex.Message });
-            }
-        }
-
-        // ===================== Save time log =====================
+        // ===================== UPDATED: SEND LOGS TO ADMIN WITH DETAILED ERROR HANDLING =====================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> SaveTimeLog([FromBody] TimeLogModel model)
+        public async Task<IActionResult> SendLogsToAdmin([FromBody] SendLogsViewModel model)
         {
             try
             {
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Json(new { success = false, message = "User not authenticated" });
+                }
 
-                // This is a placeholder - implement when you create TimeLogs table
-                return Ok(new { success = true, message = "Time log saved successfully" });
+                // Get the student's details
+                var student = await _userManager.FindByIdAsync(userId);
+
+                if (student == null)
+                {
+                    return Json(new { success = false, message = "Student not found" });
+                }
+
+                // Log the data being saved
+                _logger.LogInformation($"Saving logs for student {student.Email}, Month: {model.Month}, Total Hours: {model.TotalHours}");
+                _logger.LogInformation($"Logs count: {model.Logs?.Count ?? 0}");
+
+                // Validate required fields
+                if (model.Month < 1 || model.Month > 12)
+                {
+                    return Json(new { success = false, message = "Invalid month value" });
+                }
+
+                if (string.IsNullOrEmpty(student.Program))
+                {
+                    _logger.LogWarning($"Student {student.Email} has no program assigned");
+                }
+
+                // Create a new StudentTimeLog submission
+                var submission = new TimeLogSubmission
+                {
+                    Id = Guid.NewGuid().ToString(),
+                    StudentId = userId,
+                    StudentName = student.FullName ?? student.Email,
+                    Course = student.Program ?? "N/A",
+                    Year = student.Year?.ToString() ?? "N/A",
+                    SubmissionDate = DateTime.Now,
+                    Month = model.Month,
+                    TotalHours = model.TotalHours,
+                    Logs = System.Text.Json.JsonSerializer.Serialize(model.Logs),
+                    Status = "Pending",
+                    IsRead = false
+                };
+
+                // Save to database using StudentTimeLogs table
+                _context.StudentTimeLogs.Add(submission);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Time logs saved to database for student {student.Email}, Month: {model.Month}, Total Hours: {model.TotalHours}");
+
+                return Json(new
+                {
+                    success = true,
+                    message = "Logs sent successfully to admin",
+                    submissionId = submission.Id
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                // This catches database-specific errors
+                var innerException = ex.InnerException?.Message ?? "No inner exception";
+                var innerStackTrace = ex.InnerException?.StackTrace ?? "";
+
+                _logger.LogError($"Database error sending logs to admin: {ex.Message}");
+                _logger.LogError($"Inner exception: {innerException}");
+                _logger.LogError($"Inner stack trace: {innerStackTrace}");
+
+                // Check for specific SQL errors
+                if (innerException.Contains("FK_") || innerException.Contains("foreign key"))
+                {
+                    return Json(new { success = false, message = "Foreign key constraint error. Please check your data." });
+                }
+                else if (innerException.Contains("PK_") || innerException.Contains("primary key"))
+                {
+                    return Json(new { success = false, message = "Duplicate key error. Please try again." });
+                }
+                else if (innerException.Contains("Cannot insert the value NULL"))
+                {
+                    return Json(new { success = false, message = "A required field is missing. Please check your data." });
+                }
+
+                return Json(new { success = false, message = $"Database error: {innerException}" });
             }
             catch (Exception ex)
             {
-                return BadRequest(new { success = false, message = ex.Message });
-            }
-        }
-
-        // ===================== Delete time log =====================
-        [HttpDelete]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteTimeLog(int id)
-        {
-            try
-            {
-                // This is a placeholder - implement when you create TimeLogs table
-                return Ok(new { success = true, message = "Time log deleted successfully" });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { success = false, message = ex.Message });
+                _logger.LogError($"Error sending logs to admin: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+                return Json(new { success = false, message = ex.Message });
             }
         }
     }
@@ -392,7 +675,7 @@ namespace MonitoringSystem.Controllers
 
     public class TimeLogModel
     {
-        public DateTime Date { get; set; }
+        public string Date { get; set; }
         public string AmIn { get; set; }
         public string AmOut { get; set; }
         public string PmIn { get; set; }
@@ -401,5 +684,14 @@ namespace MonitoringSystem.Controllers
         public string OtOut { get; set; }
         public double TotalHours { get; set; }
         public string Type { get; set; }
+    }
+
+    // ===== MODEL FOR SENDING LOGS =====
+    public class SendLogsViewModel
+    {
+        public List<object> Logs { get; set; }
+        public string StudentName { get; set; }
+        public double TotalHours { get; set; }
+        public int Month { get; set; }
     }
 }

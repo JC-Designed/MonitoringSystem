@@ -19,6 +19,15 @@ namespace MonitoringSystem.Models
         public DbSet<ProgramHour> ProgramHours { get; set; }
         public DbSet<Document> Documents { get; set; }
 
+        // ===== ADD TIMELOG DbSet =====
+        public DbSet<TimeLog> TimeLogs { get; set; }
+
+        // ===== ADD TASKS DbSet =====
+        public DbSet<Task> Tasks { get; set; }
+
+        // ===== ADD STUDENT TIME LOGS DbSet (RENAMED) =====
+        public DbSet<TimeLogSubmission> StudentTimeLogs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -44,6 +53,18 @@ namespace MonitoringSystem.Models
 
             builder.Entity<Document>()
                 .ToTable(tb => tb.HasTrigger("Documents_Trigger"));
+
+            // ===== ADD TRIGGER CONFIGURATION FOR TIMELOGS TABLE =====
+            builder.Entity<TimeLog>()
+                .ToTable(tb => tb.HasTrigger("TimeLogs_Trigger"));
+
+            // ===== ADD TRIGGER CONFIGURATION FOR TASKS TABLE =====
+            builder.Entity<Task>()
+                .ToTable(tb => tb.HasTrigger("Tasks_Trigger"));
+
+            // ===== ADD TRIGGER CONFIGURATION FOR STUDENT TIME LOGS TABLE =====
+            builder.Entity<TimeLogSubmission>()
+                .ToTable(tb => tb.HasTrigger("StudentTimeLogs_Trigger"));
 
             // ===================== CONFIGURE ONE-TO-ONE RELATIONSHIPS =====================
 
@@ -76,6 +97,11 @@ namespace MonitoringSystem.Models
             // ===== CONFIGURE TABLE NAMES FOR NEW TABLES =====
             builder.Entity<ProgramHour>().ToTable("ProgramHours");
             builder.Entity<Document>().ToTable("Documents");
+            builder.Entity<TimeLog>().ToTable("TimeLogs");
+            builder.Entity<Task>().ToTable("Tasks");
+
+            // ===== RENAMED TABLE: TimeLogSubmissions -> StudentTimeLogs =====
+            builder.Entity<TimeLogSubmission>().ToTable("StudentTimeLogs");
 
             // ===================== CONFIGURE INDEXES =====================
             builder.Entity<Student>()
@@ -92,9 +118,46 @@ namespace MonitoringSystem.Models
                 .IsUnique()
                 .HasDatabaseName("IX_ProgramHours_Code");
 
+            // ===== INDEX FOR DOCUMENTS =====
             builder.Entity<Document>()
                 .HasIndex(d => d.UploadedAt)
                 .HasDatabaseName("IX_Documents_UploadedAt");
+
+            // ===== ADD INDEX FOR TIMELOGS =====
+            builder.Entity<TimeLog>()
+                .HasIndex(t => new { t.UserId, t.Date })
+                .HasDatabaseName("IX_TimeLogs_UserId_Date");
+
+            // ===== ADD INDEX FOR TASKS =====
+            builder.Entity<Task>()
+                .HasIndex(t => t.StudentId)
+                .HasDatabaseName("IX_Tasks_StudentId");
+
+            // ===== ADD INDEXES FOR STUDENT TIME LOGS =====
+            builder.Entity<TimeLogSubmission>()
+                .HasIndex(t => t.StudentId)
+                .HasDatabaseName("IX_StudentTimeLogs_StudentId");
+
+            builder.Entity<TimeLogSubmission>()
+                .HasIndex(t => t.Status)
+                .HasDatabaseName("IX_StudentTimeLogs_Status");
+
+            builder.Entity<TimeLogSubmission>()
+                .HasIndex(t => t.SubmissionDate)
+                .HasDatabaseName("IX_StudentTimeLogs_SubmissionDate");
+
+            // ===== CONFIGURE STUDENT TIME LOG PROPERTIES =====
+            builder.Entity<TimeLogSubmission>()
+                .Property(t => t.Logs)
+                .HasColumnType("nvarchar(max)"); // For storing JSON string
+
+            builder.Entity<TimeLogSubmission>()
+                .Property(t => t.Status)
+                .HasDefaultValue("Pending");
+
+            builder.Entity<TimeLogSubmission>()
+                .Property(t => t.IsRead)
+                .HasDefaultValue(false);
         }
     }
 }

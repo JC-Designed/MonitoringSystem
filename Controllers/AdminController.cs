@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Identity;
 using ClosedXML.Excel;
 using System.Data;
 using System.IO;
+using Task = System.Threading.Tasks.Task; // Add this alias to fix ambiguity
 
 namespace MonitoringSystem.Controllers
 {
@@ -21,17 +22,20 @@ namespace MonitoringSystem.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly ILogger<AdminController> _logger;
+        private readonly IWebHostEnvironment _webHostEnvironment;
 
         public AdminController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            ILogger<AdminController> logger)
+            ILogger<AdminController> logger,
+            IWebHostEnvironment webHostEnvironment)
         {
             _context = context;
             _userManager = userManager;
             _roleManager = roleManager;
             _logger = logger;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         // GET: Admin Dashboard
@@ -515,6 +519,96 @@ namespace MonitoringSystem.Controllers
             }
         }
 
+        // ===== TASKS MANAGEMENT =====
+
+        // GET: Get all tasks for a student
+        [HttpGet]
+        public async Task<IActionResult> GetStudentTasks(string studentId)
+        {
+            try
+            {
+                var tasks = await _context.Tasks
+                    .Where(t => t.StudentId == studentId)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.Title,
+                        t.Description,
+                        t.Status,
+                        t.CreatedAt,
+                        t.StudentId
+                    })
+                    .ToListAsync();
+
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting student tasks: {ex.Message}");
+                return Ok(new List<object>());
+            }
+        }
+
+        // POST: Upload a task
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadTask(IFormFile file, string title, string studentId)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                    return BadRequest("No file uploaded");
+
+                if (string.IsNullOrEmpty(title))
+                    return BadRequest("Title is required");
+
+                // Validate file size (10MB max)
+                if (file.Length > 10 * 1024 * 1024)
+                    return BadRequest("File exceeds 10MB limit");
+
+                // Read file data and convert to Base64
+                using (var memoryStream = new MemoryStream())
+                {
+                    await file.CopyToAsync(memoryStream);
+                    var fileBytes = memoryStream.ToArray();
+                    var fileData = Convert.ToBase64String(fileBytes);
+
+                    // Generate unique filename
+                    var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+
+                    var task = new MonitoringSystem.Models.Task
+                    {
+                        Title = title,
+                        FileName = uniqueFileName,
+                        FileData = fileData,
+                        Status = "Unread",
+                        CreatedAt = DateTime.Now,
+                        StudentId = studentId
+                    };
+
+                    _context.Tasks.Add(task);
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation($"Task uploaded for student {studentId}: {title}");
+
+                    return Ok(new
+                    {
+                        task.Id,
+                        task.Title,
+                        task.Status,
+                        task.CreatedAt,
+                        task.StudentId
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error uploading task: {ex.Message}");
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
         // ===== DOCUMENTS MANAGEMENT =====
 
         // GET: Get all documents
@@ -531,8 +625,7 @@ namespace MonitoringSystem.Controllers
                         d.Name,
                         d.Type,
                         d.Size,
-                        Uploaded = d.UploadedAt.ToString("yyyy-MM-dd"),
-                        d.FileData
+                        Uploaded = d.UploadedAt
                     })
                     .ToListAsync();
 
@@ -559,41 +652,64 @@ namespace MonitoringSystem.Controllers
                 if (file.Length > 10 * 1024 * 1024)
                     return BadRequest("File exceeds 10MB limit");
 
-                // Get file extension
-                var extension = Path.GetExtension(file.FileName).ToUpper().Replace(".", "");
-                var allowedTypes = new[] { "PDF", "DOCX", "XLSX", "JPG", "PNG" };
+                // Get file extension and validate
+                var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                var allowedExtensions = new[] { ".pdf", ".docx", ".xlsx", ".jpg", ".jpeg", ".png" };
 
-                if (!allowedTypes.Contains(extension))
-                    return BadRequest($"File type {extension} not supported");
+                if (!allowedExtensions.Contains(extension))
+                {
+                    return BadRequest("File type not allowed. Allowed types: PDF, DOCX, XLSX, JPG, PNG");
+                }
 
-                // Read file data
+                // Read file data and convert to Base64
                 using (var memoryStream = new MemoryStream())
                 {
                     await file.CopyToAsync(memoryStream);
-                    var fileData = memoryStream.ToArray();
+                    var fileBytes = memoryStream.ToArray();
+                    var fileData = Convert.ToBase64String(fileBytes);
 
+                    // Format file size
+                    string formattedSize = FormatFileSize(file.Length);
+
+                    // Generate unique filename
+                    var uniqueFileName = Guid.NewGuid().ToString() + extension;
+
+                    // Save to database - using the model properties
                     var document = new Document
                     {
                         Name = file.FileName,
-                        Type = extension,
-                        Size = FormatFileSize(file.Length),
-                        FileData = Convert.ToBase64String(fileData),
+                        FileName = uniqueFileName,
+                        Type = extension.TrimStart('.').ToUpper(),
+                        Size = formattedSize,
+                        FileData = fileData,
                         UploadedAt = DateTime.Now,
-                        UploadedBy = User.Identity.Name ?? "Admin"
+                        UploadedBy = User.Identity?.Name ?? "Admin"
                     };
 
                     _context.Documents.Add(document);
-                    await _context.SaveChangesAsync();
+
+                    try
+                    {
+                        await _context.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException ex)
+                    {
+                        // Get the inner exception details
+                        var innerException = ex.InnerException?.Message ?? "No inner exception";
+                        var errorMessage = $"Database error: {ex.Message}. Inner: {innerException}";
+                        _logger.LogError(errorMessage);
+                        return StatusCode(500, errorMessage);
+                    }
 
                     _logger.LogInformation($"Document uploaded: {document.Name}");
 
                     return Ok(new
                     {
-                        id = document.Id,
-                        name = document.Name,
-                        type = document.Type,
-                        size = document.Size,
-                        uploaded = document.UploadedAt.ToString("yyyy-MM-dd")
+                        document.Id,
+                        document.Name,
+                        document.Type,
+                        document.Size,
+                        Uploaded = document.UploadedAt
                     });
                 }
             }
@@ -617,6 +733,7 @@ namespace MonitoringSystem.Controllers
                 if (string.IsNullOrEmpty(document.FileData))
                     return NotFound("File data not found");
 
+                // Convert Base64 string back to bytes
                 var fileBytes = Convert.FromBase64String(document.FileData);
                 var contentType = GetContentType(document.Type);
 
@@ -629,7 +746,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // DELETE: Delete a document
+        // ===== DELETE DOCUMENT =====
         [HttpDelete]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteDocument(int id)
@@ -638,19 +755,66 @@ namespace MonitoringSystem.Controllers
             {
                 var document = await _context.Documents.FindAsync(id);
                 if (document == null)
-                    return NotFound("Document not found");
+                {
+                    return Json(new { success = false, message = "Document not found." });
+                }
 
                 _context.Documents.Remove(document);
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation($"Document deleted: {document.Name}");
 
-                return Ok(new { success = true, message = "Document deleted successfully" });
+                return Json(new { success = true, message = "Document deleted successfully." });
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Error deleting document: {ex.Message}");
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===== FIXED: DELETE STUDENT TIME LOG WITH IMPROVED ERROR HANDLING =====
+        [HttpDelete]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTimeLogSubmission(string id)
+        {
+            try
+            {
+                _logger.LogInformation($"Attempting to delete time log submission with ID: {id}");
+
+                if (string.IsNullOrEmpty(id))
+                {
+                    _logger.LogWarning("Delete attempted with null or empty ID");
+                    return Json(new { success = false, message = "Invalid ID provided" });
+                }
+
+                var submission = await _context.StudentTimeLogs.FindAsync(id);
+
+                if (submission == null)
+                {
+                    _logger.LogWarning($"Time log submission not found with ID: {id}");
+                    return Json(new { success = false, message = "Time log submission not found." });
+                }
+
+                _context.StudentTimeLogs.Remove(submission);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Time log submission deleted successfully: ID {id}");
+
+                return Json(new { success = true, message = "Time log submission deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting time log submission ID {id}: {ex.Message}");
+                _logger.LogError($"Stack trace: {ex.StackTrace}");
+
+                // Check for inner exception
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError($"Inner exception: {ex.InnerException.Message}");
+                }
+
+                return Json(new { success = false, message = $"Server error: {ex.Message}" });
             }
         }
 
@@ -704,10 +868,16 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // GET: Admin Reports page
+        // GET: Admin Reports page - UPDATED WITH CACHE HEADERS
         public IActionResult Reports()
         {
             Console.WriteLine("========== REPORTS ACTION HIT ==========");
+
+            // Add cache headers to prevent caching
+            Response.Headers["Cache-Control"] = "no-cache, no-store, must-revalidate";
+            Response.Headers["Pragma"] = "no-cache";
+            Response.Headers["Expires"] = "0";
+
             return View();
         }
 
@@ -1227,6 +1397,37 @@ namespace MonitoringSystem.Controllers
                 return StatusCode(500, new { success = false, message = "An error occurred" });
             }
         }
+
+        // ===== UPDATED: METHOD FOR UPDATING STUDENT TIME LOG STATUS (using StudentTimeLogs) =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateSubmissionStatus([FromBody] UpdateSubmissionStatusModel model)
+        {
+            try
+            {
+                var submission = await _context.StudentTimeLogs
+                    .FirstOrDefaultAsync(s => s.Id == model.Id);
+
+                if (submission == null)
+                {
+                    return Json(new { success = false, message = "Submission not found" });
+                }
+
+                submission.Status = model.Status;
+                submission.AdminRemarks = model.Remarks;
+                submission.ProcessedDate = DateTime.Now;
+                submission.IsRead = true;
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = $"Submission {model.Status.ToLower()} successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating submission status: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 
     public class MakeAdminRequest
@@ -1273,5 +1474,13 @@ namespace MonitoringSystem.Controllers
         public string fullName { get; set; }
         public string email { get; set; }
         public string userMobile { get; set; }
+    }
+
+    // ===== MODEL FOR SUBMISSION STATUS UPDATE =====
+    public class UpdateSubmissionStatusModel
+    {
+        public string Id { get; set; }
+        public string Status { get; set; }
+        public string Remarks { get; set; }
     }
 }

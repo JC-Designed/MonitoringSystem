@@ -8,6 +8,19 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Xsrf
 @{
     var token = Xsrf.GetAndStoreTokens(Context).RequestToken;
+    var user = await UserManager.GetUserAsync(User);
+    var userRole = user?.Role ?? "Student";
+    var userFullName = user?.FullName ?? "Student User";
+    var userEmail = user?.Email ?? "";
+    var userProfileImage = user?.ProfileImage ?? "/images/ctu-logo.png";
+    var userMobileNumber = user?.MobileNumber ?? "";
+    var userAddress = user?.Address ?? "";
+    var userFacebook = user?.Facebook ?? "";
+    var userCompany = user?.CompanyID?.ToString() ?? "";
+    var userStudentId = user?.StudentId ?? "";
+    var userProgram = user?.Program ?? "";
+    var userBirthDate = user?.BirthDate?.ToString("yyyy-MM-dd") ?? "2000-01-01";
+    var userContact = user?.ContactPerson ?? "";
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -145,22 +158,6 @@
     @RenderSection("Styles", required: false)
 </head>
 <body>
-    @{
-        var user = await UserManager.GetUserAsync(User);
-        var userRole = user?.Role ?? "Student";
-        var userFullName = user?.FullName ?? "Student User";
-        var userEmail = user?.Email ?? "";
-        var userProfileImage = user?.ProfileImage ?? "/images/ctu-logo.png";
-        var userMobileNumber = user?.MobileNumber ?? "";
-        var userAddress = user?.Address ?? "";
-        var userFacebook = user?.Facebook ?? "";
-        var userCompany = user?.CompanyID?.ToString() ?? "";
-        var userStudentId = user?.StudentId ?? "";
-        var userProgram = user?.Program ?? "";
-        var userBirthDate = user?.BirthDate?.ToString("yyyy-MM-dd") ?? "2000-01-01";
-        var userContact = user?.ContactPerson ?? "";
-    }
-
     <!-- Overlay -->
     <div class="sidebar-overlay"></div>
 
@@ -184,13 +181,13 @@
 
             <!-- Menu -->
             <nav class="admin-menu">
-                <a asp-action="Dashboard" asp-controller="Student" class="menu-link" id="dashboardBtn">
+                <a href="javascript:void(0);" class="menu-link" id="dashboardBtn" data-url="/Student/Dashboard" data-title="Dashboard">
                     <i class="bi bi-speedometer2"></i> <span>Dashboard</span>
                 </a>
-                <a asp-action="Tasks" asp-controller="Student" class="menu-link">
+                <a href="javascript:void(0);" class="menu-link" id="tasksBtn" data-url="/Student/Tasks" data-title="Tasks">
                     <i class="bi bi-clipboard-check-fill"></i> <span>Tasks</span>
                 </a>
-                <a asp-action="Report" asp-controller="Student" class="menu-link">
+                <a href="javascript:void(0);" class="menu-link" id="reportBtn" data-url="/Student/Report" data-title="Report">
                     <i class="bi bi-file-earmark-text-fill"></i> <span>Report</span>
                 </a>
                 <hr />
@@ -264,571 +261,658 @@
     <!-- JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Sidebar functionality
-        const sidebar = document.querySelector('.admin-sidebar');
-        const desktopToggle = document.getElementById('desktopSidebarToggle');
-        const mobileToggle = document.getElementById('sidebarToggle');
-        const overlay = document.querySelector('.sidebar-overlay');
+        (function() {
+            // ========== Global Variables ==========
+            const mainContent = document.getElementById("adminMainContent");
+            const viewProfileBtn = document.getElementById("viewProfileBtn");
+            const topbarProfilePic = document.getElementById("topbarProfilePic");
 
-        if (window.innerWidth >= 768) sidebar.classList.add('expanded');
+            // Store original user data from Razor
+            let currentUserData = {
+                fullName: '@Html.Raw(userFullName)',
+                facebook: '@Html.Raw(userFacebook)',
+                company: '@Html.Raw(userCompany)',
+                mobileNumber: '@Html.Raw(userMobileNumber)',
+                address: '@Html.Raw(userAddress)',
+                contact: '@Html.Raw(userContact)',
+                studentId: '@Html.Raw(userStudentId)',
+                program: '@Html.Raw(userProgram)',
+                birthDate: '@userBirthDate',
+                email: '@Html.Raw(userEmail)',
+                profileImage: '@Html.Raw(userProfileImage)'
+            };
 
-        desktopToggle?.addEventListener('click', () => sidebar.classList.toggle('expanded'));
-        mobileToggle?.addEventListener('click', () => {
-            sidebar.classList.toggle('expanded');
-            overlay.classList.toggle('active');
-        });
-        overlay?.addEventListener('click', () => {
-            sidebar.classList.remove('expanded');
-            overlay.classList.remove('active');
-        });
+            // Hours data for profile view
+            let profileHours = {
+                rendered: 0,
+                remaining: 0,
+                total: 0
+            };
 
-        // ========== Toast Notification Function ==========
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toastContainer');
-            const toastId = 'toast_' + Date.now();
+            // ========== Sidebar Functionality ==========
+            const sidebar = document.querySelector('.admin-sidebar');
+            const desktopToggle = document.getElementById('desktopSidebarToggle');
+            const mobileToggle = document.getElementById('sidebarToggle');
+            const overlay = document.querySelector('.sidebar-overlay');
 
-            const icon = type === 'success' ? '✓' : '✗';
-            const title = type === 'success' ? 'Success' : 'Error';
+            function initSidebar() {
+                if (window.innerWidth >= 768) sidebar.classList.add('expanded');
 
-            const toastHTML = `
-                <div class="toast-notification ${type}" id="${toastId}">
-                    <div class="toast-icon">${icon}</div>
-                    <div class="toast-content">
-                        <div class="toast-title">${title}</div>
-                        <div class="toast-message">${message}</div>
+                desktopToggle?.addEventListener('click', () => sidebar.classList.toggle('expanded'));
+                mobileToggle?.addEventListener('click', () => {
+                    sidebar.classList.toggle('expanded');
+                    overlay.classList.toggle('active');
+                });
+                overlay?.addEventListener('click', () => {
+                    sidebar.classList.remove('expanded');
+                    overlay.classList.remove('active');
+                });
+            }
+
+            // ========== Toast Notification Function ==========
+            window.showToast = function(message, type = 'success') {
+                const container = document.getElementById('toastContainer');
+                const toastId = 'toast_' + Date.now();
+
+                const icon = type === 'success' ? '✓' : '✗';
+                const title = type === 'success' ? 'Success' : 'Error';
+
+                const toastHTML = `
+                    <div class="toast-notification ${type}" id="${toastId}">
+                        <div class="toast-icon">${icon}</div>
+                        <div class="toast-content">
+                            <div class="toast-title">${title}</div>
+                            <div class="toast-message">${message}</div>
+                        </div>
+                        <div class="toast-close" onclick="this.parentElement.remove()">×</div>
                     </div>
-                    <div class="toast-close" onclick="this.parentElement.remove()">×</div>
-                </div>
-            `;
+                `;
 
-            container.insertAdjacentHTML('beforeend', toastHTML);
+                container.insertAdjacentHTML('beforeend', toastHTML);
 
-            setTimeout(() => {
-                const toast = document.getElementById(toastId);
-                if (toast) {
-                    toast.classList.add('show');
-                }
-            }, 10);
+                setTimeout(() => {
+                    const toast = document.getElementById(toastId);
+                    if (toast) {
+                        toast.classList.add('show');
+                    }
+                }, 10);
 
-            // Auto remove after 3 seconds
-            setTimeout(() => {
-                const toast = document.getElementById(toastId);
-                if (toast) {
-                    toast.classList.remove('show');
-                    setTimeout(() => toast.remove(), 300);
-                }
-            }, 3000);
-        }
+                setTimeout(() => {
+                    const toast = document.getElementById(toastId);
+                    if (toast) {
+                        toast.classList.remove('show');
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, 3000);
+            };
 
-        // ========== SPA Content Switching ==========
-        const mainContent = document.getElementById("adminMainContent");
-        const viewProfileBtn = document.getElementById("viewProfileBtn");
-        const topbarProfilePic = document.getElementById("topbarProfilePic");
+            // ========== Helper Functions ==========
+            function escapeHtml(text) {
+                if (!text) return text;
+                return String(text)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
 
-        // Store original user data from Razor
-        let currentUserData = {
-            fullName: '@Html.Raw(userFullName)',
-            facebook: '@Html.Raw(userFacebook)',
-            company: '@Html.Raw(userCompany)',
-            mobileNumber: '@Html.Raw(userMobileNumber)',
-            address: '@Html.Raw(userAddress)',
-            contact: '@Html.Raw(userContact)',
-            studentId: '@Html.Raw(userStudentId)',
-            program: '@Html.Raw(userProgram)',
-            birthDate: '@userBirthDate',
-            email: '@Html.Raw(userEmail)',
-            profileImage: '@Html.Raw(userProfileImage)'
-        };
-
-        // Hours data for profile view
-        let profileHours = {
-            rendered: 0,
-            remaining: 0,
-            total: 0
-        };
-
-        // Function to fetch fresh user data
-        async function fetchFreshUserData() {
-            try {
+            async function fetchWithToken(url, options = {}) {
                 const token = document.getElementById('antiForgeryToken')?.value;
-                const response = await fetch('/Student/GetCurrentUser', {
-                    method: 'GET',
+
+                const defaultHeaders = {
+                    'RequestVerificationToken': token,
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+
+                if (options.body && !(options.body instanceof FormData)) {
+                    defaultHeaders['Content-Type'] = 'application/json';
+                }
+
+                const response = await fetch(url, {
+                    ...options,
                     headers: {
-                        'RequestVerificationToken': token
+                        ...defaultHeaders,
+                        ...options.headers
                     }
                 });
 
-                const data = await response.json();
-                console.log('User data:', data);
-
-                if (data.success) {
-                    return data.user;
-                }
-                return currentUserData;
-            } catch (error) {
-                console.error('Error fetching user data:', error);
-                return currentUserData;
-            }
-        }
-
-        // Function to load student hours (rendered, remaining, total) for profile
-        async function loadProfileHours() {
-            try {
-                // First get user data to get total allotted
-                const userResponse = await fetch('/Student/GetCurrentUser');
-                const userData = await userResponse.json();
-                const total = userData.user?.totalAllottedHours || 0;
-
-                // Then get time logs to calculate rendered
-                const logsResponse = await fetch('/Student/GetTimeLogs');
-                let rendered = 0;
-                if (logsResponse.ok) {
-                    const logs = await logsResponse.json();
-                    rendered = logs
-                        .filter(log => log.type === 'regular')
-                        .reduce((sum, log) => sum + (log.totalHours || 0), 0);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                profileHours = {
-                    rendered: rendered,
-                    remaining: total - rendered,
-                    total: total
-                };
-            } catch (error) {
-                console.error('Error loading profile hours:', error);
-                profileHours = { rendered: 0, remaining: 0, total: 0 };
+                return response;
             }
-        }
 
-        // Function to create profile HTML with data and hours
-        function getProfileHTML(userData, hours) {
-            return `
-                <div class="container py-4">
-                    <!-- Profile Picture with upload -->
-                    <div class="profile-pic-wrapper mb-4 position-relative" style="width:140px; height:140px;">
-                        <img src="${userData.profileImage || '/images/ctu-logo.png'}" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
-                        <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
-                             style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
-                            <i class="bi bi-camera-fill text-white fs-4"></i>
-                        </div>
-                        <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
-                             style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
-                            <i class="bi bi-camera-fill text-white"></i>
-                        </div>
-                        <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
-                    </div>
+            // ========== Data Fetching Functions ==========
+            async function fetchFreshUserData() {
+                try {
+                    const response = await fetchWithToken('/Student/GetCurrentUser');
+                    const data = await response.json();
 
-                    <div class="d-flex justify-content-end mb-3">
-                        <button class="btn" id="editProfileBtn" style="background-color: #0d6efd; color: white; border: none; padding: 8px 25px; font-weight: 500;">
-                            <i class="bi bi-pencil-square me-2"></i>Edit Profile
-                        </button>
-                    </div>
+                    if (data.success) {
+                        return data.user;
+                    }
+                    return currentUserData;
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                    return currentUserData;
+                }
+            }
 
-                    <div class="card shadow-sm p-4" style="max-width:1200px;">
-                        <div class="flex-grow-1 w-100">
-                            <!-- Row 1 -->
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label for="fullName" class="form-label fw-bold">Full Name</label>
-                                    <input type="text" id="fullName" class="form-control" value="${escapeHtml(userData.fullName) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="facebook" class="form-label fw-bold">Facebook</label>
-                                    <input type="text" id="facebook" class="form-control" value="${escapeHtml(userData.facebook) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="company" class="form-label fw-bold">Company</label>
-                                    <input type="text" id="company" class="form-control" value="${escapeHtml(userData.company) || ''}" readonly>
-                                </div>
+            async function loadProfileHours() {
+                try {
+                    const userResponse = await fetchWithToken('/Student/GetCurrentUser');
+                    const userData = await userResponse.json();
+                    const total = userData.user?.totalAllottedHours || 0;
+
+                    const logsResponse = await fetchWithToken('/Student/GetTimeLogs');
+                    let rendered = 0;
+
+                    if (logsResponse.ok) {
+                        const logs = await logsResponse.json();
+                        rendered = logs
+                            .filter(log => log.type === 'regular')
+                            .reduce((sum, log) => sum + (log.totalHours || 0), 0);
+                    }
+
+                    return {
+                        rendered: rendered,
+                        remaining: total - rendered,
+                        total: total
+                    };
+                } catch (error) {
+                    console.error('Error loading profile hours:', error);
+                    return { rendered: 0, remaining: 0, total: 0 };
+                }
+            }
+
+            // ========== Profile Functions ==========
+            function getProfileHTML(userData, hours) {
+                return `
+                    <div class="container py-4">
+                        <div class="profile-pic-wrapper mb-4 position-relative" style="width:140px; height:140px;">
+                            <img src="${userData.profileImage || '/images/ctu-logo.png'}" id="profileImage" class="rounded-circle border border-3 border-white" style="width:140px;height:140px;object-fit:cover;">
+                            <div class="profile-pic-overlay d-flex justify-content-center align-items-center"
+                                 style="position:absolute; top:0; left:0; width:100%; height:100%; border-radius:50%; background:rgba(0,0,0,0.3); opacity:0; cursor:pointer; transition:opacity 0.2s;">
+                                <i class="bi bi-camera-fill text-white fs-4"></i>
                             </div>
+                            <div class="change-pic-icon position-absolute d-flex justify-content-center align-items-center"
+                                 style="width:36px; height:36px; bottom:0; right:0; background:rgba(0,0,0,0.2); border-radius:50%; border:2px solid white; cursor:pointer;">
+                                <i class="bi bi-camera-fill text-white"></i>
+                            </div>
+                            <input type="file" id="profilePicInput" accept="image/*" style="display:none;">
+                        </div>
 
-                            <!-- Row 2 -->
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label for="mobileNumber" class="form-label fw-bold">Mobile Number</label>
-                                    <input type="text" id="mobileNumber" class="form-control" value="${escapeHtml(userData.mobileNumber) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="address" class="form-label fw-bold">Address</label>
-                                    <input type="text" id="address" class="form-control" value="${escapeHtml(userData.address) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="password" class="form-label fw-bold">Password</label>
-                                    <div class="input-group">
-                                        <input type="password" id="password" class="form-control" value="********" readonly />
-                                        <span class="input-group-text" id="togglePassword" style="background:transparent; border-left:0; cursor:pointer;">
-                                            <i class="bi bi-eye-slash"></i>
-                                        </span>
+                        <div class="d-flex justify-content-end mb-3">
+                            <button class="btn" id="editProfileBtn" style="background-color: #0d6efd; color: white; border: none; padding: 8px 25px; font-weight: 500;">
+                                <i class="bi bi-pencil-square me-2"></i>Edit Profile
+                            </button>
+                        </div>
+
+                        <div class="card shadow-sm p-4" style="max-width:1200px;">
+                            <div class="flex-grow-1 w-100">
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="fullName" class="form-label fw-bold">Full Name</label>
+                                        <input type="text" id="fullName" class="form-control" value="${escapeHtml(userData.fullName) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="facebook" class="form-label fw-bold">Facebook</label>
+                                        <input type="text" id="facebook" class="form-control" value="${escapeHtml(userData.facebook) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="company" class="form-label fw-bold">Company</label>
+                                        <input type="text" id="company" class="form-control" value="${escapeHtml(userData.company) || ''}" readonly>
                                     </div>
                                 </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="mobileNumber" class="form-label fw-bold">Mobile Number</label>
+                                        <input type="text" id="mobileNumber" class="form-control" value="${escapeHtml(userData.mobileNumber) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="address" class="form-label fw-bold">Address</label>
+                                        <input type="text" id="address" class="form-control" value="${escapeHtml(userData.address) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="password" class="form-label fw-bold">Password</label>
+                                        <div class="input-group">
+                                            <input type="password" id="password" class="form-control" value="********" readonly />
+                                            <span class="input-group-text" id="togglePassword" style="background:transparent; border-left:0; cursor:pointer;">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="contactPerson" class="form-label fw-bold">Contact Person</label>
+                                        <input type="text" id="contactPerson" class="form-control" value="${escapeHtml(userData.contact) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="studentId" class="form-label fw-bold">Student ID</label>
+                                        <input type="text" id="studentId" class="form-control" value="${escapeHtml(userData.studentId) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="program" class="form-label fw-bold">Program</label>
+                                        <input type="text" id="program" class="form-control" value="${escapeHtml(userData.program) || ''}" readonly>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Rendered Hours</label>
+                                        <input type="text" class="form-control" value="${hours.rendered.toFixed(1)} hrs" readonly style="background-color: #e9ecef;">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Remaining Hours</label>
+                                        <input type="text" class="form-control" value="${hours.remaining.toFixed(1)} hrs" readonly style="background-color: #e9ecef;">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label fw-bold">Total Allotted</label>
+                                        <input type="text" class="form-control" value="${hours.total} hrs" readonly style="background-color: #e9ecef;">
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <label for="birthdate" class="form-label fw-bold">Birthdate</label>
+                                        <input type="date" id="birthdate" class="form-control" value="${userData.birthDate || '2000-01-01'}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="email" class="form-label fw-bold">Email</label>
+                                        <input type="email" id="email" class="form-control" value="${escapeHtml(userData.email) || ''}" readonly>
+                                    </div>
+                                    <div class="col-md-4"></div>
+                                </div>
+
+                                <div class="text-end" id="saveButtonContainer" style="display: none;">
+                                    <button class="btn" id="saveProfileBtn" style="background-color: #07B618; border-color: #07B618; color: white; padding: 8px 30px; font-weight: 500;">
+                                        <i class="bi bi-check-circle me-2"></i>Save Changes
+                                    </button>
+                                </div>
                             </div>
-
-                            <!-- Row 3 -->
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label for="contactPerson" class="form-label fw-bold">Contact Person</label>
-                                    <input type="text" id="contactPerson" class="form-control" value="${escapeHtml(userData.contact) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="studentId" class="form-label fw-bold">Student ID</label>
-                                    <input type="text" id="studentId" class="form-control" value="${escapeHtml(userData.studentId) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="program" class="form-label fw-bold">Program</label>
-                                    <input type="text" id="program" class="form-control" value="${escapeHtml(userData.program) || ''}" readonly>
-                                </div>
-                            </div>
-
-                            <!-- Row 4 - Hours fields (now using real data) -->
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Rendered Hours</label>
-                                    <input type="text" class="form-control" value="${hours.rendered.toFixed(1)} hrs" readonly style="background-color: #e9ecef;">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Remaining Hours</label>
-                                    <input type="text" class="form-control" value="${hours.remaining.toFixed(1)} hrs" readonly style="background-color: #e9ecef;">
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Total Allotted</label>
-                                    <input type="text" class="form-control" value="${hours.total} hrs" readonly style="background-color: #e9ecef;">
-                                </div>
-                            </div>
-
-                            <!-- Row 5 -->
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label for="birthdate" class="form-label fw-bold">Birthdate</label>
-                                    <input type="date" id="birthdate" class="form-control" value="${userData.birthDate || '2000-01-01'}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <label for="email" class="form-label fw-bold">Email</label>
-                                    <input type="email" id="email" class="form-control" value="${escapeHtml(userData.email) || ''}" readonly>
-                                </div>
-                                <div class="col-md-4">
-                                    <!-- Empty for spacing -->
-                                </div>
-                            </div>
-
-                            <!-- Save Changes Button -->
-                            <div class="text-end" id="saveButtonContainer" style="display: none;">
-                                <button class="btn" id="saveProfileBtn" style="background-color: #07B618; border-color: #07B618; color: white; padding: 8px 30px; font-weight: 500;">
-                                    <i class="bi bi-check-circle me-2"></i>Save Changes
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Helper function to escape HTML
-        function escapeHtml(text) {
-            if (!text) return text;
-            return String(text)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
-
-        // Profile SPA (updated to load real hours)
-        async function openProfileSPA() {
-            // Show loading
-            mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-            document.querySelector(".topbar-title").textContent = "Profile";
-
-            // Fetch fresh user data and hours
-            const freshUserData = await fetchFreshUserData();
-            await loadProfileHours(); // This sets profileHours
-
-            // Update current data
-            if (freshUserData) {
-                currentUserData = freshUserData;
-            }
-
-            // Generate and set HTML using real hours
-            mainContent.innerHTML = getProfileHTML(currentUserData, profileHours);
-
-            // Initialize all event listeners
-            initializeProfileEvents();
-        }
-
-        // Initialize all profile events
-        function initializeProfileEvents() {
-            // Profile picture upload
-            const profileImage = document.getElementById("profileImage");
-            const profileOverlay = document.querySelector(".profile-pic-overlay");
-            const changePicIcon = document.querySelector(".change-pic-icon");
-            const profilePicInput = document.getElementById("profilePicInput");
-
-            if (profileOverlay) {
-                profileOverlay.addEventListener("click", () => profilePicInput?.click());
-            }
-            if (changePicIcon) {
-                changePicIcon.addEventListener("click", () => profilePicInput?.click());
-            }
-
-            if (profilePicInput) {
-                profilePicInput.addEventListener("change", async (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                        const formData = new FormData();
-                        formData.append('profileImage', e.target.files[0]);
-
-                        try {
-                            const token = document.getElementById('antiForgeryToken')?.value;
-                            const response = await fetch('/Student/UploadProfileImage', {
-                                method: 'POST',
-                                body: formData,
-                                headers: {
-                                    'RequestVerificationToken': token
-                                }
-                            });
-
-                            const data = await response.json();
-                            if (data.success) {
-                                const reader = new FileReader();
-                                reader.onload = function(evt) {
-                                    if (profileImage) profileImage.src = evt.target.result;
-                                    if (topbarProfilePic) topbarProfilePic.src = evt.target.result;
-                                    currentUserData.profileImage = evt.target.result;
-                                }
-                                reader.readAsDataURL(e.target.files[0]);
-                                showToast('Profile picture updated successfully!', 'success');
-                            } else {
-                                showToast(data.message || 'Failed to upload image', 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error uploading image:', error);
-                            showToast('Error uploading image', 'error');
-                        }
-                    }
-                });
-            }
-
-            // Password toggle
-            const passwordInput = document.getElementById('password');
-            const togglePassword = document.getElementById('togglePassword');
-
-            if (togglePassword && passwordInput) {
-                // Remove old event listeners by cloning
-                const newToggle = togglePassword.cloneNode(true);
-                togglePassword.parentNode.replaceChild(newToggle, togglePassword);
-
-                newToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const type = passwordInput.type === 'password' ? 'text' : 'password';
-                    passwordInput.type = type;
-
-                    const icon = this.querySelector('i');
-                    if (icon) {
-                        if (type === 'text') {
-                            icon.classList.remove('bi-eye-slash');
-                            icon.classList.add('bi-eye');
-                        } else {
-                            icon.classList.remove('bi-eye');
-                            icon.classList.add('bi-eye-slash');
-                        }
-                    }
-                });
-            }
-
-            // Edit Profile button
-            const editProfileBtn = document.getElementById('editProfileBtn');
-            const saveButtonContainer = document.getElementById('saveButtonContainer');
-
-            if (editProfileBtn) {
-                editProfileBtn.addEventListener('click', function() {
-                    document.querySelectorAll('#fullName, #facebook, #company, #mobileNumber, #address, #contactPerson, #studentId, #program, #birthdate, #email').forEach(input => {
-                        if (input) {
-                            input.removeAttribute('readonly');
-                            input.classList.add('border-primary');
-                        }
-                    });
-
-                    editProfileBtn.style.display = 'none';
-                    if (saveButtonContainer) saveButtonContainer.style.display = 'block';
-                });
-            }
-
-            // Save Changes button - WITH TOAST NOTIFICATION
-            const saveProfileBtn = document.getElementById('saveProfileBtn');
-            if (saveProfileBtn) {
-                saveProfileBtn.addEventListener('click', async function() {
-                    // Disable button to prevent double-click
-                    saveProfileBtn.disabled = true;
-                    const originalText = saveProfileBtn.innerHTML;
-                    saveProfileBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
-
-                    const updatedData = {
-                        FullName: document.getElementById('fullName')?.value || '',
-                        Facebook: document.getElementById('facebook')?.value || '',
-                        Company: document.getElementById('company')?.value || '',
-                        MobileNumber: document.getElementById('mobileNumber')?.value || '',
-                        Address: document.getElementById('address')?.value || '',
-                        Contact: document.getElementById('contactPerson')?.value || '',
-                        StudentId: document.getElementById('studentId')?.value || '',
-                        Program: document.getElementById('program')?.value || '',
-                        BirthDate: document.getElementById('birthdate')?.value || '',
-                        Email: document.getElementById('email')?.value || ''
-                    };
-
-                    console.log('Sending data:', updatedData);
-
-                    try {
-                        // Get token value inside the function
-                        const token = document.getElementById('antiForgeryToken')?.value;
-                        console.log('Token being sent:', token);
-
-                        const response = await fetch('/Student/UpdateProfile', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'RequestVerificationToken': token
-                            },
-                            body: JSON.stringify(updatedData)
-                        });
-
-                        // Check if response is OK
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            throw new Error(`Server returned ${response.status}: ${errorText || 'No error message'}`);
-                        }
-
-                        const data = await response.json();
-                        console.log('Save response:', data);
-
-                        if (data.success) {
-                            showToast('Profile updated successfully!', 'success');
-
-                            // Make fields readonly again
-                            document.querySelectorAll('#fullName, #facebook, #company, #mobileNumber, #address, #contactPerson, #studentId, #program, #birthdate, #email').forEach(input => {
-                                if (input) {
-                                    input.setAttribute('readonly', true);
-                                    input.classList.remove('border-primary');
-                                }
-                            });
-
-                            if (saveButtonContainer) saveButtonContainer.style.display = 'none';
-                            if (editProfileBtn) editProfileBtn.style.display = 'block';
-
-                            // Update currentUserData
-                            currentUserData = {
-                                ...currentUserData,
-                                fullName: updatedData.FullName,
-                                facebook: updatedData.Facebook,
-                                company: updatedData.Company,
-                                mobileNumber: updatedData.MobileNumber,
-                                address: updatedData.Address,
-                                contact: updatedData.Contact,
-                                studentId: updatedData.StudentId,
-                                program: updatedData.Program,
-                                birthDate: updatedData.BirthDate,
-                                email: updatedData.Email
-                            };
-
-                            // Update topbar name
-                            if (updatedData.FullName) {
-                                const nameElement = document.querySelector('.dropdown strong');
-                                if (nameElement) {
-                                    nameElement.textContent = updatedData.FullName;
-                                }
-                            }
-                        } else {
-                            showToast(data.message || 'Failed to save changes', 'error');
-                        }
-                    } catch (error) {
-                        console.error('Error saving profile:', error);
-                        showToast('Error: ' + error.message, 'error');
-                    } finally {
-                        // Re-enable button
-                        saveProfileBtn.disabled = false;
-                        saveProfileBtn.innerHTML = originalText;
-                    }
-                });
-            }
-        }
-
-        // Event listeners
-        viewProfileBtn?.addEventListener("click", (e) => {
-            e.preventDefault();
-            openProfileSPA();
-        });
-
-        // ========== FIXED DASHBOARD BUTTON - Now fetches from server ==========
-        document.getElementById("dashboardBtn")?.addEventListener("click", async (e) => {
-            e.preventDefault();
-
-            // Show loading
-            mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-            document.querySelector(".topbar-title").textContent = "Dashboard";
-
-            try {
-                // Fetch the Dashboard page from the server
-                const response = await fetch('/Student/Dashboard');
-                const html = await response.text();
-
-                // Extract only the content inside adminMainContent
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newContent = doc.getElementById('adminMainContent');
-
-                if (newContent) {
-                    mainContent.innerHTML = newContent.innerHTML;
-                } else {
-                    mainContent.innerHTML = html;
-                }
-
-                // Re-run any scripts if needed
-                const scripts = mainContent.getElementsByTagName('script');
-                for (let script of scripts) {
-                    if (script.src) {
-                        const newScript = document.createElement('script');
-                        newScript.src = script.src;
-                        document.body.appendChild(newScript);
-                    } else {
-                        eval(script.innerHTML);
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading dashboard:', error);
-                mainContent.innerHTML = '<div class="alert alert-danger">Error loading dashboard</div>';
-            }
-        });
-
-        // Notifications
-        const notifBell = document.getElementById("notifBell");
-        notifBell?.addEventListener("click", function() {
-            mainContent.style.opacity = 0;
-            setTimeout(() => {
-                mainContent.innerHTML = `
-                    <div class="container py-4">
-                        <h4 class="mb-4">Notification History</h4>
-                        <div class="card shadow-sm mb-4 p-4">
-                            <p class="text-muted">No notifications yet.</p>
                         </div>
                     </div>
                 `;
-                document.querySelector(".topbar-title").textContent = "Notifications";
-                mainContent.style.opacity = 1;
-            }, 200);
-        });
+            }
 
-        // Dark Mode
-        const themeToggle = document.getElementById("themeToggle");
-        const themeIcon = document.getElementById("themeIcon");
-        if (localStorage.getItem("darkMode") === "true") {
-            document.body.classList.add("dark-mode");
-            themeIcon.classList.replace("bi-moon-fill", "bi-sun-fill");
-        }
-        themeToggle?.addEventListener("click", () => {
-            document.body.classList.toggle("dark-mode");
-            const isDark = document.body.classList.contains("dark-mode");
-            themeIcon.classList.toggle("bi-moon-fill", !isDark);
-            themeIcon.classList.toggle("bi-sun-fill", isDark);
-            localStorage.setItem("darkMode", isDark);
-        });
+            async function openProfileSPA() {
+                mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                document.querySelector(".topbar-title").textContent = "Profile";
+
+                const [freshUserData, hours] = await Promise.all([
+                    fetchFreshUserData(),
+                    loadProfileHours()
+                ]);
+
+                if (freshUserData) {
+                    currentUserData = freshUserData;
+                }
+
+                mainContent.innerHTML = getProfileHTML(currentUserData, hours);
+                initializeProfileEvents();
+            }
+
+            function initializeProfileEvents() {
+                const profileImage = document.getElementById("profileImage");
+                const profileOverlay = document.querySelector(".profile-pic-overlay");
+                const changePicIcon = document.querySelector(".change-pic-icon");
+                const profilePicInput = document.getElementById("profilePicInput");
+
+                if (profileOverlay) {
+                    profileOverlay.addEventListener("click", () => profilePicInput?.click());
+                }
+                if (changePicIcon) {
+                    changePicIcon.addEventListener("click", () => profilePicInput?.click());
+                }
+
+                if (profilePicInput) {
+                    profilePicInput.addEventListener("change", async (e) => {
+                        if (e.target.files && e.target.files[0]) {
+                            const formData = new FormData();
+                            formData.append('profileImage', e.target.files[0]);
+
+                            try {
+                                const response = await fetchWithToken('/Student/UploadProfileImage', {
+                                    method: 'POST',
+                                    body: formData
+                                });
+
+                                const data = await response.json();
+                                if (data.success) {
+                                    const reader = new FileReader();
+                                    reader.onload = function(evt) {
+                                        if (profileImage) profileImage.src = evt.target.result;
+                                        if (topbarProfilePic) topbarProfilePic.src = evt.target.result;
+                                        currentUserData.profileImage = evt.target.result;
+                                    }
+                                    reader.readAsDataURL(e.target.files[0]);
+                                    showToast('Profile picture updated successfully!', 'success');
+                                } else {
+                                    showToast(data.message || 'Failed to upload image', 'error');
+                                }
+                            } catch (error) {
+                                console.error('Error uploading image:', error);
+                                showToast('Error uploading image', 'error');
+                            }
+                        }
+                    });
+                }
+
+                const passwordInput = document.getElementById('password');
+                const togglePassword = document.getElementById('togglePassword');
+
+                if (togglePassword && passwordInput) {
+                    const newToggle = togglePassword.cloneNode(true);
+                    togglePassword.parentNode.replaceChild(newToggle, togglePassword);
+
+                    newToggle.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const type = passwordInput.type === 'password' ? 'text' : 'password';
+                        passwordInput.type = type;
+
+                        const icon = this.querySelector('i');
+                        if (icon) {
+                            if (type === 'text') {
+                                icon.classList.remove('bi-eye-slash');
+                                icon.classList.add('bi-eye');
+                            } else {
+                                icon.classList.remove('bi-eye');
+                                icon.classList.add('bi-eye-slash');
+                            }
+                        }
+                    });
+                }
+
+                const editProfileBtn = document.getElementById('editProfileBtn');
+                const saveButtonContainer = document.getElementById('saveButtonContainer');
+
+                if (editProfileBtn) {
+                    editProfileBtn.addEventListener('click', function() {
+                        document.querySelectorAll('#fullName, #facebook, #company, #mobileNumber, #address, #contactPerson, #studentId, #program, #birthdate, #email').forEach(input => {
+                            if (input) {
+                                input.removeAttribute('readonly');
+                                input.classList.add('border-primary');
+                            }
+                        });
+
+                        editProfileBtn.style.display = 'none';
+                        if (saveButtonContainer) saveButtonContainer.style.display = 'block';
+                    });
+                }
+
+                const saveProfileBtn = document.getElementById('saveProfileBtn');
+                if (saveProfileBtn) {
+                    saveProfileBtn.addEventListener('click', async function() {
+                        saveProfileBtn.disabled = true;
+                        const originalText = saveProfileBtn.innerHTML;
+                        saveProfileBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+
+                        const updatedData = {
+                            FullName: document.getElementById('fullName')?.value || '',
+                            Facebook: document.getElementById('facebook')?.value || '',
+                            Company: document.getElementById('company')?.value || '',
+                            MobileNumber: document.getElementById('mobileNumber')?.value || '',
+                            Address: document.getElementById('address')?.value || '',
+                            Contact: document.getElementById('contactPerson')?.value || '',
+                            StudentId: document.getElementById('studentId')?.value || '',
+                            Program: document.getElementById('program')?.value || '',
+                            BirthDate: document.getElementById('birthdate')?.value || '',
+                            Email: document.getElementById('email')?.value || ''
+                        };
+
+                        try {
+                            const response = await fetchWithToken('/Student/UpdateProfile', {
+                                method: 'POST',
+                                body: JSON.stringify(updatedData)
+                            });
+
+                            const data = await response.json();
+
+                            if (data.success) {
+                                showToast('Profile updated successfully!', 'success');
+
+                                document.querySelectorAll('#fullName, #facebook, #company, #mobileNumber, #address, #contactPerson, #studentId, #program, #birthdate, #email').forEach(input => {
+                                    if (input) {
+                                        input.setAttribute('readonly', true);
+                                        input.classList.remove('border-primary');
+                                    }
+                                });
+
+                                if (saveButtonContainer) saveButtonContainer.style.display = 'none';
+                                if (editProfileBtn) editProfileBtn.style.display = 'block';
+
+                                currentUserData = {
+                                    ...currentUserData,
+                                    fullName: updatedData.FullName,
+                                    facebook: updatedData.Facebook,
+                                    company: updatedData.Company,
+                                    mobileNumber: updatedData.MobileNumber,
+                                    address: updatedData.Address,
+                                    contact: updatedData.Contact,
+                                    studentId: updatedData.StudentId,
+                                    program: updatedData.Program,
+                                    birthDate: updatedData.BirthDate,
+                                    email: updatedData.Email
+                                };
+
+                                const nameElement = document.querySelector('.dropdown strong');
+                                if (nameElement && updatedData.FullName) {
+                                    nameElement.textContent = updatedData.FullName;
+                                }
+                            } else {
+                                showToast(data.message || 'Failed to save changes', 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error saving profile:', error);
+                            showToast('Error: ' + error.message, 'error');
+                        } finally {
+                            saveProfileBtn.disabled = false;
+                            saveProfileBtn.innerHTML = originalText;
+                        }
+                    });
+                }
+            }
+
+            // ========== FIXED: Content Loading Function with Better Script Execution ==========
+            async function loadContent(url, title) {
+                // Update browser URL without reloading
+                window.history.pushState({ url: url, title: title }, title, url);
+
+                // Show loading
+                mainContent.innerHTML = '<div class="text-center py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+                document.querySelector(".topbar-title").textContent = title;
+
+                try {
+                    const response = await fetchWithToken(url);
+                    const html = await response.text();
+
+                    // Parse and extract main content
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+
+                    // Look for main content
+                    const newContent = doc.getElementById('adminMainContent') ||
+                                     doc.querySelector('main') ||
+                                     doc.querySelector('.container');
+
+                    if (newContent) {
+                        mainContent.innerHTML = newContent.innerHTML;
+                    } else {
+                        const body = doc.body;
+                        if (body) {
+                            mainContent.innerHTML = body.innerHTML;
+                        } else {
+                            mainContent.innerHTML = html;
+                        }
+                    }
+
+                    // ===== IMPROVED SCRIPT EXECUTION =====
+                    // First, collect all script contents
+                    const scriptContents = [];
+                    const scriptSrcs = [];
+
+                    // Get scripts from the loaded content
+                    const scripts = mainContent.querySelectorAll('script');
+                    scripts.forEach(script => {
+                        if (script.src) {
+                            scriptSrcs.push(script.src);
+                        } else {
+                            scriptContents.push(script.textContent);
+                        }
+                        // Remove the original script to avoid duplicates
+                        script.remove();
+                    });
+
+                    // Also get scripts from the head of the loaded document
+                    const headScripts = doc.querySelectorAll('head script:not([src])');
+                    headScripts.forEach(script => {
+                        if (script.textContent) {
+                            scriptContents.push(script.textContent);
+                        }
+                    });
+
+                    // Execute inline scripts first
+                    scriptContents.forEach(content => {
+                        try {
+                            // Create a new script element and append it
+                            const newScript = document.createElement('script');
+                            newScript.textContent = content;
+                            document.body.appendChild(newScript);
+                            // Remove it after execution (optional)
+                            setTimeout(() => newScript.remove(), 100);
+                        } catch (e) {
+                            console.error('Error executing inline script:', e);
+                        }
+                    });
+
+                    // Then load external scripts
+                    scriptSrcs.forEach(src => {
+                        const newScript = document.createElement('script');
+                        newScript.src = src;
+                        newScript.async = false;
+                        document.head.appendChild(newScript);
+                    });
+
+                    // Dispatch event after all scripts are executed
+                    setTimeout(() => {
+                        window.dispatchEvent(new CustomEvent('contentLoaded', {
+                            detail: { url: url, title: title }
+                        }));
+
+                        // Also try to call dashboard specific initialization if it exists
+                        if (typeof window.initializeDashboard === 'function' && url.includes('Dashboard')) {
+                            console.log('Calling dashboard initialization...');
+                            window.initializeDashboard();
+                        }
+                    }, 200);
+
+                } catch (error) {
+                    console.error(`Error loading ${title}:`, error);
+                    mainContent.innerHTML = `<div class="alert alert-danger m-3">Error loading ${title}. Please try again.</div>`;
+                }
+            }
+
+            // ========== Event Listeners ==========
+            function initEventListeners() {
+                // Profile button
+                viewProfileBtn?.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    openProfileSPA();
+                });
+
+                // Dashboard button
+                const dashboardBtn = document.getElementById("dashboardBtn");
+                if (dashboardBtn) {
+                    dashboardBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        loadContent('/Student/Dashboard', 'Dashboard');
+                    });
+                }
+
+                // Tasks button
+                const tasksBtn = document.getElementById("tasksBtn");
+                if (tasksBtn) {
+                    tasksBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        loadContent('/Student/Tasks', 'Tasks');
+                    });
+                }
+
+                // Report button
+                const reportBtn = document.getElementById("reportBtn");
+                if (reportBtn) {
+                    reportBtn.addEventListener("click", (e) => {
+                        e.preventDefault();
+                        loadContent('/Student/Report', 'Report');
+                    });
+                }
+
+                // Handle browser back/forward buttons
+                window.addEventListener('popstate', (event) => {
+                    if (event.state && event.state.url) {
+                        loadContent(event.state.url, event.state.title);
+                    }
+                });
+
+                // Notifications
+                const notifBell = document.getElementById("notifBell");
+                notifBell?.addEventListener("click", function() {
+                    mainContent.style.opacity = 0;
+                    setTimeout(() => {
+                        mainContent.innerHTML = `
+                            <div class="container py-4">
+                                <h4 class="mb-4">Notification History</h4>
+                                <div class="card shadow-sm mb-4 p-4">
+                                    <p class="text-muted">No notifications yet.</p>
+                                </div>
+                            </div>
+                        `;
+                        document.querySelector(".topbar-title").textContent = "Notifications";
+                        mainContent.style.opacity = 1;
+                    }, 200);
+                });
+            }
+
+            // ========== Dark Mode ==========
+            function initDarkMode() {
+                const themeToggle = document.getElementById("themeToggle");
+                const themeIcon = document.getElementById("themeIcon");
+
+                if (localStorage.getItem("darkMode") === "true") {
+                    document.body.classList.add("dark-mode");
+                    themeIcon?.classList.replace("bi-moon-fill", "bi-sun-fill");
+                }
+
+                themeToggle?.addEventListener("click", () => {
+                    document.body.classList.toggle("dark-mode");
+                    const isDark = document.body.classList.contains("dark-mode");
+                    if (themeIcon) {
+                        themeIcon.classList.toggle("bi-moon-fill", !isDark);
+                        themeIcon.classList.toggle("bi-sun-fill", isDark);
+                    }
+                    localStorage.setItem("darkMode", isDark);
+                });
+            }
+
+            // ========== Initialize Everything ==========
+            function init() {
+                initSidebar();
+                initDarkMode();
+                initEventListeners();
+            }
+
+            // Run initialization when DOM is ready
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
+        })();
     </script>
 
     @RenderSection("Scripts", required: false)

@@ -5,7 +5,39 @@
 
 <link rel="stylesheet" href="~/css/student.css" />
 
+<style>
+    /* Animation styles for toast notifications */
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+</style>
+
 <div class="dashboard-bg py-1">
+    <!-- Hidden field for student name -->
+    <input type="hidden" id="studentName" value="@(User.Identity?.Name ?? "Student")" />
+    <!-- Anti-forgery token for AJAX requests -->
+    @Html.AntiForgeryToken()
+
     <div class="container-fluid dashboard-container">
         <!-- ===== RENDERED HOURS & REMAINING TIME CARDS ===== -->
         <div class="row g-4 mb-4">
@@ -298,7 +330,7 @@
                                 <i class="fas fa-history me-2"></i>Time Logs History
                             </h5>
                             <div class="d-flex gap-2 align-items-center">
-                                <select class="form-select form-select-sm" id="monthFilter" style="width: 150px;" onchange="filterLogsByMonth()">
+                                <select class="form-select form-select-sm" id="monthFilter" style="width: 150px;">
                                     <option value="1">January</option>
                                     <option value="2">February</option>
                                     <option value="3">March</option>
@@ -341,6 +373,13 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            <!-- ===== SEND LOGS BUTTON AT BOTTOM RIGHT CORNER ===== -->
+                            <div class="d-flex justify-content-end mt-4">
+                                <button class="btn btn-success" onclick="sendLogsToAdmin()">
+                                    <i class="fas fa-paper-plane me-2"></i>Send Logs
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -351,56 +390,171 @@
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <script>
-        // ========== CHART CODE ==========
-        Chart.defaults.font.family = 'Segoe UI';
-        Chart.defaults.color = '#666';
-
-        const premiumBarStyle = {
-            borderRadius: 8,
-            barPercentage: 0.9,
-            categoryPercentage: 0.9,
-            maxBarThickness: 60
-        };
-
-        const taskCompletedOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'top' } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
-                x: { grid: { display: false } }
-            }
-        };
-
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-        const ctxTasks = document.getElementById('studentTasksChart').getContext('2d');
-        const studentTasksChart = new Chart(ctxTasks, {
-            type: 'bar',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Tasks Completed',
-                    data: [0,0,0,0,0,0,0,0,0,0,0,0],
-                    backgroundColor: '#55D2FF',
-                    borderColor: '#55D2FF',
-                    ...premiumBarStyle
-                }]
-            },
-            options: taskCompletedOptions
-        });
-
-        // ========== DOCUMENTS SECTION ==========
+        // ========== GLOBAL VARIABLES ==========
+        let studentTasksChart = null;
+        let totalAllottedHours = 0;
+        let renderedHours = 0;
+        let timeLogs = [];
         let documents = [];
 
-        function loadDocuments() {
-            const saved = localStorage.getItem('documents');
-            if (saved) {
-                documents = JSON.parse(saved);
-            } else {
+        // ========== TOAST NOTIFICATION SYSTEM (Top Right Corner) ==========
+        function showToast(message, type = 'success') {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                `;
+                document.body.appendChild(toastContainer);
+            }
+
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                min-width: 300px;
+                margin-bottom: 10px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                animation: slideIn 0.3s ease;
+                background: ${type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8'};
+            `;
+
+            // Add icon based on type
+            const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 18px; font-weight: bold;">${icon}</span>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer;">×</button>
+            `;
+
+            toastContainer.appendChild(toast);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => {
+                        if (toast.parentElement) {
+                            toast.remove();
+                        }
+                    }, 300);
+                }
+            }, 3000);
+        }
+
+        // ========== INITIALIZATION FUNCTION ==========
+        async function initializeDashboard() {
+            console.log('🚀 Initializing Dashboard...');
+
+            try {
+                // Load all data in parallel - no loading states needed
+                await Promise.all([
+                    loadDocuments(),
+                    loadStudentData(),
+                    loadTimeLogs()
+                ]);
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showToast('Error loading dashboard data', 'error');
+            }
+
+            initializeChart();
+            setupEventListeners();
+
+            // Populate days for time entries
+            populateDays();
+            populateHLDays();
+        }
+
+        // ========== CHART INITIALIZATION ==========
+        function initializeChart() {
+            Chart.defaults.font.family = 'Segoe UI';
+            Chart.defaults.color = '#666';
+
+            const premiumBarStyle = {
+                borderRadius: 8,
+                barPercentage: 0.9,
+                categoryPercentage: 0.9,
+                maxBarThickness: 60
+            };
+
+            const taskCompletedOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
+                    x: { grid: { display: false } }
+                }
+            };
+
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const ctxTasks = document.getElementById('studentTasksChart')?.getContext('2d');
+
+            if (ctxTasks) {
+                // Destroy existing chart if it exists
+                if (studentTasksChart) {
+                    studentTasksChart.destroy();
+                }
+
+                studentTasksChart = new Chart(ctxTasks, {
+                    type: 'bar',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'Tasks Completed',
+                            data: [0,0,0,0,0,0,0,0,0,0,0,0],
+                            backgroundColor: '#55D2FF',
+                            borderColor: '#55D2FF',
+                            ...premiumBarStyle
+                        }]
+                    },
+                    options: taskCompletedOptions
+                });
+            }
+        }
+
+        // ========== DOCUMENTS FUNCTIONS ==========
+        async function loadDocuments() {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Student/GetDocuments', {
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    documents = await response.json();
+                    console.log('Documents loaded from server:', documents);
+                } else {
+                    documents = [];
+                    console.error('Failed to load documents:', response.status);
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
                 documents = [];
             }
+
             renderDocumentsTable();
         }
 
@@ -420,20 +574,35 @@
 
             documents.forEach(doc => {
                 let fileIcon = 'fa-file';
-                if (doc.type === 'PDF') fileIcon = 'fa-file-pdf';
-                else if (doc.type === 'DOCX') fileIcon = 'fa-file-word';
-                else if (doc.type === 'XLSX') fileIcon = 'fa-file-excel';
-                else if (doc.type === 'JPG' || doc.type === 'PNG') fileIcon = 'fa-file-image';
+                let iconColor = '#7f8c8d';
+
+                const fileType = doc.type ? doc.type.toUpperCase() : '';
+
+                if (fileType === 'PDF') {
+                    fileIcon = 'fa-file-pdf';
+                    iconColor = '#e74c3c';
+                } else if (fileType === 'DOCX' || fileType === 'DOC') {
+                    fileIcon = 'fa-file-word';
+                    iconColor = '#3498db';
+                } else if (fileType === 'XLSX' || fileType === 'XLS') {
+                    fileIcon = 'fa-file-excel';
+                    iconColor = '#27ae60';
+                } else if (fileType === 'JPG' || fileType === 'JPEG' || fileType === 'PNG' || fileType === 'GIF') {
+                    fileIcon = 'fa-file-image';
+                    iconColor = '#f39c12';
+                }
+
+                const uploadedDate = doc.uploaded ? new Date(doc.uploaded).toLocaleDateString() : 'Unknown';
 
                 const row = `
                     <tr>
                         <td>
-                            <i class="fas ${fileIcon} me-2" style="color: ${getFileColor(doc.type)}"></i>
-                            ${doc.name}
+                            <i class="fas ${fileIcon} me-2" style="color: ${iconColor}"></i>
+                            ${escapeHtml(doc.name)}
                         </td>
-                        <td><span class="badge bg-secondary">${doc.type}</span></td>
-                        <td>${doc.size}</td>
-                        <td>${new Date(doc.uploaded).toLocaleDateString()}</td>
+                        <td><span class="badge bg-secondary">${doc.type || 'Unknown'}</span></td>
+                        <td>${doc.size || '0 KB'}</td>
+                        <td>${uploadedDate}</td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="downloadDocument(${doc.id})">
                                 <i class="fas fa-download"></i> Download
@@ -445,89 +614,192 @@
             });
         }
 
-        function getFileColor(type) {
-            switch(type) {
-                case 'PDF': return '#e74c3c';
-                case 'DOCX': return '#3498db';
-                case 'XLSX': return '#27ae60';
-                case 'JPG': case 'PNG': return '#f39c12';
-                default: return '#7f8c8d';
+        window.downloadDocument = async function(docId) {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+                window.location.href = `/Student/DownloadDocument/${docId}`;
+            } catch (error) {
+                console.error('Error downloading document:', error);
+                showToast('Error downloading document', 'error');
             }
+        };
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
 
-        function downloadDocument(docId) {
-            const doc = documents.find(d => d.id === docId);
-            if (doc) {
-                alert(`Downloading: ${doc.name}\n(This would download the actual file in production)`);
+        // ========== SEND LOGS TO ADMIN (SAVE TO DATABASE ONLY - NO DOWNLOAD) ==========
+        window.sendLogsToAdmin = async function() {
+            if (timeLogs.length === 0) {
+                showToast('No time logs to send.', 'error');
+                return;
             }
-        }
+
+            if (confirm(`Are you sure you want to send ${timeLogs.length} time log entries to the admin?`)) {
+                const sendButton = document.querySelector('.btn-success');
+                const originalText = sendButton.innerHTML;
+                sendButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+                sendButton.disabled = true;
+
+                try {
+                    // Get student information
+                    const studentName = document.getElementById('studentName')?.value || 'Student';
+
+                    // Get current month from filter
+                    const monthFilter = document.getElementById('monthFilter');
+                    const selectedMonth = monthFilter ? parseInt(monthFilter.value) : new Date().getMonth() + 1;
+
+                    // Filter logs for the selected month
+                    const filteredLogs = timeLogs.filter(log => {
+                        const logDate = new Date(log.date);
+                        const logMonth = logDate.getMonth() + 1;
+                        return logMonth === selectedMonth;
+                    });
+
+                    if (filteredLogs.length === 0) {
+                        showToast('No logs found for the selected month.', 'error');
+                        sendButton.innerHTML = originalText;
+                        sendButton.disabled = false;
+                        return;
+                    }
+
+                    // Calculate total hours
+                    let totalRenderedHours = 0;
+                    filteredLogs.forEach(log => {
+                        if (log.type === 'regular' && log.totalHours) {
+                            totalRenderedHours += log.totalHours;
+                        }
+                    });
+
+                    // Get anti-forgery token
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                    // ===== SAVE TO DATABASE ONLY (NO EXCEL DOWNLOAD) =====
+                    const response = await fetch('/Student/SendLogsToAdmin', {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            logs: filteredLogs,
+                            studentName: studentName,
+                            totalHours: totalRenderedHours,
+                            month: selectedMonth
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showToast(`✅ ${filteredLogs.length} time log entries sent to admin!`, 'success');
+
+                        // Optional: Show a message that admin will be able to download
+                        showToast(`Admin can now download these logs from the reports page.`, 'info');
+                    } else {
+                        showToast('Failed to send logs: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error sending logs:', error);
+                    showToast('Error sending logs to admin', 'error');
+                } finally {
+                    sendButton.innerHTML = originalText;
+                    sendButton.disabled = false;
+                }
+            }
+        };
 
         // ========== HOURS TRACKING & LOGS HISTORY ==========
-
-        // TEST: Direct API call to see what's returned
-        fetch('/Student/GetCurrentUser')
-            .then(response => response.json())
-            .then(data => {
-                console.log('DIRECT API TEST:', data);
-                console.log('Total Hours from API:', data.user?.totalAllottedHours);
-            })
-            .catch(error => console.error('API TEST ERROR:', error));
-
-        let totalAllottedHours = 0;
-        let renderedHours = 0;
-        let timeLogs = [];
-
         async function loadStudentData() {
             try {
                 console.log('Fetching student data...');
-                const response = await fetch('/Student/GetCurrentUser');
-                const data = await response.json();
-                console.log('API Response:', data);
 
-                // Try different paths to find totalAllottedHours
-                if (data.user && data.user.totalAllottedHours !== undefined) {
-                    totalAllottedHours = data.user.totalAllottedHours;
-                    console.log('Found in data.user.totalAllottedHours:', totalAllottedHours);
-                } else if (data.totalAllottedHours !== undefined) {
-                    totalAllottedHours = data.totalAllottedHours;
-                    console.log('Found in data.totalAllottedHours:', totalAllottedHours);
-                } else {
-                    totalAllottedHours = 1800; // Default for testing
-                    console.log('Using default value:', totalAllottedHours);
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Student/GetCurrentUser', {
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
                 }
 
-                // Force update the display
-                document.getElementById('totalHours').textContent = totalAllottedHours;
+                const data = await response.json();
+                console.log('Student API Response:', data);
 
-                timeLogs = [];
-                recalculateRenderedHours();
+                if (data.success && data.user) {
+                    totalAllottedHours = data.user.totalAllottedHours || 0;
+
+                    // If the API returns rendered hours, use it
+                    if (data.user.totalRenderedHours !== undefined) {
+                        renderedHours = data.user.totalRenderedHours;
+                    }
+
+                    console.log('Total Allotted Hours:', totalAllottedHours);
+                    console.log('Rendered Hours from API:', renderedHours);
+                }
+
+                updateDisplay();
 
             } catch (error) {
                 console.error('Error in loadStudentData:', error);
-                totalAllottedHours = 1800;
-                document.getElementById('totalHours').textContent = totalAllottedHours;
+                totalAllottedHours = 0;
+                renderedHours = 0;
+                updateDisplay();
+            }
+        }
+
+        async function loadTimeLogs() {
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Student/GetTimeLogs', {
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    timeLogs = await response.json();
+                    console.log('Time logs loaded from database:', timeLogs);
+
+                    // Recalculate rendered hours from time logs
+                    const calculatedRendered = timeLogs
+                        .filter(log => log.type === 'regular')
+                        .reduce((sum, log) => sum + (log.totalHours || 0), 0);
+
+                    // Only update if different from current value
+                    if (calculatedRendered !== renderedHours) {
+                        renderedHours = calculatedRendered;
+                        console.log('Rendered hours updated from time logs:', renderedHours);
+                        updateDisplay();
+                    }
+                } else {
+                    timeLogs = [];
+                    console.error('Failed to load time logs:', response.status);
+                }
+            } catch (error) {
+                console.error('Error loading time logs:', error);
                 timeLogs = [];
             }
 
             const currentMonth = new Date().getMonth() + 1;
-            document.getElementById('monthFilter').value = currentMonth;
+            const monthFilter = document.getElementById('monthFilter');
+            if (monthFilter) {
+                monthFilter.value = currentMonth;
+            }
             renderLogsTable();
-        }
-
-        function loadLogs() {
-            loadStudentData();
-        }
-
-        function saveLogs() {
-            // In production, this would save to server
-            localStorage.setItem('timeLogs', JSON.stringify(timeLogs));
-        }
-
-        function recalculateRenderedHours() {
-            renderedHours = timeLogs
-                .filter(log => log.type === 'regular')
-                .reduce((sum, log) => sum + (log.totalHours || 0), 0);
-            updateDisplay();
         }
 
         function updateDisplay() {
@@ -555,20 +827,25 @@
             }
 
             document.getElementById('logsCount').textContent = timeLogs.length + ' total';
+
+            console.log('Display updated - Rendered:', renderedHours, 'Total:', totalAllottedHours);
         }
 
-        function filterLogsByMonth() {
+        window.filterLogsByMonth = function() {
             renderLogsTable();
-        }
+        };
 
         function renderLogsTable() {
             const tbody = document.getElementById('logsTableBody');
+            if (!tbody) return;
+
             tbody.innerHTML = '';
 
             const selectedMonth = parseInt(document.getElementById('monthFilter').value);
 
             const filteredLogs = timeLogs.filter(log => {
-                const logMonth = new Date(log.date).getMonth() + 1;
+                const logDate = new Date(log.date);
+                const logMonth = logDate.getMonth() + 1;
                 return logMonth === selectedMonth;
             });
 
@@ -577,7 +854,7 @@
                 return;
             }
 
-            [...filteredLogs].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((log, index) => {
+            [...filteredLogs].sort((a, b) => new Date(b.date) - new Date(a.date)).forEach((log) => {
                 const dateObj = new Date(log.date);
                 const day = dateObj.getDate();
 
@@ -601,7 +878,7 @@
                             <td>${otOut}</td>
                             <td><span class="badge bg-info">${total} hrs</span></td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLog('${log.date}', '${log.type}', '${log.amIn || ''}')">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLog(${log.id})">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -612,10 +889,10 @@
                     const row = `
                         <tr>
                             <td>${day}</td>
-                            <td colspan="6" class="text-center text-muted">${log.type} (No time entries)</td>
+                            <td colspan="6" class="text-center text-muted">${log.type}</td>
                             <td>—</td>
                             <td>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLog('${log.date}', '${log.type}', '')">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteLog(${log.id})">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
@@ -626,22 +903,39 @@
             });
         }
 
-        function deleteLog(date, type, amIn) {
-            const originalIndex = timeLogs.findIndex(l =>
-                l.date === date &&
-                l.type === type &&
-                (type === 'regular' ? l.amIn === amIn : true)
-            );
+        window.deleteLog = async function(id) {
+            if (confirm('Are you sure you want to delete this entry?')) {
+                try {
+                    const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
 
-            if (originalIndex !== -1) {
-                if (confirm('Are you sure you want to delete this entry?')) {
-                    timeLogs.splice(originalIndex, 1);
-                    saveLogs();
-                    recalculateRenderedHours();
-                    renderLogsTable();
+                    const response = await fetch(`/Student/DeleteTimeLog/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'RequestVerificationToken': token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // Update rendered hours from server response
+                        if (data.totalRendered !== undefined) {
+                            renderedHours = data.totalRendered;
+                        }
+
+                        // Reload time logs to refresh the table
+                        await loadTimeLogs();
+                        showToast('Time log deleted successfully', 'success');
+                    } else {
+                        showToast('Failed to delete: ' + data.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error deleting log:', error);
+                    showToast('Error deleting log', 'error');
                 }
             }
-        }
+        };
 
         // ========== TIME ENTRY FUNCTIONS ==========
         function populateDays() {
@@ -710,11 +1004,11 @@
             return amHours + pmHours + otHours;
         }
 
-        function saveDailyTime() {
+        window.saveDailyTime = async function() {
             const month = document.getElementById('monthDropdown').value.padStart(2, '0');
             const day = document.getElementById('dayDropdown').value.padStart(2, '0');
             const year = new Date().getFullYear();
-            const date = `${year}-${month}-${day}`;
+            const date = `${year}-${month}-${day}T00:00:00`;
 
             const amIn = document.getElementById('amTimeIn').value;
             const amOut = document.getElementById('amTimeOut').value;
@@ -724,77 +1018,128 @@
             const otOut = document.getElementById('otTimeOut').value;
 
             if (!amIn && !pmIn && !otIn) {
-                alert('Please enter at least one time entry');
+                showToast('Please enter at least one time entry', 'error');
                 return;
             }
 
             const totalHours = calculateTotalHours();
             if (totalHours <= 0) {
-                alert('Total hours must be greater than 0');
+                showToast('Total hours must be greater than 0', 'error');
                 return;
             }
 
             const remaining = totalAllottedHours - renderedHours;
             if (totalHours > remaining) {
-                alert(`Cannot add ${totalHours.toFixed(2)} hours. Only ${remaining.toFixed(2)} hours remaining!`);
+                showToast(`Cannot add ${totalHours.toFixed(2)} hours. Only ${remaining.toFixed(2)} hours remaining!`, 'error');
                 return;
             }
 
-            const exists = timeLogs.some(log => log.date === date);
-            if (exists) {
-                alert('An entry for this date already exists. Please delete it first if you want to replace it.');
-                return;
+            const saveBtn = document.querySelector('#addTimeContainer .btn-primary');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Student/SaveTimeLog', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: date,
+                        type: 'regular',
+                        amIn: amIn,
+                        amOut: amOut,
+                        pmIn: pmIn,
+                        pmOut: pmOut,
+                        otIn: otIn,
+                        otOut: otOut,
+                        totalHours: totalHours
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update rendered hours from server response
+                    if (data.totalRendered !== undefined) {
+                        renderedHours = data.totalRendered;
+                    }
+
+                    // Reload time logs to refresh the table
+                    await loadTimeLogs();
+                    hideAddTimeContainer();
+                    showToast('Time saved successfully!', 'success');
+                } else {
+                    showToast('Failed to save: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving time log:', error);
+                showToast('Error saving time log', 'error');
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
             }
+        };
 
-            const logEntry = {
-                date: date,
-                type: 'regular',
-                amIn: amIn,
-                amOut: amOut,
-                pmIn: pmIn,
-                pmOut: pmOut,
-                otIn: otIn,
-                otOut: otOut,
-                totalHours: totalHours
-            };
-
-            timeLogs.push(logEntry);
-            saveLogs();
-            recalculateRenderedHours();
-            renderLogsTable();
-
-            hideAddTimeContainer();
-            alert('Time saved successfully!');
-        }
-
-        function saveHolidayLeave() {
+        window.saveHolidayLeave = async function() {
             const month = document.getElementById('hlMonthDropdown').value.padStart(2, '0');
             const day = document.getElementById('hlDayDropdown').value.padStart(2, '0');
             const year = new Date().getFullYear();
-            const date = `${year}-${month}-${day}`;
+            const date = `${year}-${month}-${day}T00:00:00`;
             const type = document.getElementById('hlType').value;
 
-            const exists = timeLogs.some(log => log.date === date);
-            if (exists) {
-                alert('An entry for this date already exists. Please delete it first if you want to replace it.');
-                return;
+            const saveBtn = document.querySelector('#holidayLeaveContainer .btn-info');
+            const originalText = saveBtn.innerHTML;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+            saveBtn.disabled = true;
+
+            try {
+                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+
+                const response = await fetch('/Student/SaveTimeLog', {
+                    method: 'POST',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: date,
+                        type: type,
+                        amIn: '',
+                        amOut: '',
+                        pmIn: '',
+                        pmOut: '',
+                        otIn: '',
+                        otOut: '',
+                        totalHours: 0
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Reload time logs to refresh the table
+                    await loadTimeLogs();
+                    hideHolidayLeaveContainer();
+                    showToast(`${type} recorded for ${date.split('T')[0]}`, 'success');
+                } else {
+                    showToast('Failed to save: ' + data.message, 'error');
+                }
+            } catch (error) {
+                console.error('Error saving holiday/leave:', error);
+                showToast('Error saving holiday/leave', 'error');
+            } finally {
+                saveBtn.innerHTML = originalText;
+                saveBtn.disabled = false;
             }
-
-            const logEntry = {
-                date: date,
-                type: type,
-                totalHours: 0
-            };
-
-            timeLogs.push(logEntry);
-            saveLogs();
-            renderLogsTable();
-            hideHolidayLeaveContainer();
-            alert(`${type} recorded for ${date}`);
-        }
+        };
 
         // ========== CONTAINER FUNCTIONS ==========
-        function showAddTimeContainer() {
+        window.showAddTimeContainer = function() {
             document.getElementById('addTimeContainer').style.display = 'block';
             document.getElementById('holidayLeaveContainer').style.display = 'none';
             document.getElementById('mainDashboardContent').style.display = 'none';
@@ -809,15 +1154,14 @@
             document.getElementById('pmTimeOut').value = '';
             document.getElementById('otTimeIn').value = '';
             document.getElementById('otTimeOut').value = '';
-        }
+        };
 
-        function hideAddTimeContainer() {
+        window.hideAddTimeContainer = function() {
             document.getElementById('addTimeContainer').style.display = 'none';
             document.getElementById('mainDashboardContent').style.display = 'block';
-            renderLogsTable();
-        }
+        };
 
-        function showHolidayLeaveContainer() {
+        window.showHolidayLeaveContainer = function() {
             document.getElementById('holidayLeaveContainer').style.display = 'block';
             document.getElementById('addTimeContainer').style.display = 'none';
             document.getElementById('mainDashboardContent').style.display = 'none';
@@ -825,26 +1169,43 @@
             const currentMonth = new Date().getMonth() + 1;
             document.getElementById('hlMonthDropdown').value = currentMonth;
             populateHLDays();
-        }
+        };
 
-        function hideHolidayLeaveContainer() {
+        window.hideHolidayLeaveContainer = function() {
             document.getElementById('holidayLeaveContainer').style.display = 'none';
             document.getElementById('mainDashboardContent').style.display = 'block';
-            renderLogsTable();
+        };
+
+        // ========== EVENT LISTENERS SETUP ==========
+        function setupEventListeners() {
+            const monthDropdown = document.getElementById('monthDropdown');
+            if (monthDropdown) {
+                monthDropdown.removeEventListener('change', populateDays);
+                monthDropdown.addEventListener('change', populateDays);
+            }
+
+            const hlMonthDropdown = document.getElementById('hlMonthDropdown');
+            if (hlMonthDropdown) {
+                hlMonthDropdown.removeEventListener('change', populateHLDays);
+                hlMonthDropdown.addEventListener('change', populateHLDays);
+            }
+
+            const monthFilter = document.getElementById('monthFilter');
+            if (monthFilter) {
+                monthFilter.removeEventListener('change', filterLogsByMonth);
+                monthFilter.addEventListener('change', filterLogsByMonth);
+            }
         }
 
-        // Month change events
-        document.getElementById('monthDropdown').addEventListener('change', populateDays);
-        document.getElementById('hlMonthDropdown').addEventListener('change', populateHLDays);
+        // ========== INITIALIZE WHEN DOM IS READY ==========
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeDashboard);
+        } else {
+            initializeDashboard();
+        }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDocuments();
-            loadLogs();
-            populateDays();
-            populateHLDays();
-            console.log('✅ Dashboard initialized');
-        });
+        // Make functions available globally
+        window.filterLogsByMonth = filterLogsByMonth;
     </script>
 }
 
@@ -1015,6 +1376,21 @@
         padding: 0.5rem;
     }
 
+    .btn-success {
+        background: #28a745;
+        border: none;
+        border-radius: 10px;
+        padding: 0.6rem 1.8rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
     h6.fw-bold {
         color: #2d3748;
         font-size: 1rem;
@@ -1162,6 +1538,3 @@
         font-size: 14px;
     }
 </style>
-
-<!-- Add Font Awesome for icons -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">

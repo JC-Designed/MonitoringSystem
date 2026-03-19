@@ -582,27 +582,6 @@
             }
         }
 
-        // Save documents to server
-        async function saveDocuments() {
-            try {
-                const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
-                const response = await fetch('/Admin/SaveDocuments', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
-                    body: JSON.stringify(documents)
-                });
-
-                if (response.ok) {
-                    await loadDocuments(); // Reload to get updated data
-                }
-            } catch (error) {
-                console.error('Error saving documents:', error);
-            }
-        }
-
         // Format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -612,7 +591,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Handle file selection
+        // ========== UPDATED: Handle file selection with server upload ==========
         async function handleFileSelect(files) {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];

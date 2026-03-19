@@ -1,71 +1,203 @@
 ﻿@{
     Layout = "_AdminLayout";
     ViewData["Title"] = "Reports";
+}
 
-    var demoReports = new List<dynamic>
+@using MonitoringSystem.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using System.Text.Json
+@using System.Threading.Tasks
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext Context
+
+@{
+    // Get all students with their related data
+    var students = await Context.Users
+        .Where(u => u.Role == "Student")
+        .OrderBy(u => u.FullName)
+        .Select(u => new
+        {
+            u.Id,
+            u.FullName,
+            u.Facebook,
+            u.MobileNumber,
+            u.Address,
+            u.ContactPerson,
+            u.StudentId,
+            u.Program,
+            u.BirthDate,
+            u.Email,
+            u.ProfileImage,
+            u.Year,
+            u.CompanyID,
+            u.TotalAllottedHours,
+            u.CreatedAt,
+            u.Status
+        })
+        .ToListAsync();
+
+    // Get all companies for reference
+    var companies = await Context.Companies
+        .Select(c => new { c.Id, c.CompanyName })
+        .ToDictionaryAsync(c => c.Id, c => c.CompanyName);
+
+    // Get all tasks for students
+    var tasks = await Context.Tasks
+        .OrderByDescending(t => t.CreatedAt)
+        .Select(t => new
+        {
+            t.Id,
+            t.Title,
+            t.Description,
+            t.FilePath,
+            t.FileName,
+            t.Status,
+            t.CreatedAt,
+            t.StudentId
+        })
+        .ToListAsync();
+
+    // Get all documents for students
+    var documents = await Context.Documents
+        .OrderByDescending(d => d.UploadedAt)
+        .Select(d => new
+        {
+            d.Id,
+            d.Name,
+            d.Type,
+            d.Size,
+            d.FileData,
+            d.UploadedAt,
+            d.UploadedBy,
+            StudentId = d.UploadedBy
+        })
+        .ToListAsync();
+
+    // Get all time log submissions with proper month names
+    var timeLogSubmissions = await Context.StudentTimeLogs
+        .OrderByDescending(s => s.SubmissionDate)
+        .Select(s => new
+        {
+            Id = s.Id ?? "",
+            StudentId = s.StudentId ?? "",
+            StudentName = s.StudentName ?? "Unknown Student",
+            Course = s.Course ?? "N/A",
+            Year = s.Year ?? "N/A",
+            Section = s.Section ?? "N/A",
+            SubmissionDate = s.SubmissionDate,
+            Month = s.Month,
+            TotalHours = s.TotalHours,
+            Logs = s.Logs ?? "[]",
+            Status = s.Status ?? "Pending",
+            IsRead = s.IsRead,
+            AdminRemarks = s.AdminRemarks ?? "",
+            ProcessedDate = s.ProcessedDate,
+            MonthName = GetMonthName(s.Month)
+        })
+        .ToListAsync();
+}
+
+@functions {
+    static string GetMonthName(int? month)
     {
-        new { Name = "Alice Smith", Facebook="alice.smith", MobileNumber="09171234567", Address="123 Main St", ContactPerson="John Smith", ContactNumber="09171234568", Birthdate="01/15/2005", Email="alice@example.com", ReportType = "MOA", Company="Acme Inc.", Year="2026", Status = "Unread", Details = "Report about late submission.", DateCreated = DateTime.Now.AddHours(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1001", Course="BSIT" },
-        new { Name = "John Doe", Facebook="john.doe", MobileNumber="09172345678", Address="456 Elm St", ContactPerson="Jane Doe", ContactNumber="09172345679", Birthdate="03/22/2004", Email="john@example.com", ReportType = "Complaint", Company="Beta Corp", Year="2026", Status = "Unread", Details = "Report on project progress.", DateCreated = DateTime.Now.AddDays(-2), ProfilePic = "https://via.placeholder.com/150", StudentId="STU1002", Course="BSCS" }
-    };
+        return month switch
+        {
+            1 => "January",
+            2 => "February",
+            3 => "March",
+            4 => "April",
+            5 => "May",
+            6 => "June",
+            7 => "July",
+            8 => "August",
+            9 => "September",
+            10 => "October",
+            11 => "November",
+            12 => "December",
+            _ => "Unknown"
+        };
+    }
 }
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
 <style>
-    /* Card layout */
+    /* ===== VARIABLES ===== */
+    :root {
+        --primary-color: #0787FF;
+        --danger-color: #FE5252;
+        --success-color: #28a745;
+        --warning-color: #ffc107;
+        --info-color: #17a2b8;
+        --border-radius: 8px;
+        --border-radius-lg: 16px;
+        --transition-speed: 0.2s;
+    }
+
+    /* ===== CARD LAYOUT ===== */
     .report-card {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px 20px;
+        padding: 20px 25px;
         border: 1px solid #dee2e6;
-        border-radius: 12px;
-        margin-bottom: 12px;
+        border-radius: var(--border-radius-lg);
+        margin-bottom: 15px;
         background: #fff;
-        transition: 0.2s;
+        transition: var(--transition-speed);
+        min-height: 100px;
     }
 
         .report-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
         }
 
     .student-section {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 15px;
+        width: 35%;
     }
 
     .profile-thumb {
-        width: 45px;
-        height: 45px;
+        width: 60px;
+        height: 60px;
         border-radius: 50%;
         object-fit: cover;
+        border: 2px solid #f0f0f0;
     }
 
     .student-info {
         display: flex;
         flex-direction: column;
+        gap: 4px;
     }
 
         .student-info .name {
-            font-weight: normal;
+            font-weight: 600;
+            font-size: 1.1rem;
         }
 
         .student-info .email,
         .student-info .mobile {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: #6c757d;
         }
 
     .program {
-        font-weight: normal;
+        font-weight: 500;
+        font-size: 1rem;
+        width: 25%;
     }
 
-    .status-badge-card {
+    /* ===== STATUS BADGES ===== */
+    .status-badge {
         display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
+        padding: 6px 14px;
+        border-radius: 24px;
+        font-size: 0.9rem;
         font-weight: 500;
     }
 
@@ -74,44 +206,48 @@
         color: #721c24;
     }
 
-    .status-read {
+    .status-read,
+    .status-available {
         background-color: #d1e7dd;
         color: #0f5132;
+    }
+
+    .status-pending {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .status-approved {
+        background-color: var(--success-color);
+        color: white;
+    }
+
+    .status-rejected {
+        background-color: var(--danger-color);
+        color: white;
     }
 
     .action-icon {
         background: transparent;
         border: none;
-        font-size: 1.2rem;
+        font-size: 1.3rem;
         color: #6c757d;
         cursor: pointer;
+        padding: 8px;
+        border-radius: 50%;
+        transition: background-color var(--transition-speed);
     }
 
         .action-icon:hover {
-            color: #0d6efd;
+            background-color: #f0f0f0;
+            color: var(--primary-color);
         }
 
-    /* Upload button styling */
-    .upload-btn {
-        background-color: #0787FF;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 20px;
-        font-size: 0.9rem;
-        cursor: pointer;
-        margin-left: 8px;
-    }
-
-        .upload-btn:hover {
-            background-color: #0066cc;
-        }
-
-    /* Filter row styling */
+    /* ===== FILTER ROW ===== */
     .filter-row {
         display: flex;
         gap: 1rem;
-        margin-bottom: 1.5rem;
+        margin-bottom: 2rem;
         flex-wrap: wrap;
     }
 
@@ -120,22 +256,23 @@
     }
 
     .filter-label {
-        font-weight: normal;
-        margin-bottom: 0.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
         display: block;
+        color: #495057;
     }
 
-    /* Header labels - black */
     .header-labels {
         display: flex;
         justify-content: space-between;
-        padding: 0 2px;
-        margin-bottom: 10px;
+        padding: 0 5px;
+        margin-bottom: 15px;
         font-weight: bold;
-        color: #000 !important;
+        color: #000;
+        font-size: 1rem;
     }
 
-    /* Tables styling (shared between Tasks and Documents) */
+    /* ===== TABLES ===== */
     .data-table .table {
         width: 100%;
         border-collapse: separate;
@@ -144,7 +281,7 @@
 
     .data-table th,
     .data-table td {
-        padding: 12px 16px !important;
+        padding: 14px 18px;
         vertical-align: middle;
         white-space: nowrap;
     }
@@ -153,59 +290,84 @@
         background-color: #f8f9fa;
         font-weight: 600;
         border-bottom: 2px solid #dee2e6;
+        font-size: 0.95rem;
     }
 
     .data-table tbody tr {
         background-color: #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        border-radius: 10px;
+        transition: var(--transition-speed);
     }
 
-    /* Status badge styling */
-    .status-badge {
-        display: inline-block;
-        padding: 4px 12px;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 500;
-    }
-
-    .status-unread {
-        background-color: #f8d7da;
-        color: #721c24;
-    }
-
-    .status-read {
-        background-color: #d1e7dd;
-        color: #0f5132;
-    }
-
-    .download-icon {
-        background: transparent;
-        border: none;
-        font-size: 1.1rem;
-        color: #6c757d;
-        cursor: pointer;
-        margin-left: 8px;
-    }
-
-        .download-icon:hover {
-            color: #0d6efd;
+        .data-table tbody tr:hover {
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
 
-    /* Preview section student info – compact spacing */
-    .student-info-card strong {
-        font-weight: 600;
-        margin-right: 4px;
+    /* ===== BUTTONS ===== */
+    .btn {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+        border-radius: var(--border-radius);
+        transition: all var(--transition-speed);
     }
 
-    .student-info-card .col-md-6 {
-        margin-bottom: 0.5rem;
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        border-radius: 6px;
     }
 
-    /* Link styling */
+    .btn i {
+        margin-right: 6px;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+        .btn-primary:hover {
+            background-color: #0066cc;
+            border-color: #0066cc;
+        }
+
+    .btn-danger {
+        background-color: var(--danger-color);
+        border-color: var(--danger-color);
+        color: white;
+    }
+
+        .btn-danger:hover {
+            background-color: #e04141;
+            border-color: #e04141;
+        }
+
+    /* ===== PREVIEW SECTION ===== */
+    .student-info-card {
+        padding: 2rem;
+    }
+
+        .student-info-card strong {
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .student-info-card .col-md-6 {
+            margin-bottom: 0.75rem;
+            font-size: 1rem;
+        }
+
+    #previewProfilePic {
+        width: 180px;
+        height: 180px;
+        border: 5px solid white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
     .info-link {
-        color: #0d6efd;
+        color: var(--primary-color);
         text-decoration: none;
     }
 
@@ -213,44 +375,133 @@
             text-decoration: underline;
         }
 
-    /* Modal styling */
-    .modal {
-        display: none;
+    /* ===== FILE ICONS ===== */
+    .file-icon-pdf {
+        color: #dc3545;
+    }
+
+    .file-icon-word {
+        color: var(--primary-color);
+    }
+
+    .file-icon-excel {
+        color: var(--success-color);
+    }
+
+    .file-icon-image {
+        color: #fd7e14;
+    }
+
+    .file-icon-default {
+        color: #6c757d;
+    }
+
+    .file-icon-time {
+        color: var(--primary-color);
+    }
+
+    /* ===== TOAST NOTIFICATION ===== */
+    #toast-container {
         position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0,0,0,0.5);
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
     }
 
+    .toast {
+        min-width: 300px;
+        margin-bottom: 10px;
+        padding: 15px 20px;
+        border-radius: var(--border-radius);
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        animation: slideIn 0.3s ease;
+    }
+
+    .toast-success {
+        background-color: var(--success-color);
+    }
+
+    .toast-error {
+        background-color: var(--danger-color);
+    }
+
+    .toast-info {
+        background-color: var(--info-color);
+    }
+
+    @@keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        padding: 0 5px;
+    }
+
+    /* ===== MODAL ===== */
     .modal-content {
-        background-color: #fefefe;
-        margin: 15% auto;
-        padding: 20px;
-        border: 1px solid #888;
-        width: 50%;
-        border-radius: 12px;
-        max-width: 500px;
+        border-radius: var(--border-radius-lg);
+        border: none;
     }
 
-    .close {
-        color: #aaa;
-        float: right;
-        font-size: 28px;
-        font-weight: bold;
+    .modal-header {
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        border-top: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+    }
+
+    /* ===== UTILITY CLASSES ===== */
+    .cursor-pointer {
         cursor: pointer;
     }
 
-        .close:hover {
-            color: black;
-        }
+    .text-truncate-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
 </style>
 
-<!-- MAIN REPORTS VIEW (cards + filters) -->
-<div id="mainReports" class="container py-4">
-
+<!-- MAIN REPORTS VIEW -->
+<div id="studentsTab" class="tab-content active container py-4">
     <!-- FILTERS -->
     <div class="filter-row">
         <div class="filter-item">
@@ -261,12 +512,27 @@
             <label class="filter-label">Academic Year</label>
             <select id="yearFilter" class="form-select">
                 <option value="">All Years</option>
+                @foreach (var year in students.Select(s => s.Year)
+                                .Where(y => y.HasValue)
+                                .Select(y => y.Value)
+                                .Distinct()
+                                .OrderBy(y => y))
+                {
+                    <option value="@year">@year</option>
+                }
             </select>
         </div>
         <div class="filter-item">
             <label class="filter-label">Program</label>
             <select id="programFilter" class="form-select">
                 <option value="">All Programs</option>
+                @foreach (var program in students.Select(s => s.Program)
+                                .Where(p => !string.IsNullOrEmpty(p))
+                                .Distinct()
+                                .OrderBy(p => p))
+                {
+                    <option value="@program">@program</option>
+                }
             </select>
         </div>
         <div class="filter-item">
@@ -279,7 +545,7 @@
         </div>
     </div>
 
-    <!-- HEADER LABELS (black) -->
+    <!-- HEADER LABELS -->
     <div class="header-labels">
         <div style="width:35%;">Student Name</div>
         <div style="width:25%;">Program</div>
@@ -289,55 +555,69 @@
 
     <!-- CARDS CONTAINER -->
     <div id="cardsContainer">
-        @foreach (var report in demoReports)
-        {
-            <div class="report-card"
-                 data-name="@report.Name"
-                 data-facebook="@report.Facebook"
-                 data-mobilenumber="@report.MobileNumber"
-                 data-address="@report.Address"
-                 data-contactperson="@report.ContactPerson"
-                 data-contactnumber="@report.ContactNumber"
-                 data-birthdate="@report.Birthdate"
-                 data-email="@report.Email"
-                 data-year="@report.Year"
-                 data-status="@report.Status"
-                 data-details="@report.Details"
-                 data-profile="@report.ProfilePic"
-                 data-studentid="@report.StudentId"
-                 data-course="@report.Course"
-                 data-company="@report.Company"
-                 data-reporttype="@report.ReportType"
-                 data-student-key="@report.StudentId">
+        @{
+            var taskStatusLookup = tasks
+            .GroupBy(t => t.StudentId)
+            .ToDictionary(
+            g => g.Key,
+            g => g.Any(t => t.Status == "Unread") ? "Unread" : "Read"
+            );
+        }
 
-                <!-- STUDENT INFO (profile + name/email/mobile) -->
-                <div class="student-section" style="width:35%;">
-                    <img src="@(string.IsNullOrEmpty(report.ProfilePic) ? "/images/defaultpicture.jpg" : report.ProfilePic)"
+        @foreach (var student in students)
+        {
+            var status = taskStatusLookup.GetValueOrDefault(student.Id, "Read");
+            var companyName = student.CompanyID.HasValue && companies.ContainsKey(student.CompanyID.Value)
+            ? companies[student.CompanyID.Value]
+            : "";
+
+            <div class="report-card"
+                 data-id="@student.Id"
+                 data-name="@student.FullName"
+                 data-facebook="@student.Facebook"
+                 data-mobilenumber="@student.MobileNumber"
+                 data-address="@student.Address"
+                 data-contactperson="@student.ContactPerson"
+                 data-birthdate="@(student.BirthDate?.ToString("MM/dd/yyyy"))"
+                 data-email="@student.Email"
+                 data-year="@student.Year"
+                 data-status="@status"
+                 data-profile="@(string.IsNullOrEmpty(student.ProfileImage) ? "/images/defaultpicture.jpg" : student.ProfileImage)"
+                 data-studentid="@student.StudentId"
+                 data-course="@student.Program"
+                 data-company="@companyName"
+                 data-totalhours="@student.TotalAllottedHours"
+                 data-student-key="@student.Id">
+
+                <!-- STUDENT INFO -->
+                <div class="student-section">
+                    <img src="@(string.IsNullOrEmpty(student.ProfileImage) ? "/images/defaultpicture.jpg" : student.ProfileImage)"
                          class="profile-thumb"
+                         loading="lazy"
                          onerror="this.src='/images/defaultpicture.jpg';">
 
                     <div class="student-info">
-                        <span class="name">@report.Name</span>
-                        <span class="email">@report.Email</span>
-                        <span class="mobile">@report.MobileNumber</span>
+                        <span class="name">@student.FullName</span>
+                        <span class="email">@student.Email</span>
+                        <span class="mobile">@student.MobileNumber</span>
                     </div>
                 </div>
 
                 <!-- PROGRAM -->
-                <div class="program" style="width:25%;">
-                    @report.Course
+                <div class="program">
+                    @student.Program
                 </div>
 
-                <!-- STATUS (will be updated dynamically) -->
+                <!-- STATUS -->
                 <div style="width:20%;" class="status-container">
-                    <span class="status-badge-card @(report.Status == "Unread" ? "status-unread" : "status-read")">
-                        @report.Status
+                    <span class="status-badge @(status == "Unread" ? "status-unread" : "status-read")">
+                        @status
                     </span>
                 </div>
 
-                <!-- ACTION (eye icon) -->
+                <!-- ACTION -->
                 <div style="width:20%;" class="text-end">
-                    <button class="action-icon preview-btn">
+                    <button class="action-icon preview-btn" title="View Student Details">
                         <i class="bi bi-eye"></i>
                     </button>
                 </div>
@@ -346,23 +626,25 @@
     </div>
 </div>
 
-<!-- PREVIEW SECTION (hidden by default) -->
+<!-- PREVIEW SECTION -->
 <div id="previewSection" style="display:none;" class="container py-4">
-
-    <button class="btn mb-3" id="backBtn" style="background-color:#0787FF; color:white;">&laquo; Back to Reports</button>
+    <button class="btn btn-primary mb-3" id="backBtn">
+        <i class="bi bi-arrow-left"></i> Back to Reports
+    </button>
 
     <!-- Profile Picture -->
-    <div class="mb-3">
+    <div class="mb-4 text-center text-md-start">
         <img id="previewProfilePic" src="/images/defaultpicture.jpg"
              class="rounded-circle shadow"
-             style="width:150px;height:150px;object-fit:cover;border:4px solid white;"
+             alt="Profile Picture"
+             loading="lazy"
              onerror="this.src='/images/defaultpicture.jpg';">
     </div>
 
     <!-- Student Info Card -->
-    <div class="card shadow-sm rounded-4 p-4 student-info-card" style="overflow:hidden;">
-        <h5 class="fw-bold border-bottom pb-2 mb-3">Student Information</h5>
-        <div class="row g-3">
+    <div class="card shadow-sm rounded-4 p-4 student-info-card">
+        <h5 class="fw-bold border-bottom pb-2 mb-4">Student Information</h5>
+        <div class="row g-4">
             <div class="col-md-6"><strong>Name:</strong> <span id="pName"></span></div>
             <div class="col-md-6"><strong>Student ID:</strong> <span id="pStudentID"></span></div>
             <div class="col-md-6"><strong>Program:</strong> <span id="pCourse"></span></div>
@@ -370,27 +652,25 @@
             <div class="col-md-6"><strong>Facebook:</strong> <span id="pFacebook"></span></div>
             <div class="col-md-6"><strong>Mobile Number:</strong> <span id="pMobileNumber"></span></div>
             <div class="col-md-6"><strong>Address:</strong> <span id="pAddress"></span></div>
-            <div class="col-md-6"><strong>Contact Number:</strong> <span id="pContactNumber"></span></div>
+            <div class="col-md-6"><strong>Contact Person:</strong> <span id="pContactPerson"></span></div>
             <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
             <div class="col-md-6"><strong>Email:</strong> <span id="pEmail"></span></div>
             <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
+            <div class="col-md-6"><strong>Total Allotted Hours:</strong> <span id="pTotalHours"></span></div>
         </div>
     </div>
 
     <!-- TASKS SECTION -->
-    <div class="d-flex justify-content-between align-items-center mt-3">
+    <div class="d-flex justify-content-between align-items-center mt-4">
         <h5 class="fw-bold mb-0">Tasks</h5>
         <div>
-            <button class="btn upload-btn" id="uploadTaskBtn" style="background-color:#0787FF; color:white;">
-                <i class="bi bi-upload"></i> Upload New Task
+            <button id="downloadTemplateBtn" class="btn btn-danger">
+                <i class="bi bi-download"></i> Download Template
             </button>
-            <a href="#" id="downloadTemplateBtn" class="btn" style="background-color:#FE5252; color:white; margin-left:8px;">
-                Download Template
-            </a>
         </div>
     </div>
 
-    <div id="tasksTable" class="mt-4 p-3 rounded-4 shadow-sm data-table" style="border: 1px solid #dee2e6;">
+    <div id="tasksTable" class="mt-4 p-4 rounded-4 shadow-sm data-table">
         <div class="table-responsive">
             <table class="table mb-0 align-middle">
                 <thead class="text-center">
@@ -402,773 +682,875 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Alice Smith's Tasks (STU1001) -->
-                    <tr data-task-id="1" data-task-status="Unread" data-student-id="STU1001">
-                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 1"></td>
-                        <td class="text-center">Task 1 - Initial Report</td>
-                        <td class="text-center">03/01/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-task-btn" title="Download Task">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr data-task-id="2" data-task-status="Unread" data-student-id="STU1001">
-                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 2"></td>
-                        <td class="text-center">Task 2 - Progress Update</td>
-                        <td class="text-center">03/05/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-task-btn" title="Download Task">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr data-task-id="3" data-task-status="Unread" data-student-id="STU1001">
-                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 3"></td>
-                        <td class="text-center">Task 3 - Final Submission</td>
-                        <td class="text-center">—</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-task-btn" title="Download Task">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- John Doe's Tasks (STU1002) -->
-                    <tr data-task-id="4" data-task-status="Unread" data-student-id="STU1002">
-                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 1"></td>
-                        <td class="text-center">Task 1 - Project Proposal</td>
-                        <td class="text-center">03/02/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-task-btn" title="Download Task">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr data-task-id="5" data-task-status="Unread" data-student-id="STU1002">
-                        <td class="text-center"><input type="checkbox" class="task-checkbox" value="Task 2"></td>
-                        <td class="text-center">Task 2 - Progress Report</td>
-                        <td class="text-center">03/06/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-task-btn" title="Download Task">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
+                <tbody id="tasksTableBody">
+                    <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view tasks</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
 
     <!-- DOCUMENTS SECTION -->
-    <div class="d-flex justify-content-between align-items-center mt-4">
-        <h5 class="fw-bold mb-0">Documents</h5>
+    <div class="d-flex justify-content-between align-items-center mt-5">
+        <h5 class="fw-bold mb-0">Documents & Time Logs</h5>
         <div>
-            <button class="btn upload-btn" id="uploadDocumentBtn" style="background-color:#0787FF; color:white;">
-                <i class="bi bi-upload"></i> Upload New Document
+            <button id="downloadDocumentsBtn" class="btn btn-danger">
+                <i class="bi bi-download"></i> Download Selected
             </button>
-            <a href="#" id="downloadDocumentsBtn" class="btn" style="background-color:#FE5252; color:white; margin-left:8px;">
-                Download Documents
-            </a>
         </div>
     </div>
 
-    <div id="documentsTable" class="mt-4 p-3 rounded-4 shadow-sm data-table" style="border: 1px solid #dee2e6;">
+    <div id="documentsTable" class="mt-4 p-4 rounded-4 shadow-sm data-table">
         <div class="table-responsive">
             <table class="table mb-0 align-middle">
                 <thead class="text-center">
                     <tr>
                         <th>Select</th>
-                        <th>Document Type</th>
-                        <th>Date Uploaded</th>
-                        <th>Read Status</th>
-                        <th>Action</th>
+                        <th>Name</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Alice Smith's Documents (STU1001) -->
-                    <tr data-doc-id="1" data-doc-status="Unread" data-student-id="STU1001">
-                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="MOA"></td>
-                        <td class="text-center">MOA - Acme Inc.</td>
-                        <td class="text-center">03/02/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-doc-btn" title="Download Document">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr data-doc-id="2" data-doc-status="Unread" data-student-id="STU1001">
-                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="Compliance"></td>
-                        <td class="text-center">Compliance Report - Beta Corp</td>
-                        <td class="text-center">03/06/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-doc-btn" title="Download Document">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <!-- John Doe's Documents (STU1002) -->
-                    <tr data-doc-id="3" data-doc-status="Unread" data-student-id="STU1002">
-                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="MOA"></td>
-                        <td class="text-center">MOA - Beta Corp</td>
-                        <td class="text-center">03/03/2026</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-doc-btn" title="Download Document">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <tr data-doc-id="4" data-doc-status="Unread" data-student-id="STU1002">
-                        <td class="text-center"><input type="checkbox" class="doc-checkbox" value="Endorsement"></td>
-                        <td class="text-center">Endorsement Letter</td>
-                        <td class="text-center">—</td>
-                        <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                        <td class="text-center">
-                            <button class="download-icon download-doc-btn" title="Download Document">
-                                <i class="bi bi-download"></i>
-                            </button>
-                        </td>
-                    </tr>
+                <tbody id="documentsTableBody">
+                    <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view documents</td></tr>
                 </tbody>
             </table>
         </div>
     </div>
-
 </div>
 
-<!-- Upload Modal -->
-<div id="uploadModal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h4 id="modalTitle">Upload New File</h4>
-        <div class="mt-3">
-            <label for="fileTitle" class="form-label">File Title</label>
-            <input type="text" class="form-control" id="fileTitle" placeholder="Enter file title">
-        </div>
-        <div class="mt-3">
-            <label for="fileInput" class="form-label">Choose File</label>
-            <input type="file" class="form-control" id="fileInput">
-        </div>
-        <div class="mt-4 text-end">
-            <button class="btn btn-secondary me-2" id="cancelUpload">Cancel</button>
-            <button class="btn" id="confirmUpload" style="background-color:#0787FF; color:white;">Upload</button>
-        </div>
-    </div>
-</div>
+<!-- Hidden anti-forgery token for AJAX requests -->
+@Html.AntiForgeryToken()
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const cards = document.querySelectorAll(".report-card");
-        const mainReports = document.getElementById("mainReports");
-        const previewSection = document.getElementById("previewSection");
-        const cardsContainer = document.getElementById("cardsContainer");
-        const uploadModal = document.getElementById("uploadModal");
-        const closeModal = document.querySelector(".close");
-        const cancelUpload = document.getElementById("cancelUpload");
-        const confirmUpload = document.getElementById("confirmUpload");
-        const modalTitle = document.getElementById("modalTitle");
-        const fileTitle = document.getElementById("fileTitle");
-        const fileInput = document.getElementById("fileInput");
+    (function() {
+        'use strict';
 
-        let currentStudentId = null;
-        let uploadType = null; // 'task' or 'document'
+        // ===== STATE MANAGEMENT =====
+        const AppState = {
+            currentStudentId: null,
+            students: @Html.Raw(Json.Serialize(students)),
+            tasks: @Html.Raw(Json.Serialize(tasks)),
+            documents: @Html.Raw(Json.Serialize(documents)),
+            timeLogs: @Html.Raw(Json.Serialize(timeLogSubmissions)),
 
-        // Function to update main card status based on tasks and documents
-        function updateMainCardStatus(studentId) {
-            const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
-            if (!card) return;
-
-            const statusContainer = card.querySelector('.status-container .status-badge-card');
-
-            // Check all tasks for this student
-            const taskRows = document.querySelectorAll(`#tasksTable tbody tr[data-student-id="${studentId}"]`);
-            const docRows = document.querySelectorAll(`#documentsTable tbody tr[data-student-id="${studentId}"]`);
-
-            let allRead = true;
-
-            // Check tasks
-            taskRows.forEach(row => {
-                const taskStatus = row.dataset.taskStatus;
-                if (taskStatus === 'Unread') {
-                    allRead = false;
-                }
-            });
-
-            // Check documents
-            docRows.forEach(row => {
-                const docStatus = row.dataset.docStatus;
-                if (docStatus === 'Unread') {
-                    allRead = false;
-                }
-            });
-
-            // Update the status badge
-            if (allRead) {
-                statusContainer.className = 'status-badge-card status-read';
-                statusContainer.textContent = 'Read';
-                card.dataset.status = 'Read';
-            } else {
-                statusContainer.className = 'status-badge-card status-unread';
-                statusContainer.textContent = 'Unread';
-                card.dataset.status = 'Unread';
+            // Cache DOM elements
+            elements: {
+                cardsContainer: document.getElementById('cardsContainer'),
+                mainReports: document.getElementById('studentsTab'),
+                previewSection: document.getElementById('previewSection'),
+                tasksTableBody: document.getElementById('tasksTableBody'),
+                documentsTableBody: document.getElementById('documentsTableBody'),
+                backBtn: document.getElementById('backBtn'),
+                downloadTemplateBtn: document.getElementById('downloadTemplateBtn'),
+                downloadDocumentsBtn: document.getElementById('downloadDocumentsBtn'),
+                searchName: document.getElementById('searchName'),
+                yearFilter: document.getElementById('yearFilter'),
+                programFilter: document.getElementById('programFilter'),
+                statusFilter: document.getElementById('statusFilter')
             }
+        };
 
-            // After updating status, reapply the status filter
-            applyStatusFilter();
-        }
+        // ===== UTILITY FUNCTIONS =====
+        const Utils = {
+            formatDate(dateString) {
+                if (!dateString) return '—';
+                try {
+                    return new Date(dateString).toLocaleDateString('en-US', {
+                        month: '2-digit',
+                        day: '2-digit',
+                        year: 'numeric'
+                    });
+                } catch {
+                    return '—';
+                }
+            },
 
-        // Function to mark a student's status as Unread (when new file is uploaded)
-        function markAsUnread(studentId) {
-            const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
-            if (!card) return;
+            getMonthName(month) {
+                const months = [
+                    'January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'
+                ];
+                return months[month - 1] || 'Unknown';
+            },
 
-            const statusContainer = card.querySelector('.status-container .status-badge-card');
+            showToast(message, type = 'success') {
+                let toastContainer = document.getElementById('toast-container');
+                if (!toastContainer) {
+                    toastContainer = document.createElement('div');
+                    toastContainer.id = 'toast-container';
+                    document.body.appendChild(toastContainer);
+                }
 
-            // Always set to Unread when new file is uploaded
-            statusContainer.className = 'status-badge-card status-unread';
-            statusContainer.textContent = 'Unread';
-            card.dataset.status = 'Unread';
+                const toast = document.createElement('div');
+                toast.className = `toast toast-${type}`;
+                toast.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px; font-weight: bold;">${type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ'}</span>
+                        <span>${message}</span>
+                    </div>
+                    <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+                `;
 
-            // After updating status, reapply the status filter
-            applyStatusFilter();
-        }
+                toastContainer.appendChild(toast);
 
-        // Function to apply status filter
-        function applyStatusFilter() {
-            const selectedStatus = document.getElementById("statusFilter").value;
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.style.animation = 'slideOut 0.3s ease';
+                        setTimeout(() => toast.remove(), 300);
+                    }
+                }, 3000);
+            },
 
-            if (selectedStatus === "") {
-                // Show all cards
-                cards.forEach(card => {
-                    card.style.display = "flex";
+            getAntiForgeryToken() {
+                return document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+            },
+
+            getStudentInfo(studentId) {
+                const student = AppState.students.find(s => s.id === studentId);
+                const studentCard = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
+                return {
+                    student: student,
+                    card: studentCard
+                };
+            }
+        };
+
+        // ===== FILTER FUNCTIONS =====
+        const FilterManager = {
+            filterCards() {
+                const searchTerm = AppState.elements.searchName.value.toLowerCase();
+                const selectedYear = AppState.elements.yearFilter.value;
+                const selectedProgram = AppState.elements.programFilter.value;
+                const selectedStatus = AppState.elements.statusFilter.value;
+
+                document.querySelectorAll('.report-card').forEach(card => {
+                    const name = card.dataset.name?.toLowerCase() || '';
+                    const year = card.dataset.year;
+                    const program = card.dataset.course;
+                    const status = card.dataset.status;
+
+                    let show = true;
+                    if (searchTerm && !name.includes(searchTerm)) show = false;
+                    if (selectedYear && year !== selectedYear) show = false;
+                    if (selectedProgram && program !== selectedProgram) show = false;
+                    if (selectedStatus && status !== selectedStatus) show = false;
+
+                    card.style.display = show ? 'flex' : 'none';
                 });
-            } else {
-                // Filter by selected status
-                cards.forEach(card => {
-                    const cardStatus = card.dataset.status;
-                    if (cardStatus === selectedStatus) {
-                        card.style.display = "flex";
+            },
+
+            init() {
+                AppState.elements.searchName.addEventListener('input', () => this.filterCards());
+                AppState.elements.yearFilter.addEventListener('change', () => this.filterCards());
+                AppState.elements.programFilter.addEventListener('change', () => this.filterCards());
+                AppState.elements.statusFilter.addEventListener('change', () => this.filterCards());
+            }
+        };
+
+        // ===== TASK FUNCTIONS =====
+        const TaskManager = {
+            renderTasksForStudent(studentId) {
+                const studentTasks = AppState.tasks.filter(t => t.studentId === studentId);
+                const tbody = AppState.elements.tasksTableBody;
+
+                if (studentTasks.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No tasks found for this student</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = studentTasks.map(task => {
+                    const date = Utils.formatDate(task.createdAt);
+                    const status = task.status || 'Unread';
+                    const statusClass = status === 'Unread' ? 'status-unread' : 'status-read';
+
+                    return `
+                        <tr data-task-id="${task.id}" data-task-status="${status}" data-student-id="${task.studentId}">
+                            <td class="text-center"><input type="checkbox" class="task-checkbox" value="${task.id}"></td>
+                            <td class="text-center">${task.title || 'Untitled'}</td>
+                            <td class="text-center">${date}</td>
+                            <td class="text-center"><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary download-task-btn" title="Download Task">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                this.attachDownloadListeners();
+            },
+
+            attachDownloadListeners() {
+                document.querySelectorAll('.download-task-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.handleTaskDownload(e));
+                });
+            },
+
+            generateTaskExcel(taskTitle, studentId) {
+                const { student, card } = Utils.getStudentInfo(studentId);
+
+                // Create CSV content
+                let csv = "STUDENT TASK REPORT\n";
+                csv += "=".repeat(50) + "\n\n";
+
+                csv += "STUDENT INFORMATION\n";
+                csv += "-".repeat(30) + "\n";
+                csv += "Full Name," + (student?.fullName || card?.dataset.name || 'N/A') + "\n";
+                csv += "Student ID," + (student?.studentId || card?.dataset.studentid || 'N/A') + "\n";
+                csv += "Program," + (student?.program || card?.dataset.course || 'N/A') + "\n";
+                csv += "Year," + (student?.year || card?.dataset.year || 'N/A') + "\n";
+                csv += "Email," + (student?.email || card?.dataset.email || 'N/A') + "\n";
+                csv += "Mobile Number," + (student?.mobileNumber || card?.dataset.mobilenumber || 'N/A') + "\n";
+                csv += "Company," + (card?.dataset.company || 'N/A') + "\n\n";
+
+                csv += "TASK INFORMATION\n";
+                csv += "-".repeat(30) + "\n";
+                csv += "Task Title," + taskTitle + "\n";
+                csv += "Status,Completed\n";
+                csv += "Download Date," + new Date().toLocaleDateString() + "\n";
+                csv += "Download Time," + new Date().toLocaleTimeString() + "\n";
+
+                // Create filename
+                const studentName = (student?.fullName || card?.dataset.name || 'Student').replace(/\s+/g, '_');
+                const fileName = `Task_${studentName}_${taskTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
+
+                // Download file
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                Utils.showToast(`Task downloaded as Excel with student information`, 'success');
+            },
+
+            handleTaskDownload(e) {
+                e.preventDefault();
+                const row = e.currentTarget.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const taskId = row.dataset.taskId;
+                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+                const studentId = row.dataset.studentId;
+                const checkbox = row.querySelector('.task-checkbox');
+
+                if (statusBadge.classList.contains('status-unread')) {
+                    statusBadge.classList.remove('status-unread');
+                    statusBadge.classList.add('status-read');
+                    statusBadge.textContent = 'Read';
+                    row.dataset.taskStatus = 'Read';
+
+                    const task = AppState.tasks.find(t => t.id == taskId);
+                    if (task) task.status = 'Read';
+
+                    if (checkbox) checkbox.checked = false;
+
+                    StudentManager.updateMainCardStatus(studentId);
+                }
+
+                this.generateTaskExcel(taskTitle, studentId);
+            },
+
+            downloadSelected() {
+                const selectedCheckboxes = document.querySelectorAll('#tasksTable tbody tr:not([style*="none"]) .task-checkbox:checked');
+
+                if (selectedCheckboxes.length === 0) {
+                    Utils.showToast('Please select at least one task.', 'error');
+                    return;
+                }
+
+                selectedCheckboxes.forEach(cb => {
+                    const row = cb.closest('tr');
+                    const statusBadge = row.querySelector('.status-badge');
+                    const taskId = row.dataset.taskId;
+                    const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
+                    const studentId = row.dataset.studentId;
+
+                    if (statusBadge.classList.contains('status-unread')) {
+                        statusBadge.classList.remove('status-unread');
+                        statusBadge.classList.add('status-read');
+                        statusBadge.textContent = 'Read';
+                        row.dataset.taskStatus = 'Read';
+
+                        const task = AppState.tasks.find(t => t.id == taskId);
+                        if (task) task.status = 'Read';
+
+                        cb.checked = false;
+
+                        if (studentId) {
+                            StudentManager.updateMainCardStatus(studentId);
+                        }
+                    }
+
+                    this.generateTaskExcel(taskTitle, studentId);
+                });
+            }
+        };
+
+        // ===== DOCUMENT FUNCTIONS =====
+        const DocumentManager = {
+            renderDocumentsAndTimeLogs(studentId) {
+                const studentDocs = AppState.documents.filter(d => d.studentId === studentId);
+                const studentSubmissions = AppState.timeLogs.filter(s => s.studentId === studentId);
+
+                const allItems = [];
+
+                // Add documents
+                studentDocs.forEach(doc => {
+                    allItems.push({
+                        id: doc.id,
+                        type: 'document',
+                        name: doc.name,
+                        date: doc.uploadedAt,
+                        status: 'Available',
+                        statusClass: 'status-available',
+                        icon: 'bi-file-earmark-text',
+                        iconColor: '#0d6efd'
+                    });
+                });
+
+                // Add time logs
+                studentSubmissions.forEach(sub => {
+                    const statusClass = sub.status === 'Approved' ? 'status-approved'
+                        : sub.status === 'Rejected' ? 'status-rejected'
+                        : 'status-pending';
+
+                    allItems.push({
+                        id: sub.id,
+                        type: 'timelog',
+                        name: `${sub.monthName} Time Log (${sub.totalHours} hrs)`,
+                        date: sub.submissionDate,
+                        status: sub.status || 'Pending',
+                        statusClass: statusClass,
+                        icon: 'bi-clock-history',
+                        iconColor: '#0d6efd',
+                        logs: sub.logs,
+                        monthName: sub.monthName,
+                        totalHours: sub.totalHours,
+                        studentId: sub.studentId,
+                        studentName: sub.studentName,
+                        course: sub.course,
+                        year: sub.year,
+                        section: sub.section
+                    });
+                });
+
+                // Sort by date (newest first)
+                allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                const tbody = AppState.elements.documentsTableBody;
+
+                if (allItems.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No documents or submissions found for this student</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = allItems.map(item => {
+                    const date = Utils.formatDate(item.date);
+
+                    if (item.type === 'document') {
+                        return `
+                            <tr data-doc-id="${item.id}" data-item-type="document" data-student-id="${studentId}">
+                                <td class="text-center"><input type="checkbox" class="doc-checkbox" value="${item.id}"></td>
+                                <td>
+                                    <i class="bi ${item.icon} me-2" style="color: ${item.iconColor};"></i>
+                                    ${item.name}
+                                </td>
+                                <td>${date}</td>
+                                <td><span class="badge ${item.statusClass}">${item.status}</span></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="window.downloadDocument('${item.id}', '${studentId}')" title="Download">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="window.deleteDocument('${item.id}', '${studentId}')" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
                     } else {
-                        card.style.display = "none";
+                        return `
+                            <tr data-submission-id="${item.id}" data-item-type="timelog" data-student-id="${studentId}">
+                                <td class="text-center"><input type="checkbox" class="submission-checkbox" value="${item.id}"></td>
+                                <td>
+                                    <i class="bi ${item.icon} me-2" style="color: ${item.iconColor};"></i>
+                                    ${item.name}
+                                </td>
+                                <td>${date}</td>
+                                <td><span class="badge ${item.statusClass}">${item.status}</span></td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="window.downloadTimeLogSubmission('${item.id}')" title="Download Excel">
+                                        <i class="bi bi-file-earmark-excel"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-info me-1" onclick="window.viewTimeLogSubmission('${item.id}')" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="window.deleteTimeLogSubmission('${item.id}', '${studentId}')" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        `;
+                    }
+                }).join('');
+            },
+
+            downloadSelected() {
+                const docCheckboxes = document.querySelectorAll('#documentsTable tbody tr[data-item-type="document"] .doc-checkbox:checked');
+                const submissionCheckboxes = document.querySelectorAll('#documentsTable tbody tr[data-item-type="timelog"] .submission-checkbox:checked');
+
+                const totalSelected = docCheckboxes.length + submissionCheckboxes.length;
+
+                if (totalSelected === 0) {
+                    Utils.showToast('Please select at least one item to download.', 'error');
+                    return;
+                }
+
+                // Create manifest Excel file
+                let csv = "SELECTED DOCUMENTS MANIFEST\n";
+                csv += "=".repeat(50) + "\n";
+                csv += "Generated on:," + new Date().toLocaleString() + "\n\n";
+
+                if (docCheckboxes.length > 0) {
+                    csv += "SELECTED DOCUMENTS\n";
+                    csv += "-".repeat(30) + "\n";
+                    csv += "Document Name,Type\n";
+                    docCheckboxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        const name = row.querySelector('td:nth-child(2)').textContent.trim();
+                        csv += `${name},Document\n`;
+                    });
+                    csv += "\n";
+                }
+
+                if (submissionCheckboxes.length > 0) {
+                    csv += "SELECTED TIME LOGS\n";
+                    csv += "-".repeat(30) + "\n";
+                    csv += "Time Log Name,Type\n";
+                    submissionCheckboxes.forEach(cb => {
+                        const row = cb.closest('tr');
+                        const name = row.querySelector('td:nth-child(2)').textContent.trim();
+                        csv += `${name},Time Log\n`;
+                    });
+                }
+
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Selected_Items_Manifest_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                Utils.showToast(`Generated manifest for ${totalSelected} item(s)`, 'success');
+
+                docCheckboxes.forEach(cb => cb.checked = false);
+                submissionCheckboxes.forEach(cb => cb.checked = false);
+            }
+        };
+
+        // ===== TIME LOG FUNCTIONS =====
+        window.downloadTimeLogSubmission = function(submissionId) {
+            const submission = AppState.timeLogs.find(s => s.id === submissionId);
+            if (!submission) return;
+
+            try {
+                let logsData = submission.logs;
+                if (typeof logsData === 'string') {
+                    try {
+                        logsData = JSON.parse(logsData);
+                    } catch (e) {
+                        logsData = [];
+                    }
+                }
+
+                const { student, card } = Utils.getStudentInfo(submission.studentId);
+
+                // Create Excel/CSV content
+                let csv = "STUDENT TIME LOG REPORT\n";
+                csv += "=".repeat(60) + "\n\n";
+
+                csv += "STUDENT INFORMATION\n";
+                csv += "-".repeat(40) + "\n";
+                csv += "Full Name," + (submission.studentName || student?.fullName || card?.dataset.name || 'N/A') + "\n";
+                csv += "Student ID," + (student?.studentId || card?.dataset.studentid || 'N/A') + "\n";
+                csv += "Program," + (student?.program || submission.course || card?.dataset.course || 'N/A') + "\n";
+                csv += "Year," + (student?.year || submission.year || card?.dataset.year || 'N/A') + "\n";
+                csv += "Section," + (submission.section || 'N/A') + "\n";
+                csv += "Email," + (student?.email || card?.dataset.email || 'N/A') + "\n";
+                csv += "Mobile Number," + (student?.mobileNumber || card?.dataset.mobilenumber || 'N/A') + "\n\n";
+
+                csv += "TIME LOG DETAILS\n";
+                csv += "-".repeat(40) + "\n";
+                csv += "Month," + submission.monthName + "\n";
+                csv += "Total Hours Rendered," + submission.totalHours + "\n";
+                csv += "Status," + (submission.status || 'Pending') + "\n";
+                csv += "Submission Date," + new Date(submission.submissionDate).toLocaleDateString() + "\n\n";
+
+                if (submission.adminRemarks) {
+                    csv += "Admin Remarks," + submission.adminRemarks + "\n\n";
+                }
+
+                csv += "DAILY TIME RECORD\n";
+                csv += "=".repeat(100) + "\n";
+                csv += "Day,AM In,AM Out,PM In,PM Out,OT In,OT Out,Total Hours,Type\n";
+                csv += "-".repeat(100) + "\n";
+
+                if (Array.isArray(logsData) && logsData.length > 0) {
+                    logsData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(log => {
+                        const date = new Date(log.date);
+                        const day = date.getDate();
+
+                        if (log.type === 'regular') {
+                            csv += `${day},${log.amIn || '-'},${log.amOut || '-'},${log.pmIn || '-'},${log.pmOut || '-'},${log.otIn || '-'},${log.otOut || '-'},${log.totalHours || 0},Regular\n`;
+                        } else {
+                            csv += `${day},-,-,-,-,-,-,-,${log.type}\n`;
+                        }
+                    });
+                }
+
+                csv += "\n" + "=".repeat(60) + "\n";
+                csv += "SUMMARY\n";
+                csv += "=".repeat(60) + "\n";
+                csv += "Total Days Worked," + logsData.length + "\n";
+                csv += "Total Hours Rendered," + submission.totalHours + "\n";
+                csv += "Average Hours Per Day," + (logsData.length > 0 ? (submission.totalHours / logsData.length).toFixed(2) : '0') + "\n";
+
+                // Create filename
+                const studentName = (submission.studentName || student?.fullName || 'Student').replace(/\s+/g, '_');
+                const fileName = `TimeLog_${studentName}_${submission.monthName}_${new Date().toISOString().split('T')[0]}.csv`;
+
+                // Download file
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                Utils.showToast('Time log downloaded as Excel with student information!', 'success');
+            } catch (error) {
+                console.error('Error downloading time log:', error);
+                Utils.showToast('Error downloading time log', 'error');
+            }
+        };
+
+        window.viewTimeLogSubmission = function(submissionId) {
+            const submission = AppState.timeLogs.find(s => s.id === submissionId);
+            if (!submission) return;
+
+            try {
+                let logsData = submission.logs;
+                if (typeof logsData === 'string') {
+                    try {
+                        logsData = JSON.parse(logsData);
+                    } catch (e) {
+                        logsData = [];
+                    }
+                }
+
+                let logsHtml = '<div class="modal fade" id="timeLogModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Time Log Details - ' + submission.monthName + '</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">';
+                logsHtml += '<p><strong>Student:</strong> ' + submission.studentName + '</p>';
+                logsHtml += '<p><strong>Total Hours:</strong> ' + submission.totalHours + '</p>';
+                logsHtml += '<p><strong>Status:</strong> <span class="badge ' + (submission.status === 'Approved' ? 'bg-success' : submission.status === 'Rejected' ? 'bg-danger' : 'bg-warning') + '">' + (submission.status || 'Pending') + '</span></p>';
+
+                if (submission.adminRemarks) {
+                    logsHtml += '<p><strong>Admin Remarks:</strong> ' + submission.adminRemarks + '</p>';
+                }
+
+                logsHtml += '<hr><h6>Daily Logs:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Day</th><th>AM In</th><th>AM Out</th><th>PM In</th><th>PM Out</th><th>OT In</th><th>OT Out</th><th>Total</th><th>Type</th></tr></thead><tbody>';
+
+                if (Array.isArray(logsData) && logsData.length > 0) {
+                    logsData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(log => {
+                        const date = new Date(log.date);
+                        const day = date.getDate();
+
+                        if (log.type === 'regular') {
+                            logsHtml += `<tr>
+                                <td>${day}</td>
+                                <td>${log.amIn || '-'}</td>
+                                <td>${log.amOut || '-'}</td>
+                                <td>${log.pmIn || '-'}</td>
+                                <td>${log.pmOut || '-'}</td>
+                                <td>${log.otIn || '-'}</td>
+                                <td>${log.otOut || '-'}</td>
+                                <td>${log.totalHours || 0}</td>
+                                <td>Regular</td>
+                            </tr>`;
+                        } else {
+                            logsHtml += `<tr>
+                                <td>${day}</td>
+                                <td colspan="7" class="text-center">${log.type}</td>
+                                <td>-</td>
+                            </tr>`;
+                        }
+                    });
+                } else {
+                    logsHtml += '<tr><td colspan="9" class="text-center">No detailed logs available</td></tr>';
+                }
+
+                logsHtml += '</tbody></table></div>';
+                logsHtml += '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>';
+
+                // Remove existing modal if any
+                const existingModal = document.getElementById('timeLogModal');
+                if (existingModal) existingModal.remove();
+
+                // Add modal to body
+                document.body.insertAdjacentHTML('beforeend', logsHtml);
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('timeLogModal'));
+                modal.show();
+                Utils.showToast('Time log details loaded', 'success');
+            } catch (error) {
+                console.error('Error viewing submission:', error);
+                Utils.showToast('Error viewing submission details', 'error');
+            }
+        };
+
+        window.deleteTimeLogSubmission = async function(submissionId, studentId) {
+            if (!confirm('Are you sure you want to delete this time log submission? This action cannot be undone.')) return;
+
+            try {
+                const token = Utils.getAntiForgeryToken();
+                const response = await fetch(`/Admin/DeleteTimeLogSubmission/${submissionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'Content-Type': 'application/json'
                     }
                 });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const row = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
+                    if (row) {
+                        row.remove();
+
+                        const remainingRows = document.querySelectorAll('#documentsTableBody tr').length;
+                        if (remainingRows === 0) {
+                            document.getElementById('documentsTableBody').innerHTML =
+                                '<tr><td colspan="5" class="text-center text-muted py-4">No documents or submissions found for this student</td></tr>';
+                        }
+
+                        // Remove from state
+                        AppState.timeLogs = AppState.timeLogs.filter(s => s.id !== submissionId);
+
+                        Utils.showToast('Time log submission deleted successfully!', 'success');
+                    }
+                } else {
+                    Utils.showToast('Failed to delete: ' + (data.message || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                console.error('Error deleting submission:', error);
+                Utils.showToast('Error deleting submission: ' + error.message, 'error');
             }
-        }
+        };
 
-        // Function to filter tables by student
-        function filterTablesByStudent(studentId) {
-            // Hide/show task rows
-            document.querySelectorAll('#tasksTable tbody tr').forEach(row => {
-                if (row.dataset.studentId === studentId) {
-                    row.style.display = '';
-                    // Uncheck any checkboxes in hidden rows
-                    const checkbox = row.querySelector('.task-checkbox');
-                    if (checkbox) checkbox.checked = false;
+        window.downloadDocument = function(docId, studentId) {
+            window.location.href = `/Admin/DownloadDocument/${docId}`;
+        };
+
+        window.deleteDocument = async function(docId, studentId) {
+            if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) return;
+
+            try {
+                const token = Utils.getAntiForgeryToken();
+                const response = await fetch(`/Admin/DeleteDocument/${docId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'RequestVerificationToken': token,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const row = document.querySelector(`tr[data-doc-id="${docId}"]`);
+                    if (row) {
+                        row.remove();
+
+                        const remainingRows = document.querySelectorAll('#documentsTableBody tr').length;
+                        if (remainingRows === 0) {
+                            document.getElementById('documentsTableBody').innerHTML =
+                                '<tr><td colspan="5" class="text-center text-muted py-4">No documents or submissions found for this student</td></tr>';
+                        }
+
+                        // Remove from state
+                        AppState.documents = AppState.documents.filter(d => d.id !== docId);
+
+                        Utils.showToast('Document deleted successfully!', 'success');
+                    }
                 } else {
-                    row.style.display = 'none';
+                    Utils.showToast('Failed to delete document: ' + data.message, 'error');
                 }
-            });
+            } catch (error) {
+                console.error('Error deleting document:', error);
+                Utils.showToast('Error deleting document', 'error');
+            }
+        };
 
-            // Hide/show document rows
-            document.querySelectorAll('#documentsTable tbody tr').forEach(row => {
-                if (row.dataset.studentId === studentId) {
-                    row.style.display = '';
-                    // Uncheck any checkboxes in hidden rows
-                    const checkbox = row.querySelector('.doc-checkbox');
-                    if (checkbox) checkbox.checked = false;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-        }
+        // ===== STUDENT FUNCTIONS =====
+        const StudentManager = {
+            updateMainCardStatus(studentId) {
+                const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
+                if (!card) return;
 
-        // Function to add a new task row
-        function addNewTask(studentId, title) {
-            const tbody = document.querySelector('#tasksTable tbody');
-            const newTaskId = Date.now(); // Simple unique ID
-            const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
+                const statusContainer = card.querySelector('.status-container .status-badge');
+                const studentTasks = AppState.tasks.filter(t => t.studentId === studentId);
 
-            const newRow = document.createElement('tr');
-            newRow.dataset.taskId = newTaskId;
-            newRow.dataset.taskStatus = 'Unread';
-            newRow.dataset.studentId = studentId;
+                const hasUnread = studentTasks.some(task => task.status === 'Unread');
+                const newStatus = hasUnread ? 'Unread' : 'Read';
 
-            newRow.innerHTML = `
-                <td class="text-center"><input type="checkbox" class="task-checkbox" value="New Task"></td>
-                <td class="text-center">${title}</td>
-                <td class="text-center">${today}</td>
-                <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                <td class="text-center">
-                    <button class="download-icon download-task-btn" title="Download Task">
-                        <i class="bi bi-download"></i>
-                    </button>
-                </td>
-            `;
+                statusContainer.className = `status-badge ${hasUnread ? 'status-unread' : 'status-read'}`;
+                statusContainer.textContent = newStatus;
+                card.dataset.status = newStatus;
 
-            tbody.appendChild(newRow);
+                FilterManager.filterCards();
+            },
 
-            // Add download event listener to the new button
-            const downloadBtn = newRow.querySelector('.download-task-btn');
-            downloadBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const row = this.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const taskId = row.dataset.taskId;
-                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
-                const studentId = row.dataset.studentId;
-                const checkbox = row.querySelector('.task-checkbox');
+            showPreview(card) {
+                AppState.currentStudentId = card.dataset.studentKey;
 
-                if (statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.taskStatus = 'Read';
+                TaskManager.renderTasksForStudent(AppState.currentStudentId);
+                DocumentManager.renderDocumentsAndTimeLogs(AppState.currentStudentId);
 
-                    if (checkbox) checkbox.checked = false;
-                }
-
-                if (studentId) {
-                    updateMainCardStatus(studentId);
-                }
-
-                const templateUrl = "/templates/reporttemplate.docx";
-                const filename = `Task_${taskId}_${taskTitle.replace(/\s+/g, '_')}.docx`;
-                const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }
-
-        // Function to add a new document row
-        function addNewDocument(studentId, title) {
-            const tbody = document.querySelector('#documentsTable tbody');
-            const newDocId = Date.now(); // Simple unique ID
-            const today = new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' });
-
-            const newRow = document.createElement('tr');
-            newRow.dataset.docId = newDocId;
-            newRow.dataset.docStatus = 'Unread';
-            newRow.dataset.studentId = studentId;
-
-            newRow.innerHTML = `
-                <td class="text-center"><input type="checkbox" class="doc-checkbox" value="New Document"></td>
-                <td class="text-center">${title}</td>
-                <td class="text-center">${today}</td>
-                <td class="text-center"><span class="status-badge status-unread">Unread</span></td>
-                <td class="text-center">
-                    <button class="download-icon download-doc-btn" title="Download Document">
-                        <i class="bi bi-download"></i>
-                    </button>
-                </td>
-            `;
-
-            tbody.appendChild(newRow);
-
-            // Add download event listener to the new button
-            const downloadBtn = newRow.querySelector('.download-doc-btn');
-            downloadBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                const row = this.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const docId = row.dataset.docId;
-                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
-                const studentId = row.dataset.studentId;
-                const checkbox = row.querySelector('.doc-checkbox');
-
-                if (statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.docStatus = 'Read';
-
-                    if (checkbox) checkbox.checked = false;
-                }
-
-                if (studentId) {
-                    updateMainCardStatus(studentId);
-                }
-
-                const templateUrl = "/templates/reporttemplate.docx";
-                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
-                const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }
-
-        // Initialize all cards with correct status on page load
-        function initializeAllStatuses() {
-            cards.forEach(card => {
-                const studentId = card.dataset.studentKey;
-                updateMainCardStatus(studentId);
-            });
-        }
-
-        // --- Populate filter dropdowns ---
-        const years = new Set();
-        const programs = new Set();
-        cards.forEach(card => {
-            years.add(card.dataset.year);
-            programs.add(card.dataset.course);
-        });
-
-        const yearFilter = document.getElementById("yearFilter");
-        const programFilter = document.getElementById("programFilter");
-        const statusFilter = document.getElementById("statusFilter");
-
-        [...years].sort().forEach(year => {
-            const option = document.createElement("option");
-            option.value = year;
-            option.textContent = year;
-            yearFilter.appendChild(option);
-        });
-
-        [...programs].sort().forEach(program => {
-            const option = document.createElement("option");
-            option.value = program;
-            option.textContent = program;
-            programFilter.appendChild(option);
-        });
-
-        // --- Combined filter function ---
-        function filterCards() {
-            const searchTerm = document.getElementById("searchName").value.toLowerCase();
-            const selectedYear = yearFilter.value;
-            const selectedProgram = programFilter.value;
-            const selectedStatus = statusFilter.value;
-
-            cards.forEach(card => {
-                const name = card.dataset.name.toLowerCase();
-                const year = card.dataset.year;
-                const program = card.dataset.course;
-                const status = card.dataset.status;
-
-                let show = true;
-                if (searchTerm && !name.includes(searchTerm)) show = false;
-                if (selectedYear && year !== selectedYear) show = false;
-                if (selectedProgram && program !== selectedProgram) show = false;
-                if (selectedStatus && status !== selectedStatus) show = false;
-
-                card.style.display = show ? "flex" : "none";
-            });
-        }
-
-        document.getElementById("searchName").addEventListener("input", filterCards);
-        yearFilter.addEventListener("change", filterCards);
-        programFilter.addEventListener("change", filterCards);
-        statusFilter.addEventListener("change", filterCards);
-
-        // --- Preview button (eye icon) ---
-        document.querySelectorAll('.preview-btn').forEach(btn => {
-            btn.addEventListener('click', function (e) {
-                e.preventDefault();
-                const card = this.closest('.report-card');
-                currentStudentId = card.dataset.studentKey;
-
-                // Filter tables to show only this student's data
-                filterTablesByStudent(currentStudentId);
-
-                document.getElementById("previewProfilePic").src = card.dataset.profile && card.dataset.profile.trim() !== ""
+                // Update profile picture
+                document.getElementById('previewProfilePic').src = card.dataset.profile && card.dataset.profile.trim() !== ''
                     ? card.dataset.profile
-                    : "/images/defaultpicture.jpg";
+                    : '/images/defaultpicture.jpg';
 
-                document.getElementById("pName").textContent = card.dataset.name || "—";
-                document.getElementById("pStudentID").textContent = card.dataset.studentid || "—";
-                document.getElementById("pCourse").textContent = card.dataset.course || "—";
-                document.getElementById("pYear").textContent = card.dataset.year || "—";
+                // Update student info
+                document.getElementById('pName').textContent = card.dataset.name || '—';
+                document.getElementById('pStudentID').textContent = card.dataset.studentid || '—';
+                document.getElementById('pCourse').textContent = card.dataset.course || '—';
+                document.getElementById('pYear').textContent = card.dataset.year || '—';
 
-                const fbSpan = document.getElementById("pFacebook");
+                // Facebook
+                const fbSpan = document.getElementById('pFacebook');
                 const fbUsername = card.dataset.facebook;
-                if (fbUsername && fbUsername.trim() !== "") {
+                if (fbUsername && fbUsername.trim() !== '') {
                     fbSpan.innerHTML = `<a href="https://facebook.com/${fbUsername}" target="_blank" class="info-link">${fbUsername}</a>`;
                 } else {
-                    fbSpan.textContent = "—";
+                    fbSpan.textContent = '—';
                 }
 
-                document.getElementById("pMobileNumber").textContent = card.dataset.mobilenumber || "—";
-                document.getElementById("pAddress").textContent = card.dataset.address || "—";
-                document.getElementById("pContactNumber").textContent = card.dataset.contactnumber || "—";
-                document.getElementById("pBirthdate").textContent = card.dataset.birthdate || "—";
-                document.getElementById("pEmail").textContent = card.dataset.email || "—";
+                document.getElementById('pMobileNumber').textContent = card.dataset.mobilenumber || '—';
+                document.getElementById('pAddress').textContent = card.dataset.address || '—';
+                document.getElementById('pContactPerson').textContent = card.dataset.contactperson || '—';
+                document.getElementById('pBirthdate').textContent = card.dataset.birthdate || '—';
+                document.getElementById('pEmail').textContent = card.dataset.email || '—';
 
-                const companySpan = document.getElementById("pCompany");
+                // Company
+                const companySpan = document.getElementById('pCompany');
                 const company = card.dataset.company;
-                if (company && company.trim() !== "") {
+                if (company && company.trim() !== '') {
                     companySpan.innerHTML = `<a href="https://www.google.com/search?q=${encodeURIComponent(company)}" target="_blank" class="info-link">${company}</a>`;
                 } else {
-                    companySpan.textContent = "—";
+                    companySpan.textContent = '—';
                 }
 
-                mainReports.style.display = "none";
-                previewSection.style.display = "block";
-            });
-        });
+                document.getElementById('pTotalHours').textContent = card.dataset.totalhours || '0';
 
-        // --- Upload button handlers ---
-        document.getElementById("uploadTaskBtn").addEventListener("click", function() {
-            uploadType = 'task';
-            modalTitle.textContent = 'Upload New Task';
-            fileTitle.value = '';
-            fileInput.value = '';
-            uploadModal.style.display = 'block';
-        });
+                // Switch views
+                AppState.elements.mainReports.style.display = 'none';
+                AppState.elements.previewSection.style.display = 'block';
+            },
 
-        document.getElementById("uploadDocumentBtn").addEventListener("click", function() {
-            uploadType = 'document';
-            modalTitle.textContent = 'Upload New Document';
-            fileTitle.value = '';
-            fileInput.value = '';
-            uploadModal.style.display = 'block';
-        });
-
-        // --- Modal close handlers ---
-        function closeUploadModal() {
-            uploadModal.style.display = 'none';
-            uploadType = null;
-        }
-
-        closeModal.addEventListener('click', closeUploadModal);
-        cancelUpload.addEventListener('click', closeUploadModal);
-
-        window.addEventListener('click', function(event) {
-            if (event.target === uploadModal) {
-                closeUploadModal();
+            init() {
+                document.querySelectorAll('.preview-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const card = e.currentTarget.closest('.report-card');
+                        this.showPreview(card);
+                    });
+                });
             }
-        });
+        };
 
-        // --- Confirm upload handler ---
-        confirmUpload.addEventListener('click', function() {
-            if (!fileTitle.value.trim()) {
-                alert('Please enter a file title');
-                return;
-            }
+        // ===== INITIALIZATION =====
+        function init() {
+            FilterManager.init();
+            StudentManager.init();
 
-            if (!fileInput.files || fileInput.files.length === 0) {
-                alert('Please select a file to upload');
-                return;
-            }
-
-            // Simulate upload (in real app, you'd send to server)
-            alert(`File "${fileInput.files[0].name}" uploaded successfully!`);
-
-            // Add new row based on upload type
-            if (uploadType === 'task') {
-                addNewTask(currentStudentId, fileTitle.value);
-            } else if (uploadType === 'document') {
-                addNewDocument(currentStudentId, fileTitle.value);
-            }
-
-            // Mark the student's main status as Unread
-            markAsUnread(currentStudentId);
-
-            closeUploadModal();
-        });
-
-        // --- Back button ---
-        document.getElementById("backBtn").addEventListener("click", function () {
-            previewSection.style.display = "none";
-            mainReports.style.display = "block";
-
-            // Show all rows again and uncheck all checkboxes
-            document.querySelectorAll('#tasksTable tbody tr, #documentsTable tbody tr').forEach(row => {
-                row.style.display = '';
-                // Uncheck all checkboxes
-                const taskCheckbox = row.querySelector('.task-checkbox');
-                const docCheckbox = row.querySelector('.doc-checkbox');
-                if (taskCheckbox) taskCheckbox.checked = false;
-                if (docCheckbox) docCheckbox.checked = false;
+            // Back button
+            AppState.elements.backBtn.addEventListener('click', () => {
+                AppState.elements.previewSection.style.display = 'none';
+                AppState.elements.mainReports.style.display = 'block';
+                AppState.currentStudentId = null;
             });
 
-            currentStudentId = null;
-        });
-
-        // --- TASKS download (bulk) - Only visible checkboxes ---
-        document.getElementById("downloadTemplateBtn").addEventListener("click", function (e) {
-            e.preventDefault();
-
-            // Only get checkboxes from visible rows (current student)
-            const visibleCheckboxes = [...document.querySelectorAll("#tasksTable tbody tr:not([style*='none']) .task-checkbox:checked")];
-
-            if (visibleCheckboxes.length === 0) {
-                alert("Please select at least one task.");
-                return;
-            }
-
-            visibleCheckboxes.forEach(cb => {
-                const row = cb.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const taskId = row.dataset.taskId;
-                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
-                const studentId = row.dataset.studentId;
-
-                if (statusBadge && statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.taskStatus = 'Read';
-
-                    // Uncheck the checkbox after download
-                    cb.checked = false;
-                }
-
-                // Update main card status for this student
-                if (studentId) {
-                    updateMainCardStatus(studentId);
-                }
-
-                const templateUrl = "/templates/reporttemplate.docx";
-                const filename = `Task_${taskId}_${taskTitle.replace(/\s+/g, '_')}.docx`;
-                const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        });
-
-        // --- TASKS per-row download ---
-        function addTaskDownloadListener(btn) {
-            btn.addEventListener('click', function (e) {
+            // Download buttons
+            AppState.elements.downloadTemplateBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const row = this.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const taskId = row.dataset.taskId;
-                const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
-                const studentId = row.dataset.studentId;
-                const checkbox = row.querySelector('.task-checkbox');
 
-                if (statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.taskStatus = 'Read';
-
-                    // Uncheck the checkbox after download
-                    if (checkbox) checkbox.checked = false;
+                if (!AppState.currentStudentId) {
+                    Utils.showToast('Please select a student first', 'error');
+                    return;
                 }
 
-                // Update main card status for this student
-                if (studentId) {
-                    updateMainCardStatus(studentId);
-                }
+                const { student, card } = Utils.getStudentInfo(AppState.currentStudentId);
 
-                const templateUrl = "/templates/reporttemplate.docx";
-                const filename = `Task_${taskId}_${taskTitle.replace(/\s+/g, '_')}.docx`;
+                // Generate template Excel
+                let csv = "TASK TEMPLATE\n";
+                csv += "=".repeat(50) + "\n\n";
+                csv += "Generated for:," + (student?.fullName || card?.dataset.name || 'Student') + "\n";
+                csv += "Student ID:," + (student?.studentId || card?.dataset.studentid || 'N/A') + "\n";
+                csv += "Program:," + (student?.program || card?.dataset.course || 'N/A') + "\n";
+                csv += "Date:," + new Date().toLocaleDateString() + "\n\n";
+
+                csv += "TASK TEMPLATE - INSTRUCTIONS\n";
+                csv += "Please fill in the following information:\n\n";
+
+                csv += "Task Name,Description,Due Date,Status,Remarks\n";
+                csv += "Sample Task 1,Enter task description here,YYYY-MM-DD,Pending,\n";
+                csv += "Sample Task 2,Enter task description here,YYYY-MM-DD,Pending,\n";
+                csv += "Sample Task 3,Enter task description here,YYYY-MM-DD,Pending,\n";
+
+                const studentName = (student?.fullName || card?.dataset.name || 'Student').replace(/\s+/g, '_');
+                const fileName = `Task_Template_${studentName}_${new Date().toISOString().split('T')[0]}.csv`;
+
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
+                link.href = url;
+                link.download = fileName;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+
+                Utils.showToast('Task template downloaded as Excel', 'success');
             });
-        }
 
-        document.querySelectorAll('.download-task-btn').forEach(btn => {
-            addTaskDownloadListener(btn);
-        });
-
-        // --- DOCUMENTS download (bulk) - Only visible checkboxes ---
-        document.getElementById("downloadDocumentsBtn").addEventListener("click", function (e) {
-            e.preventDefault();
-
-            // Only get checkboxes from visible rows (current student)
-            const visibleCheckboxes = [...document.querySelectorAll("#documentsTable tbody tr:not([style*='none']) .doc-checkbox:checked")];
-
-            if (visibleCheckboxes.length === 0) {
-                alert("Please select at least one document.");
-                return;
-            }
-
-            visibleCheckboxes.forEach(cb => {
-                const row = cb.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const docId = row.dataset.docId;
-                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
-                const studentId = row.dataset.studentId;
-
-                if (statusBadge && statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.docStatus = 'Read';
-
-                    // Uncheck the checkbox after download
-                    cb.checked = false;
-                }
-
-                // Update main card status for this student
-                if (studentId) {
-                    updateMainCardStatus(studentId);
-                }
-
-                const templateUrl = "/templates/reporttemplate.docx";
-                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
-                const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        });
-
-        // --- DOCUMENTS per-row download ---
-        function addDocumentDownloadListener(btn) {
-            btn.addEventListener('click', function (e) {
+            AppState.elements.downloadDocumentsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                const row = this.closest('tr');
-                const statusBadge = row.querySelector('.status-badge');
-                const docId = row.dataset.docId;
-                const docType = row.querySelector('td:nth-child(2)').textContent.trim();
-                const studentId = row.dataset.studentId;
-                const checkbox = row.querySelector('.doc-checkbox');
-
-                if (statusBadge.classList.contains('status-unread')) {
-                    statusBadge.classList.remove('status-unread');
-                    statusBadge.classList.add('status-read');
-                    statusBadge.textContent = 'Read';
-                    row.dataset.docStatus = 'Read';
-
-                    // Uncheck the checkbox after download
-                    if (checkbox) checkbox.checked = false;
-                }
-
-                // Update main card status for this student
-                if (studentId) {
-                    updateMainCardStatus(studentId);
-                }
-
-                const templateUrl = "/templates/reporttemplate.docx";
-                const filename = `Document_${docId}_${docType.replace(/\s+/g, '_')}.docx`;
-                const link = document.createElement('a');
-                link.href = templateUrl;
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                DocumentManager.downloadSelected();
             });
+
+            console.log('Application initialized successfully');
         }
 
-        document.querySelectorAll('.download-doc-btn').forEach(btn => {
-            addDocumentDownloadListener(btn);
-        });
-
-        // Initialize all statuses on page load
-        initializeAllStatuses();
-    });
+        // Start the application when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
 </script>
