@@ -49,6 +49,170 @@ namespace MonitoringSystem.Controllers
             return View();
         }
 
+        // ===================== TEST REPORT ACTION =====================
+        // GET: /Student/TestReport
+        public IActionResult TestReport()
+        {
+            return View();
+        }
+
+        // ===================== OJT REPORT ACTION =====================
+        // GET: /Student/OJTReport
+        public IActionResult OJTReport()
+        {
+            return View();
+        }
+
+        // ===================== TASK MANAGEMENT =====================
+        // GET: Student/GetTasks
+        [HttpGet]
+        public async Task<IActionResult> GetTasks()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var tasks = await _context.StudentTasks
+                    .Where(t => t.UserId == userId)
+                    .OrderByDescending(t => t.DateFrom)
+                    .Select(t => new
+                    {
+                        t.Id,
+                        t.Title,
+                        DateFrom = t.DateFrom.ToString("yyyy-MM-dd"),
+                        DateTo = t.DateTo.ToString("yyyy-MM-dd"),
+                        t.Status,
+                        AdminStatus = "Unread",
+                        t.TaskContent,
+                        t.LearningContent
+                    })
+                    .ToListAsync();
+
+                return Ok(tasks);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting tasks: {ex.Message}");
+                return Ok(new List<object>());
+            }
+        }
+
+        // POST: Student/CreateTask
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateTask([FromBody] TaskViewModel model)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return BadRequest(new { success = false, message = "User not authenticated" });
+                }
+
+                var task = new StudentTask
+                {
+                    Title = model.Title,
+                    DateFrom = DateTime.Parse(model.DateFrom),
+                    DateTo = DateTime.Parse(model.DateTo),
+                    Status = model.Status,
+                    TaskContent = model.TaskContent ?? "",
+                    LearningContent = model.LearningContent ?? "",
+                    UserId = userId,
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.StudentTasks.Add(task);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Task created: {task.Title} for user {userId}");
+
+                return Ok(new { success = true, id = task.Id });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating task: {ex.Message}");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Student/UpdateTask
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateTask([FromBody] TaskViewModel model)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return BadRequest(new { success = false, message = "User not authenticated" });
+                }
+
+                var task = await _context.StudentTasks
+                    .FirstOrDefaultAsync(t => t.Id == model.Id && t.UserId == userId);
+
+                if (task == null)
+                {
+                    return NotFound(new { success = false, message = "Task not found" });
+                }
+
+                task.Title = model.Title;
+                task.DateFrom = DateTime.Parse(model.DateFrom);
+                task.DateTo = DateTime.Parse(model.DateTo);
+                task.Status = model.Status;
+                task.TaskContent = model.TaskContent ?? "";
+                task.LearningContent = model.LearningContent ?? "";
+                task.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Task updated: {task.Title} for user {userId}");
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating task: {ex.Message}");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+
+        // POST: Student/DeleteTask
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteTask([FromBody] int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return BadRequest(new { success = false, message = "User not authenticated" });
+                }
+
+                var task = await _context.StudentTasks
+                    .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId);
+
+                if (task == null)
+                {
+                    return NotFound(new { success = false, message = "Task not found" });
+                }
+
+                _context.StudentTasks.Remove(task);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Task deleted: {task.Title} for user {userId}");
+
+                return Ok(new { success = true });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting task: {ex.Message}");
+                return BadRequest(new { success = false, message = ex.Message });
+            }
+        }
+        // ===================== END TASK MANAGEMENT =====================
+
         // ===================== DOCUMENTS MANAGEMENT =====================
 
         // GET: Student/GetDocuments
@@ -65,7 +229,8 @@ namespace MonitoringSystem.Controllers
                         d.Name,
                         d.Type,
                         d.Size,
-                        Uploaded = d.UploadedAt
+                        Uploaded = d.UploadedAt,
+                        Status = d.IsRead ? "Read" : "Unread"
                     })
                     .ToListAsync();
 
@@ -88,13 +253,19 @@ namespace MonitoringSystem.Controllers
                 if (document == null)
                     return NotFound("Document not found");
 
+                if (!document.IsRead)
+                {
+                    document.IsRead = true;
+                    document.ReadAt = DateTime.Now;
+                    _context.Documents.Update(document);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation($"Document {id} marked as read by student");
+                }
+
                 if (string.IsNullOrEmpty(document.FileData))
                     return NotFound("File data not found");
 
-                // Convert Base64 string back to bytes
                 var fileBytes = Convert.FromBase64String(document.FileData);
-
-                // Determine content type
                 var contentType = GetContentType(document.Type);
 
                 return File(fileBytes, contentType, document.Name);
@@ -170,19 +341,16 @@ namespace MonitoringSystem.Controllers
                 if (user == null)
                     return BadRequest(new { success = false, message = "User not found" });
 
-                // Parse the date
                 if (!DateTime.TryParse(model.Date, out DateTime logDate))
                 {
                     return BadRequest(new { success = false, message = "Invalid date format" });
                 }
 
-                // Check if entry already exists for this date
                 var existingLog = await _context.TimeLogs
                     .FirstOrDefaultAsync(t => t.UserId == userId && t.Date.Date == logDate.Date);
 
                 if (existingLog != null)
                 {
-                    // Update existing log
                     existingLog.AmIn = model.AmIn;
                     existingLog.AmOut = model.AmOut;
                     existingLog.PmIn = model.PmIn;
@@ -197,7 +365,6 @@ namespace MonitoringSystem.Controllers
                 }
                 else
                 {
-                    // Create new log
                     var timeLog = new TimeLog
                     {
                         UserId = userId,
@@ -218,12 +385,10 @@ namespace MonitoringSystem.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // Get updated total rendered hours
                 var totalRendered = await _context.TimeLogs
                     .Where(t => t.UserId == userId && t.Type == "regular")
                     .SumAsync(t => t.TotalHours);
 
-                // Also update user's total allotted hours if needed
                 var updatedUser = await _userManager.FindByIdAsync(userId);
 
                 return Ok(new
@@ -260,7 +425,6 @@ namespace MonitoringSystem.Controllers
 
                 _logger.LogInformation($"Time log deleted for user {userId}, id: {id}");
 
-                // Get updated total rendered hours
                 var totalRendered = await _context.TimeLogs
                     .Where(t => t.UserId == userId && t.Type == "regular")
                     .SumAsync(t => t.TotalHours);
@@ -293,7 +457,6 @@ namespace MonitoringSystem.Controllers
                     return Ok(new { success = false, message = "User not found" });
                 }
 
-                // If TotalAllottedHours is 0 but user has a program, fetch from ProgramHours and update
                 if (user.TotalAllottedHours == 0 && !string.IsNullOrEmpty(user.Program))
                 {
                     var program = await _context.ProgramHours.FirstOrDefaultAsync(p => p.Code == user.Program);
@@ -305,7 +468,6 @@ namespace MonitoringSystem.Controllers
                     }
                 }
 
-                // Get total rendered hours
                 var totalRendered = await _context.TimeLogs
                     .Where(t => t.UserId == userId && t.Type == "regular")
                     .SumAsync(t => t.TotalHours);
@@ -358,7 +520,6 @@ namespace MonitoringSystem.Controllers
         {
             try
             {
-                // Log everything for debugging
                 Console.WriteLine("========== UPDATE PROFILE CALLED ==========");
                 Console.WriteLine($"Time: {DateTime.Now}");
                 Console.WriteLine($"User: {User?.Identity?.Name ?? "Unknown"}");
@@ -373,7 +534,6 @@ namespace MonitoringSystem.Controllers
                     return Ok(new { success = false, message = "Model is null" });
                 }
 
-                // Log received data
                 Console.WriteLine("Received data:");
                 Console.WriteLine($"  FullName: {model.FullName}");
                 Console.WriteLine($"  Facebook: {model.Facebook}");
@@ -396,70 +556,32 @@ namespace MonitoringSystem.Controllers
 
                 Console.WriteLine($"Found user: {user.Email} (Current FullName: {user.FullName})");
 
-                // Update user properties
-                if (!string.IsNullOrEmpty(model.FullName))
-                {
-                    user.FullName = model.FullName;
-                    Console.WriteLine($"Updated FullName to: {model.FullName}");
-                }
+                if (!string.IsNullOrEmpty(model.FullName)) user.FullName = model.FullName;
+                if (!string.IsNullOrEmpty(model.Facebook)) user.Facebook = model.Facebook;
 
-                if (!string.IsNullOrEmpty(model.Facebook))
-                {
-                    user.Facebook = model.Facebook;
-                    Console.WriteLine($"Updated Facebook to: {model.Facebook}");
-                }
-
-                // Handle Company conversion
                 if (!string.IsNullOrEmpty(model.Company))
                 {
                     if (int.TryParse(model.Company, out int companyId))
                     {
                         user.CompanyID = companyId;
-                        Console.WriteLine($"Updated CompanyID to: {companyId}");
                     }
                     else
                     {
                         user.CompanyID = null;
-                        Console.WriteLine("CompanyID set to null (invalid number format)");
                     }
                 }
 
-                if (!string.IsNullOrEmpty(model.MobileNumber))
-                {
-                    user.MobileNumber = model.MobileNumber;
-                    Console.WriteLine($"Updated MobileNumber to: {model.MobileNumber}");
-                }
-
-                if (!string.IsNullOrEmpty(model.Address))
-                {
-                    user.Address = model.Address;
-                    Console.WriteLine($"Updated Address to: {model.Address}");
-                }
-
-                if (!string.IsNullOrEmpty(model.ContactPerson))
-                {
-                    user.ContactPerson = model.ContactPerson;
-                    Console.WriteLine($"Updated ContactPerson to: {model.ContactPerson}");
-                }
-
-                if (!string.IsNullOrEmpty(model.StudentId))
-                {
-                    user.StudentId = model.StudentId;
-                    Console.WriteLine($"Updated StudentId to: {model.StudentId}");
-                }
-
-                if (!string.IsNullOrEmpty(model.Program))
-                {
-                    user.Program = model.Program;
-                    Console.WriteLine($"Updated Program to: {model.Program}");
-                }
+                if (!string.IsNullOrEmpty(model.MobileNumber)) user.MobileNumber = model.MobileNumber;
+                if (!string.IsNullOrEmpty(model.Address)) user.Address = model.Address;
+                if (!string.IsNullOrEmpty(model.ContactPerson)) user.ContactPerson = model.ContactPerson;
+                if (!string.IsNullOrEmpty(model.StudentId)) user.StudentId = model.StudentId;
+                if (!string.IsNullOrEmpty(model.Program)) user.Program = model.Program;
 
                 if (!string.IsNullOrEmpty(model.BirthDate))
                 {
                     if (DateTime.TryParse(model.BirthDate, out DateTime birthDate))
                     {
                         user.BirthDate = birthDate;
-                        Console.WriteLine($"Updated BirthDate to: {birthDate}");
                     }
                 }
 
@@ -467,11 +589,9 @@ namespace MonitoringSystem.Controllers
                 {
                     user.Email = model.Email;
                     user.UserName = model.Email;
-                    Console.WriteLine($"Updated Email to: {model.Email}");
                 }
 
                 user.UpdatedAt = DateTime.Now;
-                Console.WriteLine($"UpdatedAt set to: {user.UpdatedAt}");
 
                 var result = await _userManager.UpdateAsync(user);
                 Console.WriteLine($"Update result: {(result.Succeeded ? "SUCCESS" : "FAILED")}");
@@ -516,24 +636,20 @@ namespace MonitoringSystem.Controllers
                     return Ok(new { success = false, message = "User not found" });
                 }
 
-                // Create images directory if it doesn't exist
                 var imagesPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "profiles");
                 if (!Directory.Exists(imagesPath))
                 {
                     Directory.CreateDirectory(imagesPath);
                 }
 
-                // Generate unique filename
                 var fileName = $"{userId}_{DateTime.Now.Ticks}{Path.GetExtension(profileImage.FileName)}";
                 var filePath = Path.Combine(imagesPath, fileName);
 
-                // Save the file
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await profileImage.CopyToAsync(stream);
                 }
 
-                // Delete old profile image if it exists and is not the default
                 if (!string.IsNullOrEmpty(user.ProfileImage) &&
                     !user.ProfileImage.Contains("defaultpicture") &&
                     !user.ProfileImage.Contains("ctu-logo"))
@@ -545,7 +661,6 @@ namespace MonitoringSystem.Controllers
                     }
                 }
 
-                // Update user's profile image path
                 user.ProfileImage = $"/images/profiles/{fileName}";
                 user.UpdatedAt = DateTime.Now;
 
@@ -559,7 +674,7 @@ namespace MonitoringSystem.Controllers
             }
         }
 
-        // ===================== UPDATED: SEND LOGS TO ADMIN WITH DETAILED ERROR HANDLING =====================
+        // ===== UPDATED: SEND LOGS TO ADMIN WITH READ/UNREAD STATUS =====
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SendLogsToAdmin([FromBody] SendLogsViewModel model)
@@ -572,7 +687,6 @@ namespace MonitoringSystem.Controllers
                     return Json(new { success = false, message = "User not authenticated" });
                 }
 
-                // Get the student's details
                 var student = await _userManager.FindByIdAsync(userId);
 
                 if (student == null)
@@ -580,11 +694,9 @@ namespace MonitoringSystem.Controllers
                     return Json(new { success = false, message = "Student not found" });
                 }
 
-                // Log the data being saved
                 _logger.LogInformation($"Saving logs for student {student.Email}, Month: {model.Month}, Total Hours: {model.TotalHours}");
                 _logger.LogInformation($"Logs count: {model.Logs?.Count ?? 0}");
 
-                // Validate required fields
                 if (model.Month < 1 || model.Month > 12)
                 {
                     return Json(new { success = false, message = "Invalid month value" });
@@ -595,7 +707,6 @@ namespace MonitoringSystem.Controllers
                     _logger.LogWarning($"Student {student.Email} has no program assigned");
                 }
 
-                // Create a new StudentTimeLog submission
                 var submission = new TimeLogSubmission
                 {
                     Id = Guid.NewGuid().ToString(),
@@ -607,11 +718,10 @@ namespace MonitoringSystem.Controllers
                     Month = model.Month,
                     TotalHours = model.TotalHours,
                     Logs = System.Text.Json.JsonSerializer.Serialize(model.Logs),
-                    Status = "Pending",
+                    Status = "Unread",
                     IsRead = false
                 };
 
-                // Save to database using StudentTimeLogs table
                 _context.StudentTimeLogs.Add(submission);
                 await _context.SaveChangesAsync();
 
@@ -621,20 +731,17 @@ namespace MonitoringSystem.Controllers
                 {
                     success = true,
                     message = "Logs sent successfully to admin",
-                    submissionId = submission.Id
+                    submissionId = submission.Id,
+                    status = "Unread"
                 });
             }
             catch (DbUpdateException ex)
             {
-                // This catches database-specific errors
                 var innerException = ex.InnerException?.Message ?? "No inner exception";
-                var innerStackTrace = ex.InnerException?.StackTrace ?? "";
 
                 _logger.LogError($"Database error sending logs to admin: {ex.Message}");
                 _logger.LogError($"Inner exception: {innerException}");
-                _logger.LogError($"Inner stack trace: {innerStackTrace}");
 
-                // Check for specific SQL errors
                 if (innerException.Contains("FK_") || innerException.Contains("foreign key"))
                 {
                     return Json(new { success = false, message = "Foreign key constraint error. Please check your data." });
@@ -656,6 +763,58 @@ namespace MonitoringSystem.Controllers
                 _logger.LogError($"Stack trace: {ex.StackTrace}");
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        // ===== GET STUDENT'S SUBMISSIONS WITH STATUS =====
+        [HttpGet]
+        public async Task<IActionResult> GetSubmissions()
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                var submissions = await _context.StudentTimeLogs
+                    .Where(s => s.StudentId == userId)
+                    .OrderByDescending(s => s.SubmissionDate)
+                    .Select(s => new
+                    {
+                        s.Id,
+                        s.Month,
+                        MonthName = GetMonthName(s.Month),
+                        s.TotalHours,
+                        s.SubmissionDate,
+                        s.Status,
+                        s.IsRead
+                    })
+                    .ToListAsync();
+
+                return Ok(new { success = true, data = submissions });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting submissions: {ex.Message}");
+                return Ok(new { success = false, message = ex.Message, data = new List<object>() });
+            }
+        }
+
+        private string GetMonthName(int month)
+        {
+            return month switch
+            {
+                1 => "January",
+                2 => "February",
+                3 => "March",
+                4 => "April",
+                5 => "May",
+                6 => "June",
+                7 => "July",
+                8 => "August",
+                9 => "September",
+                10 => "October",
+                11 => "November",
+                12 => "December",
+                _ => "Unknown"
+            };
         }
     }
 
@@ -693,5 +852,17 @@ namespace MonitoringSystem.Controllers
         public string StudentName { get; set; }
         public double TotalHours { get; set; }
         public int Month { get; set; }
+    }
+
+    // ===== TASK VIEW MODEL =====
+    public class TaskViewModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public string DateFrom { get; set; }
+        public string DateTo { get; set; }
+        public string Status { get; set; }
+        public string TaskContent { get; set; }
+        public string LearningContent { get; set; }
     }
 }

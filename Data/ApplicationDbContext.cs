@@ -25,6 +25,9 @@ namespace MonitoringSystem.Models
         // ===== ADD TASKS DbSet =====
         public DbSet<Task> Tasks { get; set; }
 
+        // ===== ADD STUDENT TASKS DbSet =====
+        public DbSet<StudentTask> StudentTasks { get; set; }
+
         // ===== ADD STUDENT TIME LOGS DbSet (RENAMED) =====
         public DbSet<TimeLogSubmission> StudentTimeLogs { get; set; }
 
@@ -61,6 +64,10 @@ namespace MonitoringSystem.Models
             // ===== ADD TRIGGER CONFIGURATION FOR TASKS TABLE =====
             builder.Entity<Task>()
                 .ToTable(tb => tb.HasTrigger("Tasks_Trigger"));
+
+            // ===== ADD TRIGGER CONFIGURATION FOR STUDENT TASKS TABLE =====
+            builder.Entity<StudentTask>()
+                .ToTable(tb => tb.HasTrigger("StudentTasks_Trigger"));
 
             // ===== ADD TRIGGER CONFIGURATION FOR STUDENT TIME LOGS TABLE =====
             builder.Entity<TimeLogSubmission>()
@@ -99,6 +106,7 @@ namespace MonitoringSystem.Models
             builder.Entity<Document>().ToTable("Documents");
             builder.Entity<TimeLog>().ToTable("TimeLogs");
             builder.Entity<Task>().ToTable("Tasks");
+            builder.Entity<StudentTask>().ToTable("StudentTasks");
 
             // ===== RENAMED TABLE: TimeLogSubmissions -> StudentTimeLogs =====
             builder.Entity<TimeLogSubmission>().ToTable("StudentTimeLogs");
@@ -133,6 +141,24 @@ namespace MonitoringSystem.Models
                 .HasIndex(t => t.StudentId)
                 .HasDatabaseName("IX_Tasks_StudentId");
 
+            // ===== ADD INDEX FOR STUDENT TASKS (UPDATED FROM Deadline TO DateFrom) =====
+            builder.Entity<StudentTask>()
+                .HasIndex(t => t.UserId)
+                .HasDatabaseName("IX_StudentTasks_UserId");
+
+            builder.Entity<StudentTask>()
+                .HasIndex(t => t.Status)
+                .HasDatabaseName("IX_StudentTasks_Status");
+
+            builder.Entity<StudentTask>()
+                .HasIndex(t => t.DateFrom)
+                .HasDatabaseName("IX_StudentTasks_DateFrom");
+
+            // ===== ADD INDEX FOR DATE TO =====
+            builder.Entity<StudentTask>()
+                .HasIndex(t => t.DateTo)
+                .HasDatabaseName("IX_StudentTasks_DateTo");
+
             // ===== ADD INDEXES FOR STUDENT TIME LOGS =====
             builder.Entity<TimeLogSubmission>()
                 .HasIndex(t => t.StudentId)
@@ -145,6 +171,33 @@ namespace MonitoringSystem.Models
             builder.Entity<TimeLogSubmission>()
                 .HasIndex(t => t.SubmissionDate)
                 .HasDatabaseName("IX_StudentTimeLogs_SubmissionDate");
+
+            // ===== CONFIGURE STUDENT TASK PROPERTIES (UPDATED) =====
+            builder.Entity<StudentTask>()
+                .Property(t => t.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            builder.Entity<StudentTask>()
+                .Property(t => t.Status)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            builder.Entity<StudentTask>()
+                .Property(t => t.DateFrom)
+                .IsRequired();
+
+            builder.Entity<StudentTask>()
+                .Property(t => t.DateTo)
+                .IsRequired();
+
+            builder.Entity<StudentTask>()
+                .Property(t => t.TaskContent)
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<StudentTask>()
+                .Property(t => t.LearningContent)
+                .HasColumnType("nvarchar(max)");
 
             // ===== CONFIGURE STUDENT TIME LOG PROPERTIES =====
             builder.Entity<TimeLogSubmission>()

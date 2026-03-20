@@ -26,5 +26,10 @@ namespace MonitoringSystem.Models
         public DateTime UploadedAt { get; set; } // When file was uploaded (changed from Uploaded)
 
         public string UploadedBy { get; set; } = string.Empty; // Who uploaded it
+
+        // New properties for read/unread status
+        public bool IsRead { get; set; } = false; // Default to false (Unread)
+
+        public DateTime? ReadAt { get; set; } // When the document was marked as read (null if unread)
     }
 }

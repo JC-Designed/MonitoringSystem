@@ -12,11 +12,11 @@
        value="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 
 <div class="container-fluid py-5">
-    <div class="card shadow-sm rounded-4 p-4 task-card">
+    <div class="card shadow-sm rounded-4 p-4 task-card" style="min-height: calc(100vh - 100px);">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h5 class="fw-bold mb-0">TASK LIST</h5>
-            <button class="btn btn-primary" id="createTaskBtn">Create Task</button>
+            <button class="btn btn-primary" id="createTaskBtn" type="button">Create Task</button>
         </div>
 
         <!-- FILTERS -->
@@ -48,60 +48,20 @@
         </div>
 
         <!-- TASK TABLE -->
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="taskTable" style="min-width:900px;">
+        <div class="table-responsive" style="overflow-x: auto; overflow-y: visible;">
+            <table class="table table-hover align-middle mb-0" id="taskTable" style="min-width:900px; overflow: visible;">
                 <thead class="table-light">
                     <tr>
                         <th class="text-center" style="width:30%; padding:20px 16px;">Title</th>
-                        <th style="width:15%; padding:20px 16px;">Date Uploaded</th>
+                        <th style="width:15%; padding:20px 16px;">Date From</th>
+                        <th style="width:15%; padding:20px 16px;">Date To</th>
                         <th style="width:15%; padding:20px 16px;">Status</th>
                         <th style="width:15%; padding:20px 16px;">Admin Status</th>
-                        <th class="text-center" style="width:20%; padding:20px 16px;">Action</th>
+                        <th class="text-center" style="width:10%; padding:20px 16px;">Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @if (taskList.Any())
-                    {
-                        foreach (var task in taskList)
-                        {
-                            var dateUploaded = task.Deadline.ToString("yyyy-MM-dd");
-                            var adminStatus = "Unread"; // would come from model in real app
-
-                            <tr data-id="@task.Id"
-                                data-title="@task.Title"
-                                data-datefrom="@task.Deadline.ToString("yyyy-MM-dd")"
-                                data-dateto="@task.Deadline.AddDays(3).ToString("yyyy-MM-dd")"
-                                data-dateuploaded="@dateUploaded"
-                                data-status="@task.Status"
-                                data-adminstatus="@adminStatus"
-                                data-taskcontent=""
-                                style="height:70px;">
-                                <td class="text-center fw-semibold">@task.Title</td>
-                                <td>@dateUploaded</td>
-                                <td class="task-status">@task.Status</td>
-                                <td>
-                                    <span class="status-badge @(adminStatus == "Unread" ? "status-unread" : "status-read")">
-                                        @adminStatus
-                                    </span>
-                                </td>
-                                <td class="text-center">
-                                    <div class="dropdown d-inline-block">
-                                        <button class="btn btn-sm btn-light dropdown-toggle p-2" type="button" data-bs-toggle="dropdown"></button>
-                                        <ul class="dropdown-menu shadow-sm">
-                                            <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
-                                            <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="5" class="text-center py-4">No tasks found.</td>
-                        </tr>
-                    }
+                <tbody id="taskTableBody" style="overflow: visible;">
+                    <!-- Tasks will be loaded from database -->
                 </tbody>
             </table>
         </div>
@@ -109,33 +69,33 @@
 </div>
 
 <!-- CREATE/EDIT TASK MODAL -->
-<div class="modal fade" id="createModal" tabindex="-1">
+<div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content rounded-4 shadow-sm p-4">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold">Create Task</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title fw-bold" id="createModalLabel">Create Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <form id="createForm">
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Title</label>
-                            <input type="text" class="form-control" name="Title" required>
+                            <input type="text" class="form-control" id="taskTitle" name="Title" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Date From</label>
-                            <input type="date" class="form-control" name="DateFrom" required>
+                            <input type="date" class="form-control" id="dateFrom" name="DateFrom" required>
                         </div>
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label">Date To</label>
-                            <input type="date" class="form-control" name="DateTo" required>
+                            <input type="date" class="form-control" id="dateTo" name="DateTo" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Status</label>
-                            <select class="form-select" name="Status">
+                            <select class="form-select" id="taskStatus" name="Status">
                                 <option selected>Ongoing</option>
                                 <option>Completed</option>
                                 <option>Aborted</option>
@@ -144,16 +104,17 @@
                     </div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Task</label>
+                            <label class="form-label">Task Details</label>
                             <div id="taskEditor" contenteditable="true"
                                  class="form-control"
                                  style="height:220px; overflow:auto; border:1px solid #ced4da; border-radius:4px; padding:0.375rem 0.75rem;">
+                                <ul><li><br></li></ul>
                             </div>
                             <small class="text-muted">Press Enter for new bullet.</small>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Learning</label>
-                            <textarea class="form-control" name="Learning" rows="12" style="height:220px;"></textarea>
+                            <label class="form-label">Learning / Insight</label>
+                            <textarea class="form-control" id="learning" name="Learning" rows="12" style="height:220px;"></textarea>
                         </div>
                     </div>
                     <div class="d-flex justify-content-end mt-4">
@@ -167,7 +128,7 @@
 </div>
 
 <!-- DELETE MODAL -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-md">
         <div class="modal-content rounded-4 shadow-sm" style="background-color:#8B0000; color:white;">
             <div class="modal-body text-center py-4">
@@ -182,7 +143,6 @@
 </div>
 
 <style>
-    /* Status badge styling */
     .status-badge {
         display: inline-block;
         padding: 4px 12px;
@@ -200,172 +160,552 @@
         background-color: #d1e7dd;
         color: #0f5132;
     }
+
+    #taskEditor ul, #taskEditor ol {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+
+    #taskEditor li {
+        margin: 4px 0;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+        overflow-y: visible !important;
+    }
+
+    .table {
+        overflow: visible !important;
+    }
+
+    tbody, tr, td {
+        overflow: visible !important;
+    }
+
+        td.text-center {
+            position: relative !important;
+            overflow: visible !important;
+        }
+
+    .dropdown {
+        position: relative !important;
+        display: inline-block !important;
+    }
+
+    .dropdown-toggle {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 0.375rem 0.75rem;
+    }
+
+        .dropdown-toggle:hover {
+            background-color: #e9ecef;
+        }
+
+    .dropdown-menu {
+        position: absolute !important;
+        top: 100% !important;
+        right: 0 !important;
+        left: auto !important;
+        margin-top: 0.25rem !important;
+        min-width: 120px;
+        padding: 0.5rem 0;
+        border: 1px solid rgba(0,0,0,0.15);
+        border-radius: 6px;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        z-index: 9999 !important;
+        background-color: white;
+    }
+
+    .dropdown-item {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-item.text-danger:hover {
+            background-color: #dc3545;
+            color: white !important;
+        }
+
+    #createTaskBtn {
+        cursor: pointer;
+        z-index: 10;
+        position: relative;
+    }
+
+    .dropdown-menu.show {
+        transform: none !important;
+    }
+
+    .task-card {
+        min-height: calc(100vh - 100px);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .table-responsive {
+        flex: 1;
+    }
 </style>
 
 <script>
-    const tbody = document.querySelector("#taskTable tbody");
-    const searchInput = document.getElementById("searchInput");
-    const statusFilter = document.getElementById("statusFilter");
-    const adminStatusFilter = document.getElementById("adminStatusFilter");
-    const createModal = document.getElementById("createModal");
-    const taskEditor = document.getElementById("taskEditor");
-    const modalTitle = document.querySelector("#createModal .modal-title");
-    const actionBtn = document.getElementById("actionBtn");
-    const cancelBtn = document.getElementById("cancelBtn");
-
+    // ============ GLOBAL VARIABLES ============
     let editingRow = null;
     let deletingRow = null;
+    let createModalInstance = null;
 
-    // Filter function
+    // ============ HELPER FUNCTIONS ============
+    function getToken() {
+        return document.getElementById("__RequestVerificationToken")?.value;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ============ TABLE FUNCTIONS ============
+    function addTaskToTable(task) {
+        const adminStatus = task.adminStatus || "Unread";
+        const tbody = document.getElementById("taskTableBody");
+        if (!tbody) return;
+
+        const newRow = document.createElement("tr");
+
+        newRow.dataset.id = task.id;
+        newRow.dataset.title = task.title;
+        newRow.dataset.datefrom = task.dateFrom;
+        newRow.dataset.dateto = task.dateTo;
+        newRow.dataset.status = task.status;
+        newRow.dataset.adminstatus = adminStatus;
+        newRow.dataset.taskcontent = task.taskContent || '';
+        newRow.dataset.learning = task.learningContent || '';
+
+        newRow.style.height = '70px';
+        newRow.style.overflow = 'visible';
+
+        newRow.innerHTML = `
+            <td class="text-center fw-semibold">${escapeHtml(task.title)}</td>
+            <td>${task.dateFrom || 'N/A'}</td>
+            <td>${task.dateTo || 'N/A'}</td>
+            <td class="task-status">${task.status}</td>
+            <td>
+                <span class="status-badge ${adminStatus === 'Unread' ? 'status-unread' : 'status-read'}">${adminStatus}</span>
+            </td>
+            <td class="text-center" style="overflow: visible; position: relative;">
+                <div class="dropdown" style="position: relative; display: inline-block;">
+                    <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="visually-hidden">Toggle dropdown</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow">
+                        <li><a class="dropdown-item edit-btn" href="javascript:void(0);" data-task-id="${task.id}">Edit</a></li>
+                        <li><a class="dropdown-item send-report-btn" href="javascript:void(0);" data-task-id="${task.id}">Send Report</a></li>
+                        <li><a class="dropdown-item text-danger delete-btn" href="javascript:void(0);" data-task-id="${task.id}">Delete</a></li>
+                    </ul>
+                </div>
+            </td>
+        `;
+
+        tbody.appendChild(newRow);
+    }
+
+    function checkNoTasksRow() {
+        const tbody = document.getElementById("taskTableBody");
+        if (!tbody) return;
+
+        const rows = tbody.querySelectorAll('tr');
+        const existingNoRow = document.getElementById('noTasksRow');
+
+        if (rows.length === 0) {
+            if (!existingNoRow) {
+                const noRow = document.createElement('tr');
+                noRow.id = 'noTasksRow';
+                noRow.innerHTML = '<td colspan="6" class="text-center py-4">No tasks found.</td>';
+                tbody.appendChild(noRow);
+            }
+        } else {
+            if (existingNoRow) {
+                existingNoRow.remove();
+            }
+        }
+    }
+
     function filterTable() {
-        const searchVal = searchInput.value.toLowerCase();
-        const statusVal = statusFilter.value;
-        const adminStatusVal = adminStatusFilter.value;
-        [...tbody.rows].forEach(row => {
+        const tbody = document.getElementById("taskTableBody");
+        const searchInput = document.getElementById("searchInput");
+        const statusFilter = document.getElementById("statusFilter");
+        const adminStatusFilter = document.getElementById("adminStatusFilter");
+
+        if (!tbody) return;
+
+        const searchVal = searchInput ? searchInput.value.toLowerCase() : '';
+        const statusVal = statusFilter ? statusFilter.value : '';
+        const adminStatusVal = adminStatusFilter ? adminStatusFilter.value : '';
+
+        const rows = tbody.querySelectorAll('tr');
+
+        rows.forEach(row => {
+            if (row.id === 'noTasksRow') return;
+
             let show = true;
-            if (searchVal && !row.dataset.title.toLowerCase().includes(searchVal)) show = false;
-            if (statusVal && row.dataset.status !== statusVal) show = false;
-            if (adminStatusVal && row.dataset.adminstatus !== adminStatusVal) show = false;
+            const title = (row.dataset.title || '').toLowerCase();
+            const status = row.dataset.status || '';
+            const adminStatus = row.dataset.adminstatus || '';
+
+            if (searchVal && !title.includes(searchVal)) show = false;
+            if (statusVal && status !== statusVal) show = false;
+            if (adminStatusVal && adminStatus !== adminStatusVal) show = false;
+
             row.style.display = show ? "" : "none";
         });
     }
-    [searchInput, statusFilter, adminStatusFilter].forEach(el => el.addEventListener("input", filterTable));
 
-    // Open create modal (new task)
-    document.getElementById("createTaskBtn").addEventListener("click", () => {
-        editingRow = null;
-        modalTitle.textContent = "Create Task";
-        actionBtn.textContent = "Create";
-        document.getElementById("createForm").reset();
-        taskEditor.innerHTML = "<ul><li><br></li></ul>";
-        bootstrap.Modal.getOrCreateInstance(createModal).show();
-    });
+    // ============ DATABASE FUNCTIONS ============
+    window.loadTasksFromDatabase = async function() {
+        console.log('loadTasksFromDatabase called');
+        const tbody = document.getElementById("taskTableBody");
+        if (!tbody) return;
 
-    // Action button click (Create or Save)
-    actionBtn.addEventListener("click", () => {
-        const title = document.querySelector("input[name='Title']").value;
-        const dateFrom = document.querySelector("input[name='DateFrom']").value;
-        const dateTo = document.querySelector("input[name='DateTo']").value;
-        const status = document.querySelector("select[name='Status']").value;
-        const taskContent = taskEditor.innerHTML;
+        try {
+            const response = await fetch('/Student/GetTasks');
+            const tasks = await response.json();
+            console.log('Tasks loaded:', tasks);
 
-        // Optional file attachment (demo)
-        const fileInput = document.getElementById("demoAttachment");
-        const fileName = fileInput?.files.length > 0 ? fileInput.files[0].name : "";
+            tbody.innerHTML = '';
+            tasks.forEach(task => {
+                addTaskToTable(task);
+            });
+            checkNoTasksRow();
+            filterTable();
+        } catch (err) {
+            console.error('Failed to load tasks:', err);
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Error loading tasks. Please refresh the page.</td></tr>';
+        }
+    };
 
-        if (!title || !dateFrom || !dateTo || !status) {
-            alert("Please fill in all fields!");
-            return;
+    async function createTaskInDatabase(taskData) {
+        const response = await fetch('/Student/CreateTask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getToken()
+            },
+            body: JSON.stringify(taskData)
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+        return result;
+    }
+
+    async function updateTaskInDatabase(taskData) {
+        const response = await fetch('/Student/UpdateTask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getToken()
+            },
+            body: JSON.stringify(taskData)
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+        return result;
+    }
+
+    async function deleteTaskFromDatabase(id) {
+        const response = await fetch('/Student/DeleteTask', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'RequestVerificationToken': getToken()
+            },
+            body: JSON.stringify(id)
+        });
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+        return result;
+    }
+
+    // ============ EVENT HANDLERS ============
+    function resetForm() {
+        document.getElementById("taskTitle").value = '';
+        document.getElementById("dateFrom").value = '';
+        document.getElementById("dateTo").value = '';
+        document.getElementById("taskStatus").value = 'Ongoing';
+        document.getElementById("taskEditor").innerHTML = '<ul><li><br></li></ul>';
+        document.getElementById("learning").value = '';
+    }
+
+    function cleanHtmlContent(html) {
+        if (!html || html === '<ul><li><br></li></ul>') return '';
+        return html;
+    }
+
+    // ============ INITIALIZATION ============
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM loaded - Task List page');
+
+        // Get elements
+        const createModal = document.getElementById("createModal");
+        const actionBtn = document.getElementById("actionBtn");
+        const cancelBtn = document.getElementById("cancelBtn");
+        const createTaskBtn = document.getElementById("createTaskBtn");
+        const modalTitle = document.querySelector("#createModal .modal-title");
+
+        // Initialize modal
+        if (createModal) {
+            createModalInstance = new bootstrap.Modal(createModal);
         }
 
-        const dateUploaded = dateFrom; // display as Date Uploaded
+        // Add filter event listeners
+        document.getElementById("searchInput")?.addEventListener("input", filterTable);
+        document.getElementById("statusFilter")?.addEventListener("input", filterTable);
+        document.getElementById("adminStatusFilter")?.addEventListener("input", filterTable);
 
-        if (editingRow) {
-            // Update existing row – preserve admin status
-            const adminStatus = editingRow.dataset.adminstatus;
-
-            editingRow.dataset.title = title;
-            editingRow.dataset.datefrom = dateFrom;
-            editingRow.dataset.dateto = dateTo;
-            editingRow.dataset.dateuploaded = dateUploaded;
-            editingRow.dataset.status = status;
-            editingRow.dataset.taskcontent = taskContent;
-            editingRow.dataset.attachment = fileName;
-
-            editingRow.querySelector("td:nth-child(1)").innerHTML =
-                `${title} ${fileName ? `<div class="text-muted" style="font-size:12px;">📎 ${fileName}</div>` : ""}`;
-            editingRow.querySelector("td:nth-child(2)").textContent = dateUploaded;
-            editingRow.querySelector("td:nth-child(3)").textContent = status;
-            // Update admin status badge
-            const statusCell = editingRow.querySelector("td:nth-child(4)");
-            statusCell.innerHTML = `<span class="status-badge ${adminStatus === 'Unread' ? 'status-unread' : 'status-read'}">${adminStatus}</span>`;
-
-            editingRow = null;
-        } else {
-            // Create new row – admin status defaults to Unread
-            const adminStatus = "Unread";
-
-            const newRow = document.createElement("tr");
-            newRow.dataset.title = title;
-            newRow.dataset.datefrom = dateFrom;
-            newRow.dataset.dateto = dateTo;
-            newRow.dataset.dateuploaded = dateUploaded;
-            newRow.dataset.status = status;
-            newRow.dataset.adminstatus = adminStatus;
-            newRow.dataset.taskcontent = taskContent;
-            newRow.dataset.attachment = fileName;
-
-            newRow.innerHTML = `
-                <td class="text-center fw-semibold">
-                    ${title}
-                    ${fileName ? `<div class="text-muted" style="font-size:12px;">📎 ${fileName}</div>` : ""}
-                </td>
-                <td>${dateUploaded}</td>
-                <td class="task-status">${status}</td>
-                <td>
-                    <span class="status-badge status-unread">${adminStatus}</span>
-                </td>
-                <td class="text-center">
-                    <div class="dropdown d-inline-block">
-                        <button class="btn btn-sm btn-light dropdown-toggle p-2" type="button" data-bs-toggle="dropdown"></button>
-                        <ul class="dropdown-menu shadow-sm">
-                            <li><a class="dropdown-item edit-btn" href="#">Edit</a></li>
-                            <li><a class="dropdown-item delete-btn" href="#">Delete</a></li>
-                        </ul>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(newRow);
+        // Create Task button
+        if (createTaskBtn) {
+            createTaskBtn.addEventListener("click", function() {
+                resetForm();
+                editingRow = null;
+                if (modalTitle) modalTitle.textContent = "Create Task";
+                if (actionBtn) actionBtn.textContent = "Create";
+                if (createModalInstance) createModalInstance.show();
+            });
         }
 
-        bootstrap.Modal.getOrCreateInstance(createModal).hide();
-        document.getElementById("createForm").reset();
-        taskEditor.innerHTML = "<ul><li><br></li></ul>";
-        if (fileInput) fileInput.value = "";
-        // Reset button text for next new task
-        actionBtn.textContent = "Create";
-    });
+        // Create/Save button
+        if (actionBtn) {
+            actionBtn.addEventListener("click", async function() {
+                const taskTitle = document.getElementById("taskTitle");
+                const dateFrom = document.getElementById("dateFrom");
+                const dateTo = document.getElementById("dateTo");
+                const taskStatus = document.getElementById("taskStatus");
+                const taskEditor = document.getElementById("taskEditor");
+                const learning = document.getElementById("learning");
 
-    // Cancel button
-    cancelBtn.addEventListener("click", () => {
-        document.getElementById("createForm").reset();
-        taskEditor.innerHTML = "<ul><li><br></li></ul>";
-        editingRow = null;
-        actionBtn.textContent = "Create"; // reset
-    });
+                if (!taskTitle.value || !dateFrom.value || !dateTo.value || !taskStatus.value) {
+                    alert("Please fill in all required fields!");
+                    return;
+                }
 
-    // Edit and Delete actions (event delegation)
-    document.addEventListener("click", (e) => {
-        if (e.target.classList.contains("edit-btn")) {
-            e.preventDefault();
-            editingRow = e.target.closest("tr");
-            modalTitle.textContent = "Edit Task";
-            actionBtn.textContent = "Save";
+                if (new Date(dateFrom.value) > new Date(dateTo.value)) {
+                    alert("Date To must be after Date From!");
+                    return;
+                }
 
-            document.querySelector("input[name='Title']").value = editingRow.dataset.title;
-            document.querySelector("input[name='DateFrom']").value = editingRow.dataset.datefrom;
-            document.querySelector("input[name='DateTo']").value = editingRow.dataset.dateto;
-            document.querySelector("select[name='Status']").value = editingRow.dataset.status;
-            taskEditor.innerHTML = editingRow.dataset.taskcontent || "<ul><li><br></li></ul>";
+                const taskData = {
+                    Id: editingRow ? parseInt(editingRow.dataset.id) : 0,
+                    Title: taskTitle.value,
+                    DateFrom: dateFrom.value,
+                    DateTo: dateTo.value,
+                    Status: taskStatus.value,
+                    TaskContent: cleanHtmlContent(taskEditor.innerHTML),
+                    LearningContent: learning.value
+                };
 
-            bootstrap.Modal.getOrCreateInstance(createModal).show();
+                try {
+                    if (editingRow) {
+                        await updateTaskInDatabase(taskData);
+                        editingRow.dataset.title = taskData.Title;
+                        editingRow.dataset.datefrom = taskData.DateFrom;
+                        editingRow.dataset.dateto = taskData.DateTo;
+                        editingRow.dataset.status = taskData.Status;
+                        editingRow.dataset.taskcontent = cleanHtmlContent(taskEditor.innerHTML);
+                        editingRow.dataset.learning = learning.value;
+
+                        editingRow.querySelector("td:nth-child(1)").textContent = taskData.Title;
+                        editingRow.querySelector("td:nth-child(2)").textContent = taskData.DateFrom;
+                        editingRow.querySelector("td:nth-child(3)").textContent = taskData.DateTo;
+                        editingRow.querySelector("td:nth-child(4)").textContent = taskData.Status;
+
+                        editingRow = null;
+                        alert('Task updated successfully!');
+                    } else {
+                        const result = await createTaskInDatabase(taskData);
+                        addTaskToTable({
+                            id: result.id,
+                            title: taskData.Title,
+                            dateFrom: taskData.DateFrom,
+                            dateTo: taskData.DateTo,
+                            status: taskData.Status,
+                            adminStatus: "Unread",
+                            taskContent: cleanHtmlContent(taskEditor.innerHTML),
+                            learningContent: learning.value
+                        });
+                        alert('Task created successfully!');
+                    }
+
+                    if (createModalInstance) createModalInstance.hide();
+                    resetForm();
+                    actionBtn.textContent = "Create";
+                    filterTable();
+                    checkNoTasksRow();
+                } catch (err) {
+                    alert('Error: ' + err.message);
+                    console.error(err);
+                }
+            });
         }
 
-        if (e.target.classList.contains("delete-btn")) {
-            e.preventDefault();
-            deletingRow = e.target.closest("tr");
-            const taskTitle = deletingRow.dataset.title;
-            document.getElementById("deleteModalText").textContent = `Are you sure you want to delete this task "${taskTitle}"?`;
-            bootstrap.Modal.getOrCreateInstance(document.getElementById("deleteModal")).show();
+        // Cancel button
+        if (cancelBtn) {
+            cancelBtn.addEventListener("click", function() {
+                resetForm();
+                editingRow = null;
+                if (actionBtn) actionBtn.textContent = "Create";
+            });
         }
-    });
 
-    // Confirm delete
-    document.getElementById("confirmDeleteBtn").addEventListener("click", () => {
-        if (deletingRow) {
-            deletingRow.remove();
-            deletingRow = null;
-            bootstrap.Modal.getOrCreateInstance(document.getElementById("deleteModal")).hide();
+        // ============ Event Delegation for all buttons ============
+        document.body.addEventListener("click", async function(e) {
+            // Edit button click
+            if (e.target.classList.contains("edit-btn") || e.target.closest('.edit-btn')) {
+                e.preventDefault();
+                const editBtn = e.target.closest('.edit-btn');
+                const row = editBtn.closest("tr");
+                if (!row) return;
+
+                console.log('Edit clicked for task:', row.dataset.title);
+
+                editingRow = row;
+                const modalTitle = document.querySelector("#createModal .modal-title");
+                const actionBtn = document.getElementById("actionBtn");
+
+                if (modalTitle) modalTitle.textContent = "Edit Task";
+                if (actionBtn) actionBtn.textContent = "Save";
+
+                document.getElementById("taskTitle").value = row.dataset.title;
+                document.getElementById("dateFrom").value = row.dataset.datefrom;
+                document.getElementById("dateTo").value = row.dataset.dateto;
+                document.getElementById("taskStatus").value = row.dataset.status;
+                document.getElementById("taskEditor").innerHTML = row.dataset.taskcontent || "<ul><li><br></li></ul>";
+                document.getElementById("learning").value = row.dataset.learning || '';
+
+                if (createModalInstance) createModalInstance.show();
+            }
+
+            // Send Report button click - FIXED: Pass task ID to the report page
+            if (e.target.classList.contains("send-report-btn") || e.target.closest('.send-report-btn')) {
+                e.preventDefault();
+                const sendBtn = e.target.closest('.send-report-btn');
+                const row = sendBtn.closest("tr");
+                const taskId = row ? row.dataset.id : null;
+                console.log('Send Report clicked for task ID:', taskId);
+                if (taskId) {
+                    window.location.href = '/Student/OJTReport?taskId=' + taskId;
+                } else {
+                    window.location.href = '/Student/OJTReport';
+                }
+            }
+
+            // Delete button click
+            if (e.target.classList.contains("delete-btn") || e.target.closest('.delete-btn')) {
+                e.preventDefault();
+                const deleteBtn = e.target.closest('.delete-btn');
+                deletingRow = deleteBtn.closest("tr");
+                if (!deletingRow) return;
+
+                const taskTitle = deletingRow.dataset.title;
+                const deleteModalText = document.getElementById("deleteModalText");
+                if (deleteModalText) {
+                    deleteModalText.textContent = `Are you sure you want to delete task "${taskTitle}"?`;
+                }
+
+                const deleteModal = document.getElementById("deleteModal");
+                if (deleteModal) {
+                    const deleteModalInstance = new bootstrap.Modal(deleteModal);
+                    deleteModalInstance.show();
+                }
+            }
+        });
+
+        // ============ Confirm delete button ============
+        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+        if (confirmDeleteBtn) {
+            confirmDeleteBtn.addEventListener("click", async function() {
+                if (deletingRow) {
+                    const taskId = parseInt(deletingRow.dataset.id);
+                    console.log('Deleting task ID:', taskId);
+
+                    try {
+                        await deleteTaskFromDatabase(taskId);
+                        console.log('Task deleted from database');
+
+                        // Remove the row from the table
+                        deletingRow.remove();
+                        deletingRow = null;
+
+                        // Update UI
+                        checkNoTasksRow();
+                        filterTable();
+
+                        // Close the modal
+                        const deleteModal = document.getElementById("deleteModal");
+                        if (deleteModal) {
+                            const deleteModalInstance = bootstrap.Modal.getInstance(deleteModal);
+                            if (deleteModalInstance) {
+                                deleteModalInstance.hide();
+                            }
+                        }
+
+                        alert('Task deleted successfully!');
+                    } catch (err) {
+                        alert('Error deleting task: ' + err.message);
+                        console.error(err);
+                    }
+                }
+            });
         }
+
+        // Cancel delete button
+        const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+        if (cancelDeleteBtn) {
+            cancelDeleteBtn.addEventListener("click", function() {
+                deletingRow = null;
+            });
+        }
+
+        // Task editor enter key for bullet points
+        const taskEditor = document.getElementById("taskEditor");
+        if (taskEditor) {
+            taskEditor.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const selection = window.getSelection();
+                    const range = selection.getRangeAt(0);
+                    let listItem = range.startContainer;
+                    while (listItem && listItem.nodeName !== 'LI') {
+                        listItem = listItem.parentNode;
+                    }
+                    if (listItem) {
+                        const newLi = document.createElement('li');
+                        newLi.innerHTML = '<br>';
+                        if (listItem.nextSibling) {
+                            listItem.parentNode.insertBefore(newLi, listItem.nextSibling);
+                        } else {
+                            listItem.parentNode.appendChild(newLi);
+                        }
+                        const newRange = document.createRange();
+                        newRange.setStart(newLi, 0);
+                        newRange.collapse(true);
+                        selection.removeAllRanges();
+                        selection.addRange(newRange);
+                    }
+                }
+            });
+        }
+
+        // Load tasks
+        window.loadTasksFromDatabase();
+        filterTable();
+
+        console.log('Task List page initialized');
     });
 </script>

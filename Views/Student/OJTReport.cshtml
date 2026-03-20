@@ -1,0 +1,464 @@
+﻿@{
+    Layout = "_StudentLayout";
+    ViewData["Title"] = "OJT FORM 6 - Performance Report";
+}
+
+<div class="container py-4">
+
+    <!-- SEND REPORT BUTTON -->
+    <div class="text-end mb-3 no-print">
+        <button class="btn btn-primary" id="sendReportBtn" onclick="sendReport()">📧 Send Report</button>
+    </div>
+
+    <div class="ojt-paper">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="logo">
+                <img src="/images/ctu-logo.png" />
+            </div>
+
+            <div class="header-text">
+                <div class="small">Republic of the Philippines</div>
+                <div class="title">CEBU TECHNOLOGICAL UNIVERSITY</div>
+                <div class="subtitle">BALAMBAN CAMPUS</div>
+                <div class="small">Cantu-od, Balamban, Cebu, Philippines</div>
+            </div>
+
+            <div class="logo">
+                <img src="/images/bagong.png" />
+            </div>
+        </div>
+
+        <div class="report-title">
+            DAILY/WEEKLY/MONTHLY PERFORMANCE REPORT
+        </div>
+
+        <div class="form-meta">
+            <div>OJT FORM 6</div>
+            <div>Revision: OCTOBER 2026</div>
+        </div>
+
+        <!-- STUDENT INFO -->
+        <table class="main-table">
+            <tr>
+                <td class="label">Name of Student Trainee:</td>
+                <td colspan="3" id="studentName">Loading...</td>
+            </tr>
+            <tr>
+                <td class="label">Course Year & Major:</td>
+                <td id="studentCourse">Loading...</td>
+                <td class="label">Inclusive Date:</td>
+                <td id="inclusiveDate">--</td>
+            </tr>
+            <tr>
+                <td class="label">Cooperating Industry:</td>
+                <td id="studentIndustry">--</td>
+                <td class="label">From:</td>
+                <td id="fromDate">--</td>
+            </tr>
+            <tr>
+                <td class="label">Department Assigned:</td>
+                <td id="studentDepartment">--</td>
+                <td class="label">To:</td>
+                <td id="toDate">--</td>
+            </tr>
+        </table>
+
+        <!-- SUMMARY + LEARNING -->
+        <table class="main-table">
+            <tr>
+                <td class="label center">Summary of Activities</td>
+                <td class="label center">Learning/Insight</td>
+            </tr>
+            <tr>
+                <td class="box" id="summaryBox"></td>
+                <td class="box" id="learningBox"></td>
+            </tr>
+        </table>
+
+        <!-- SIGNATURES -->
+        <div class="signature-block">
+            <div class="left">
+                <div class="label">Prepared by:</div>
+                <div class="line"></div>
+                <div class="small">Student Signature Over Printed Name</div>
+            </div>
+
+            <div class="right">
+                <div class="label">OJT Coordinator:</div>
+                <div class="line"></div>
+                <div class="small right-text">Signature Over Printed Name</div>
+
+                <div class="label mt">OJT Supervisor:</div>
+                <div class="line"></div>
+                <div class="small right-text">Signature Over Printed Name</div>
+            </div>
+        </div>
+
+        <!-- FOOTER IMAGE -->
+        <div class="footer-image">
+            <img src="/images/flag.png" alt="Flag" />
+        </div>
+
+    </div>
+</div>
+
+<style>
+    .ojt-paper {
+        position: relative;
+        background: white;
+        padding: 40px;
+        font-family: 'Times New Roman', serif;
+        border: 1px solid black;
+        min-height: 1000px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .logo img {
+        width: 70px;
+        height: 70px;
+        object-fit: contain;
+    }
+
+    .header-text {
+        text-align: center;
+        flex-grow: 1;
+    }
+
+    .title {
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .subtitle {
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    .small {
+        font-size: 12px;
+    }
+
+    .report-title {
+        text-align: center;
+        font-weight: bold;
+        margin: 20px 0;
+    }
+
+    .form-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+
+    .main-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 15px;
+    }
+
+        .main-table td {
+            border: 1px solid black;
+            padding: 8px;
+            font-size: 13px;
+        }
+
+    .label {
+        font-weight: bold;
+    }
+
+    .center {
+        text-align: center;
+    }
+
+    .box {
+        min-height: 250px;
+        vertical-align: top;
+        white-space: pre-wrap;
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 10px;
+    }
+
+    .signature-block {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 40px;
+    }
+
+    .left, .right {
+        width: 45%;
+    }
+
+    .line {
+        border-bottom: 1px solid black;
+        margin: 25px 0 5px 0;
+    }
+
+    .right-text {
+        text-align: right;
+    }
+
+    .mt {
+        margin-top: 25px;
+    }
+
+    .footer-image {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 160px;
+    }
+
+        .footer-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.9;
+        }
+
+    /* Bullet points styling */
+    .task-details ul, .task-details ol {
+        margin-bottom: 0;
+        padding-left: 20px;
+    }
+
+    .task-details li {
+        margin: 3px 0;
+    }
+
+    .learning-content {
+        white-space: pre-wrap;
+    }
+
+    @@media print {
+        .no-print {
+            display: none;
+        }
+
+        .ojt-paper {
+            border: none;
+        }
+
+        .box {
+            min-height: auto;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", async function () {
+
+        // Get taskId from URL if present
+        const urlParams = new URLSearchParams(window.location.search);
+        const taskId = urlParams.get('taskId');
+        console.log('Task ID from URL:', taskId);
+
+        // ============ LOAD STUDENT INFO FROM DATABASE ============
+        async function loadStudentInfo() {
+            try {
+                console.log('Fetching student info...');
+                const response = await fetch('/Student/GetCurrentUser');
+                const result = await response.json();
+                console.log('Student info response:', result);
+
+                if (result.success && result.user) {
+                    const fullName = result.user.FullName || result.user.fullName || result.user.fullname || result.user.UserName || '';
+                    const program = result.user.Program || result.user.program || result.user.Course || result.user.course || '';
+                    const industry = result.user.Industry || result.user.industry || result.user.Company || result.user.company || '';
+                    const department = result.user.Department || result.user.department || '';
+
+                    document.getElementById("studentName").innerHTML = fullName;
+                    document.getElementById("studentCourse").innerHTML = program;
+                    document.getElementById("studentIndustry").innerHTML = industry;
+                    document.getElementById("studentDepartment").innerHTML = department;
+                }
+            } catch (err) {
+                console.error('Error loading student info:', err);
+            }
+        }
+
+        // ============ FORMAT DATE FUNCTION ============
+        function formatDateDisplay(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+                return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        function formatMonthYear(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+                return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        // ============ LOAD TASKS FROM DATABASE ============
+        async function loadTasksFromDatabase() {
+            try {
+                console.log('Loading tasks for OJT Report from database...');
+                const response = await fetch('/Student/GetTasks');
+                const tasks = await response.json();
+                console.log('Tasks loaded:', tasks);
+
+                let summaryHtml = '';
+                let learningHtml = '';
+
+                if (tasks.length === 0) {
+                    summaryHtml = 'No tasks created yet.';
+                    learningHtml = 'No learning insights recorded.';
+                    document.getElementById("fromDate").innerHTML = 'No data available';
+                    document.getElementById("toDate").innerHTML = 'No data available';
+                    document.getElementById("inclusiveDate").innerHTML = 'No data available';
+                } else {
+                    // If taskId is provided, show only that task's data
+                    let tasksToShow = tasks;
+                    if (taskId) {
+                        const selectedTask = tasks.find(t => t.id == taskId);
+                        if (selectedTask) {
+                            tasksToShow = [selectedTask];
+                            console.log('Showing only selected task:', selectedTask.title);
+                        }
+                    }
+
+                    // Get earliest From date and latest To date from tasks being shown
+                    let allFromDates = [];
+                    let allToDates = [];
+
+                    tasksToShow.forEach((task) => {
+                        if (task.dateFrom) allFromDates.push(task.dateFrom);
+                        if (task.dateTo) allToDates.push(task.dateTo);
+                    });
+
+                    // Find earliest From date
+                    let earliestFrom = null;
+                    if (allFromDates.length > 0) {
+                        earliestFrom = allFromDates.reduce((earliest, current) => {
+                            return new Date(current) < new Date(earliest) ? current : earliest;
+                        }, allFromDates[0]);
+                    }
+
+                    // Find latest To date
+                    let latestTo = null;
+                    if (allToDates.length > 0) {
+                        latestTo = allToDates.reduce((latest, current) => {
+                            return new Date(current) > new Date(latest) ? current : latest;
+                        }, allToDates[0]);
+                    }
+
+                    // Set From and To dates
+                    if (earliestFrom) {
+                        document.getElementById("fromDate").innerHTML = formatDateDisplay(earliestFrom);
+                        console.log('From Date set to:', formatDateDisplay(earliestFrom));
+                    }
+
+                    if (latestTo) {
+                        document.getElementById("toDate").innerHTML = formatDateDisplay(latestTo);
+                        console.log('To Date set to:', formatDateDisplay(latestTo));
+                    }
+
+                    if (earliestFrom) {
+                        document.getElementById("inclusiveDate").innerHTML = formatMonthYear(earliestFrom);
+                        console.log('Inclusive Date set to:', formatMonthYear(earliestFrom));
+                    }
+
+                    // Build Summary content with bullet points
+                    tasksToShow.forEach((task) => {
+                        if (task.taskContent && task.taskContent !== '<ul><li><br></li></ul>') {
+                            summaryHtml += task.taskContent;
+                        }
+
+                        // Build Learning content
+                        if (task.learningContent && task.learningContent.trim() !== '') {
+                            learningHtml += `<div class="learning-content">${escapeHtml(task.learningContent)}</div>`;
+                        }
+                    });
+
+                    if (summaryHtml === '') {
+                        summaryHtml = 'No activities recorded.';
+                    }
+
+                    if (learningHtml === '') {
+                        learningHtml = 'No learning insights recorded for this period.';
+                    }
+                }
+
+                // Display in the boxes
+                document.getElementById("summaryBox").innerHTML = summaryHtml;
+                document.getElementById("learningBox").innerHTML = learningHtml;
+
+                console.log('Final dates set:', {
+                    fromDate: document.getElementById("fromDate").innerHTML,
+                    toDate: document.getElementById("toDate").innerHTML,
+                    inclusiveDate: document.getElementById("inclusiveDate").innerHTML
+                });
+
+                // Auto-resize boxes
+                function autoResize(element) {
+                    if (element) {
+                        const contentHeight = element.scrollHeight;
+                        const minHeight = 250;
+                        element.style.height = Math.max(minHeight, contentHeight + 20) + 'px';
+                    }
+                }
+
+                autoResize(document.getElementById("summaryBox"));
+                autoResize(document.getElementById("learningBox"));
+
+            } catch (err) {
+                console.error('Failed to load tasks:', err);
+                document.getElementById("summaryBox").innerHTML = 'Error loading tasks.';
+                document.getElementById("learningBox").innerHTML = 'Error loading learning insights.';
+                document.getElementById("fromDate").innerHTML = 'Error loading data';
+                document.getElementById("toDate").innerHTML = 'Error loading data';
+                document.getElementById("inclusiveDate").innerHTML = 'Error loading data';
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load student info and tasks
+        await loadStudentInfo();
+        await loadTasksFromDatabase();
+    });
+
+    // ============ SEND REPORT FUNCTION ============
+    function sendReport() {
+        const studentName = document.getElementById("studentName").innerHTML;
+        const studentCourse = document.getElementById("studentCourse").innerHTML;
+        const inclusiveDate = document.getElementById("inclusiveDate").innerHTML;
+        const fromDate = document.getElementById("fromDate").innerHTML;
+        const toDate = document.getElementById("toDate").innerHTML;
+
+        alert(`Report sent successfully!\n\nStudent: ${studentName}\nPeriod: ${fromDate} to ${toDate}\n\nYour report has been sent to your supervisor.`);
+
+        console.log('Send Report clicked', {
+            studentName,
+            studentCourse,
+            inclusiveDate,
+            fromDate,
+            toDate
+        });
+    }
+</script>

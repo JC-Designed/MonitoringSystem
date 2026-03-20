@@ -37,10 +37,18 @@
         })
         .ToListAsync();
 
-    // Get all companies for reference
-    var companies = await Context.Companies
-        .Select(c => new { c.Id, c.CompanyName })
-        .ToDictionaryAsync(c => c.Id, c => c.CompanyName);
+    // Get all companies for reference - WITH NULL CHECK
+    Dictionary<int, string> companies = new Dictionary<int, string>();
+    try
+    {
+        companies = await Context.Companies
+            .Select(c => new { c.Id, c.CompanyName })
+            .ToDictionaryAsync(c => c.Id, c => c.CompanyName);
+    }
+    catch
+    {
+        companies = new Dictionary<int, string>();
+    }
 
     // Get all tasks for students
     var tasks = await Context.Tasks
@@ -58,7 +66,7 @@
         })
         .ToListAsync();
 
-    // Get all documents for students
+    // Get all documents for students with Read/Unread status
     var documents = await Context.Documents
         .OrderByDescending(d => d.UploadedAt)
         .Select(d => new
@@ -70,11 +78,14 @@
             d.FileData,
             d.UploadedAt,
             d.UploadedBy,
-            StudentId = d.UploadedBy
+            StudentId = d.UploadedBy,
+            Status = d.IsRead ? "Read" : "Unread",
+            d.IsRead,
+            d.ReadAt
         })
         .ToListAsync();
 
-    // Get all time log submissions with proper month names
+    // Get all time log submissions with Read/Unread status
     var timeLogSubmissions = await Context.StudentTimeLogs
         .OrderByDescending(s => s.SubmissionDate)
         .Select(s => new
@@ -89,7 +100,7 @@
             Month = s.Month,
             TotalHours = s.TotalHours,
             Logs = s.Logs ?? "[]",
-            Status = s.Status ?? "Pending",
+            Status = s.IsRead ? "Read" : "Unread",
             IsRead = s.IsRead,
             AdminRemarks = s.AdminRemarks ?? "",
             ProcessedDate = s.ProcessedDate,
@@ -206,25 +217,9 @@
         color: #721c24;
     }
 
-    .status-read,
-    .status-available {
+    .status-read {
         background-color: #d1e7dd;
         color: #0f5132;
-    }
-
-    .status-pending {
-        background-color: #fff3cd;
-        color: #856404;
-    }
-
-    .status-approved {
-        background-color: var(--success-color);
-        color: white;
-    }
-
-    .status-rejected {
-        background-color: var(--danger-color);
-        color: white;
     }
 
     .action-icon {
@@ -302,6 +297,33 @@
 
         .data-table tbody tr:hover {
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+    /* ===== DOWNLOAD BUTTON STYLES ===== */
+    .download-link {
+        display: inline-block;
+        padding: 6px 16px;
+        background-color: var(--primary-color);
+        color: white !important;
+        text-decoration: none;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        transition: var(--transition-speed);
+        border: none;
+        cursor: pointer;
+    }
+
+        .download-link:hover {
+            background-color: #0066cc;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            color: white;
+            text-decoration: none;
+        }
+
+        .download-link:active {
+            transform: translateY(0);
         }
 
     /* ===== BUTTONS ===== */
@@ -553,23 +575,58 @@
         <div style="width:20%;" class="text-end">Action</div>
     </div>
 
-    <!-- CARDS CONTAINER -->
+    <!-- CARDS CONTAINER - UPDATED TO SORT UNREAD ON TOP WITH SAFE COMPANY NAME -->
     <div id="cardsContainer">
         @{
-            var taskStatusLookup = tasks
-            .GroupBy(t => t.StudentId)
-            .ToDictionary(
-            g => g.Key,
-            g => g.Any(t => t.Status == "Unread") ? "Unread" : "Read"
-            );
+            // Create a list of students with their unread status and sort unread first
+            var studentsWithStatus = new List<dynamic>();
+
+            foreach (var student in students)
+            {
+                bool hasUnreadTasks = tasks.Any(t => t.StudentId == student.Id && t.Status == "Unread");
+                bool hasUnreadDocuments = documents.Any(d => d.StudentId == student.Id && !d.IsRead);
+                bool hasUnreadTimeLogs = timeLogSubmissions.Any(t => t.StudentId == student.Id && !t.IsRead);
+
+                bool hasUnread = hasUnreadTasks || hasUnreadDocuments || hasUnreadTimeLogs;
+                string status = hasUnread ? "Unread" : "Read";
+
+                studentsWithStatus.Add(new
+                {
+                    Student = student,
+                    HasUnread = hasUnread,
+                    Status = status,
+                    SortOrder = hasUnread ? 0 : 1 // Unread first (0), then Read (1)
+                });
+            }
+
+            // Sort by HasUnread (true first) then by name
+            var sortedStudents = studentsWithStatus
+            .OrderBy(s => s.SortOrder)
+            .ThenBy(s => s.Student.FullName)
+            .ToList();
         }
 
-        @foreach (var student in students)
+        @foreach (var item in sortedStudents)
         {
-            var status = taskStatusLookup.GetValueOrDefault(student.Id, "Read");
-            var companyName = student.CompanyID.HasValue && companies.ContainsKey(student.CompanyID.Value)
-            ? companies[student.CompanyID.Value]
-            : "";
+            var student = item.Student;
+            var status = item.Status;
+
+            // ULTRA SAFE way to get company name - with multiple null checks
+            string companyName = "";
+            try
+            {
+                if (student != null && student.CompanyID.HasValue && companies != null)
+                {
+                    if (companies.ContainsKey(student.CompanyID.Value))
+                    {
+                        companyName = companies[student.CompanyID.Value] ?? "";
+                    }
+                }
+            }
+            catch
+            {
+                companyName = "";
+            }
 
             <div class="report-card"
                  data-id="@student.Id"
@@ -587,7 +644,8 @@
                  data-course="@student.Program"
                  data-company="@companyName"
                  data-totalhours="@student.TotalAllottedHours"
-                 data-student-key="@student.Id">
+                 data-student-key="@student.Id"
+                 data-hasunread="@(status == "Unread" ? "true" : "false")">
 
                 <!-- STUDENT INFO -->
                 <div class="student-section">
@@ -679,7 +737,7 @@
                         <th>Task Title</th>
                         <th>Date Uploaded</th>
                         <th>Read Status</th>
-                        <th>Action</th>
+                        <th>Download</th>
                     </tr>
                 </thead>
                 <tbody id="tasksTableBody">
@@ -691,7 +749,7 @@
 
     <!-- DOCUMENTS SECTION -->
     <div class="d-flex justify-content-between align-items-center mt-5">
-        <h5 class="fw-bold mb-0">Documents & Time Logs</h5>
+        <h5 class="fw-bold mb-0">Documents</h5>
         <div>
             <button id="downloadDocumentsBtn" class="btn btn-danger">
                 <i class="bi bi-download"></i> Download Selected
@@ -707,12 +765,42 @@
                         <th>Select</th>
                         <th>Name</th>
                         <th>Date</th>
-                        <th>Status</th>
-                        <th>Actions</th>
+                        <th>Read Status</th>
+                        <th>Download</th>
                     </tr>
                 </thead>
                 <tbody id="documentsTableBody">
                     <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view documents</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TIME LOGS SECTION -->
+    <div class="d-flex justify-content-between align-items-center mt-5">
+        <h5 class="fw-bold mb-0">Time Logs</h5>
+        <div>
+            <button id="downloadTimeLogsBtn" class="btn btn-danger">
+                <i class="bi bi-download"></i> Download Selected
+            </button>
+        </div>
+    </div>
+
+    <div id="timeLogsTable" class="mt-4 p-4 rounded-4 shadow-sm data-table">
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle">
+                <thead class="text-center">
+                    <tr>
+                        <th>Select</th>
+                        <th>Month</th>
+                        <th>Total Hours</th>
+                        <th>Submission Date</th>
+                        <th>Read Status</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
+                <tbody id="timeLogsTableBody">
+                    <tr><td colspan="6" class="text-center text-muted py-4">Select a student to view time logs</td></tr>
                 </tbody>
             </table>
         </div>
@@ -741,9 +829,11 @@
                 previewSection: document.getElementById('previewSection'),
                 tasksTableBody: document.getElementById('tasksTableBody'),
                 documentsTableBody: document.getElementById('documentsTableBody'),
+                timeLogsTableBody: document.getElementById('timeLogsTableBody'),
                 backBtn: document.getElementById('backBtn'),
                 downloadTemplateBtn: document.getElementById('downloadTemplateBtn'),
                 downloadDocumentsBtn: document.getElementById('downloadDocumentsBtn'),
+                downloadTimeLogsBtn: document.getElementById('downloadTimeLogsBtn'),
                 searchName: document.getElementById('searchName'),
                 yearFilter: document.getElementById('yearFilter'),
                 programFilter: document.getElementById('programFilter'),
@@ -813,6 +903,44 @@
                     student: student,
                     card: studentCard
                 };
+            },
+
+            // API call to mark document as read
+            async markDocumentAsRead(docId) {
+                try {
+                    const token = this.getAntiForgeryToken();
+                    const response = await fetch(`/Admin/MarkDocumentAsRead/${docId}`, {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Error marking document as read:', error);
+                    return { success: false };
+                }
+            },
+
+            // API call to mark time log as read
+            async markTimeLogAsRead(submissionId) {
+                try {
+                    const token = this.getAntiForgeryToken();
+                    const response = await fetch(`/Admin/MarkTimeLogAsRead/${submissionId}`, {
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': token,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    return data;
+                } catch (error) {
+                    console.error('Error marking time log as read:', error);
+                    return { success: false };
+                }
             }
         };
 
@@ -848,7 +976,7 @@
             }
         };
 
-        // ===== TASK FUNCTIONS =====
+        // ===== TASK FUNCTIONS - DOWNLOAD ONLY WITH TEXT BUTTON =====
         const TaskManager = {
             renderTasksForStudent(studentId) {
                 const studentTasks = AppState.tasks.filter(t => t.studentId === studentId);
@@ -859,7 +987,17 @@
                     return;
                 }
 
-                tbody.innerHTML = studentTasks.map(task => {
+                // Sort tasks: Unread first, then by date (newest first)
+                const sortedTasks = [...studentTasks].sort((a, b) => {
+                    // First by status (Unread comes first)
+                    if (a.status === 'Unread' && b.status !== 'Unread') return -1;
+                    if (a.status !== 'Unread' && b.status === 'Unread') return 1;
+
+                    // Then by date (newest first)
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                });
+
+                tbody.innerHTML = sortedTasks.map(task => {
                     const date = Utils.formatDate(task.createdAt);
                     const status = task.status || 'Unread';
                     const statusClass = status === 'Unread' ? 'status-unread' : 'status-read';
@@ -871,9 +1009,7 @@
                             <td class="text-center">${date}</td>
                             <td class="text-center"><span class="status-badge ${statusClass}">${status}</span></td>
                             <td class="text-center">
-                                <button class="btn btn-sm btn-outline-primary download-task-btn" title="Download Task">
-                                    <i class="bi bi-download"></i>
-                                </button>
+                                <button class="download-link download-task-btn">DOWNLOAD</button>
                             </td>
                         </tr>
                     `;
@@ -937,7 +1073,6 @@
                 const taskId = row.dataset.taskId;
                 const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
                 const studentId = row.dataset.studentId;
-                const checkbox = row.querySelector('.task-checkbox');
 
                 if (statusBadge.classList.contains('status-unread')) {
                     statusBadge.classList.remove('status-unread');
@@ -948,16 +1083,18 @@
                     const task = AppState.tasks.find(t => t.id == taskId);
                     if (task) task.status = 'Read';
 
-                    if (checkbox) checkbox.checked = false;
+                    // Update main card status checking ALL sources
+                    StudentManager.updateMainCardStatusFromAllSources(studentId);
 
-                    StudentManager.updateMainCardStatus(studentId);
+                    // Re-render tasks to keep unread on top
+                    this.renderTasksForStudent(studentId);
                 }
 
                 this.generateTaskExcel(taskTitle, studentId);
             },
 
             downloadSelected() {
-                const selectedCheckboxes = document.querySelectorAll('#tasksTable tbody tr:not([style*="none"]) .task-checkbox:checked');
+                const selectedCheckboxes = document.querySelectorAll('#tasksTable tbody tr .task-checkbox:checked');
 
                 if (selectedCheckboxes.length === 0) {
                     Utils.showToast('Please select at least one task.', 'error');
@@ -980,134 +1117,113 @@
                         const task = AppState.tasks.find(t => t.id == taskId);
                         if (task) task.status = 'Read';
 
-                        cb.checked = false;
-
                         if (studentId) {
-                            StudentManager.updateMainCardStatus(studentId);
+                            StudentManager.updateMainCardStatusFromAllSources(studentId);
                         }
                     }
 
                     this.generateTaskExcel(taskTitle, studentId);
                 });
+
+                // Re-render tasks to keep unread on top
+                if (AppState.currentStudentId) {
+                    this.renderTasksForStudent(AppState.currentStudentId);
+                }
             }
         };
 
-        // ===== DOCUMENT FUNCTIONS =====
+        // ===== DOCUMENT FUNCTIONS - DOWNLOAD ONLY WITH TEXT BUTTON =====
         const DocumentManager = {
-            renderDocumentsAndTimeLogs(studentId) {
+            renderDocumentsForStudent(studentId) {
                 const studentDocs = AppState.documents.filter(d => d.studentId === studentId);
-                const studentSubmissions = AppState.timeLogs.filter(s => s.studentId === studentId);
-
-                const allItems = [];
-
-                // Add documents
-                studentDocs.forEach(doc => {
-                    allItems.push({
-                        id: doc.id,
-                        type: 'document',
-                        name: doc.name,
-                        date: doc.uploadedAt,
-                        status: 'Available',
-                        statusClass: 'status-available',
-                        icon: 'bi-file-earmark-text',
-                        iconColor: '#0d6efd'
-                    });
-                });
-
-                // Add time logs
-                studentSubmissions.forEach(sub => {
-                    const statusClass = sub.status === 'Approved' ? 'status-approved'
-                        : sub.status === 'Rejected' ? 'status-rejected'
-                        : 'status-pending';
-
-                    allItems.push({
-                        id: sub.id,
-                        type: 'timelog',
-                        name: `${sub.monthName} Time Log (${sub.totalHours} hrs)`,
-                        date: sub.submissionDate,
-                        status: sub.status || 'Pending',
-                        statusClass: statusClass,
-                        icon: 'bi-clock-history',
-                        iconColor: '#0d6efd',
-                        logs: sub.logs,
-                        monthName: sub.monthName,
-                        totalHours: sub.totalHours,
-                        studentId: sub.studentId,
-                        studentName: sub.studentName,
-                        course: sub.course,
-                        year: sub.year,
-                        section: sub.section
-                    });
-                });
-
-                // Sort by date (newest first)
-                allItems.sort((a, b) => new Date(b.date) - new Date(a.date));
-
                 const tbody = AppState.elements.documentsTableBody;
 
-                if (allItems.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No documents or submissions found for this student</td></tr>';
+                if (studentDocs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No documents found for this student</td></tr>';
                     return;
                 }
 
-                tbody.innerHTML = allItems.map(item => {
-                    const date = Utils.formatDate(item.date);
+                // Sort documents: Unread first, then by date (newest first)
+                const sortedDocs = [...studentDocs].sort((a, b) => {
+                    // First by status (Unread comes first)
+                    if (!a.isRead && b.isRead) return -1;
+                    if (a.isRead && !b.isRead) return 1;
 
-                    if (item.type === 'document') {
-                        return `
-                            <tr data-doc-id="${item.id}" data-item-type="document" data-student-id="${studentId}">
-                                <td class="text-center"><input type="checkbox" class="doc-checkbox" value="${item.id}"></td>
-                                <td>
-                                    <i class="bi ${item.icon} me-2" style="color: ${item.iconColor};"></i>
-                                    ${item.name}
-                                </td>
-                                <td>${date}</td>
-                                <td><span class="badge ${item.statusClass}">${item.status}</span></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="window.downloadDocument('${item.id}', '${studentId}')" title="Download">
-                                        <i class="bi bi-download"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="window.deleteDocument('${item.id}', '${studentId}')" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    } else {
-                        return `
-                            <tr data-submission-id="${item.id}" data-item-type="timelog" data-student-id="${studentId}">
-                                <td class="text-center"><input type="checkbox" class="submission-checkbox" value="${item.id}"></td>
-                                <td>
-                                    <i class="bi ${item.icon} me-2" style="color: ${item.iconColor};"></i>
-                                    ${item.name}
-                                </td>
-                                <td>${date}</td>
-                                <td><span class="badge ${item.statusClass}">${item.status}</span></td>
-                                <td class="text-center">
-                                    <button class="btn btn-sm btn-outline-primary me-1" onclick="window.downloadTimeLogSubmission('${item.id}')" title="Download Excel">
-                                        <i class="bi bi-file-earmark-excel"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-info me-1" onclick="window.viewTimeLogSubmission('${item.id}')" title="View Details">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-outline-danger" onclick="window.deleteTimeLogSubmission('${item.id}', '${studentId}')" title="Delete">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </td>
-                            </tr>
-                        `;
-                    }
+                    // Then by date (newest first)
+                    return new Date(b.uploadedAt) - new Date(a.uploadedAt);
+                });
+
+                tbody.innerHTML = sortedDocs.map(doc => {
+                    const date = Utils.formatDate(doc.uploadedAt);
+                    const status = doc.status || 'Unread';
+                    const statusClass = status === 'Unread' ? 'status-unread' : 'status-read';
+
+                    return `
+                        <tr data-doc-id="${doc.id}" data-item-type="document" data-student-id="${studentId}" data-doc-status="${status}">
+                            <td class="text-center"><input type="checkbox" class="doc-checkbox" value="${doc.id}"></td>
+                            <td>
+                                <i class="bi bi-file-earmark-text me-2" style="color: #0d6efd;"></i>
+                                ${doc.name}
+                            </td>
+                            <td>${date}</td>
+                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td class="text-center">
+                                <button class="download-link download-doc-btn">DOWNLOAD</button>
+                            </td>
+                        </tr>
+                    `;
                 }).join('');
+
+                this.attachDownloadListeners();
+            },
+
+            attachDownloadListeners() {
+                document.querySelectorAll('.download-doc-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.handleDocumentDownload(e));
+                });
+            },
+
+            async handleDocumentDownload(e) {
+                e.preventDefault();
+                const row = e.currentTarget.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const docId = row.dataset.docId;
+                const studentId = row.dataset.studentId;
+
+                // If document is unread, mark it as read via API
+                if (statusBadge.classList.contains('status-unread')) {
+                    const result = await Utils.markDocumentAsRead(docId);
+
+                    if (result.success) {
+                        statusBadge.classList.remove('status-unread');
+                        statusBadge.classList.add('status-read');
+                        statusBadge.textContent = 'Read';
+                        row.dataset.docStatus = 'Read';
+
+                        // Update in AppState
+                        const doc = AppState.documents.find(d => d.id == docId);
+                        if (doc) {
+                            doc.status = 'Read';
+                            doc.isRead = true;
+                        }
+
+                        // Update main card status checking ALL sources
+                        StudentManager.updateMainCardStatusFromAllSources(studentId);
+
+                        // Re-render documents to keep unread on top
+                        this.renderDocumentsForStudent(studentId);
+                    }
+                }
+
+                // Download the document
+                window.location.href = `/Admin/DownloadDocument/${docId}`;
             },
 
             downloadSelected() {
-                const docCheckboxes = document.querySelectorAll('#documentsTable tbody tr[data-item-type="document"] .doc-checkbox:checked');
-                const submissionCheckboxes = document.querySelectorAll('#documentsTable tbody tr[data-item-type="timelog"] .submission-checkbox:checked');
+                const docCheckboxes = document.querySelectorAll('#documentsTable tbody tr .doc-checkbox:checked');
 
-                const totalSelected = docCheckboxes.length + submissionCheckboxes.length;
-
-                if (totalSelected === 0) {
-                    Utils.showToast('Please select at least one item to download.', 'error');
+                if (docCheckboxes.length === 0) {
+                    Utils.showToast('Please select at least one document to download.', 'error');
                     return;
                 }
 
@@ -1115,46 +1231,160 @@
                 let csv = "SELECTED DOCUMENTS MANIFEST\n";
                 csv += "=".repeat(50) + "\n";
                 csv += "Generated on:," + new Date().toLocaleString() + "\n\n";
+                csv += "Document Name,Status\n";
 
-                if (docCheckboxes.length > 0) {
-                    csv += "SELECTED DOCUMENTS\n";
-                    csv += "-".repeat(30) + "\n";
-                    csv += "Document Name,Type\n";
-                    docCheckboxes.forEach(cb => {
-                        const row = cb.closest('tr');
-                        const name = row.querySelector('td:nth-child(2)').textContent.trim();
-                        csv += `${name},Document\n`;
-                    });
-                    csv += "\n";
-                }
-
-                if (submissionCheckboxes.length > 0) {
-                    csv += "SELECTED TIME LOGS\n";
-                    csv += "-".repeat(30) + "\n";
-                    csv += "Time Log Name,Type\n";
-                    submissionCheckboxes.forEach(cb => {
-                        const row = cb.closest('tr');
-                        const name = row.querySelector('td:nth-child(2)').textContent.trim();
-                        csv += `${name},Time Log\n`;
-                    });
-                }
+                docCheckboxes.forEach(cb => {
+                    const row = cb.closest('tr');
+                    const name = row.querySelector('td:nth-child(2)').textContent.trim();
+                    const status = row.querySelector('.status-badge').textContent.trim();
+                    csv += `${name},${status}\n`;
+                });
 
                 const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `Selected_Items_Manifest_${new Date().toISOString().split('T')[0]}.csv`;
+                link.download = `Selected_Documents_${new Date().toISOString().split('T')[0]}.csv`;
                 link.click();
                 URL.revokeObjectURL(url);
 
-                Utils.showToast(`Generated manifest for ${totalSelected} item(s)`, 'success');
-
+                Utils.showToast(`Generated manifest for ${docCheckboxes.length} document(s)`, 'success');
                 docCheckboxes.forEach(cb => cb.checked = false);
-                submissionCheckboxes.forEach(cb => cb.checked = false);
+
+                // Re-render documents to keep unread on top
+                if (AppState.currentStudentId) {
+                    this.renderDocumentsForStudent(AppState.currentStudentId);
+                }
             }
         };
 
-        // ===== TIME LOG FUNCTIONS =====
+        // ===== TIME LOG FUNCTIONS - DOWNLOAD ONLY WITH TEXT BUTTON =====
+        const TimeLogManager = {
+            renderTimeLogsForStudent(studentId) {
+                const studentTimeLogs = AppState.timeLogs.filter(t => t.studentId === studentId);
+                const tbody = AppState.elements.timeLogsTableBody;
+
+                if (studentTimeLogs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No time logs found for this student</td></tr>';
+                    return;
+                }
+
+                // Sort time logs: Unread first, then by date (newest first)
+                const sortedLogs = [...studentTimeLogs].sort((a, b) => {
+                    // First by status (Unread comes first)
+                    if (!a.isRead && b.isRead) return -1;
+                    if (a.isRead && !b.isRead) return 1;
+
+                    // Then by date (newest first)
+                    return new Date(b.submissionDate) - new Date(a.submissionDate);
+                });
+
+                tbody.innerHTML = sortedLogs.map(log => {
+                    const date = Utils.formatDate(log.submissionDate);
+                    const status = log.status || 'Unread';
+                    const statusClass = status === 'Unread' ? 'status-unread' : 'status-read';
+
+                    return `
+                        <tr data-submission-id="${log.id}" data-student-id="${studentId}" data-submission-status="${status}">
+                            <td class="text-center"><input type="checkbox" class="timelog-checkbox" value="${log.id}"></td>
+                            <td>${log.monthName}</td>
+                            <td>${log.totalHours} hrs</td>
+                            <td>${date}</td>
+                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td class="text-center">
+                                <button class="download-link download-timelog-btn">DOWNLOAD</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                this.attachDownloadListeners();
+            },
+
+            attachDownloadListeners() {
+                document.querySelectorAll('.download-timelog-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.handleTimeLogDownload(e));
+                });
+            },
+
+            async handleTimeLogDownload(e) {
+                e.preventDefault();
+                const row = e.currentTarget.closest('tr');
+                const statusBadge = row.querySelector('.status-badge');
+                const submissionId = row.dataset.submissionId;
+                const studentId = row.dataset.studentId;
+
+                // If time log is unread, mark it as read via API
+                if (statusBadge.classList.contains('status-unread')) {
+                    const result = await Utils.markTimeLogAsRead(submissionId);
+
+                    if (result.success) {
+                        statusBadge.classList.remove('status-unread');
+                        statusBadge.classList.add('status-read');
+                        statusBadge.textContent = 'Read';
+                        row.dataset.submissionStatus = 'Read';
+
+                        // Update in AppState
+                        const timeLog = AppState.timeLogs.find(t => t.id == submissionId);
+                        if (timeLog) {
+                            timeLog.status = 'Read';
+                            timeLog.isRead = true;
+                        }
+
+                        // Update main card status checking ALL sources
+                        StudentManager.updateMainCardStatusFromAllSources(studentId);
+
+                        // Re-render time logs to keep unread on top
+                        this.renderTimeLogsForStudent(studentId);
+                    }
+                }
+
+                // Download the time log
+                window.downloadTimeLogSubmission(submissionId);
+            },
+
+            downloadSelected() {
+                const selectedCheckboxes = document.querySelectorAll('#timeLogsTable tbody tr .timelog-checkbox:checked');
+
+                if (selectedCheckboxes.length === 0) {
+                    Utils.showToast('Please select at least one time log to download.', 'error');
+                    return;
+                }
+
+                // Create manifest Excel file
+                let csv = "SELECTED TIME LOGS MANIFEST\n";
+                csv += "=".repeat(50) + "\n";
+                csv += "Generated on:," + new Date().toLocaleString() + "\n\n";
+                csv += "Month,Total Hours,Submission Date,Status\n";
+
+                selectedCheckboxes.forEach(cb => {
+                    const row = cb.closest('tr');
+                    const month = row.querySelector('td:nth-child(2)').textContent.trim();
+                    const hours = row.querySelector('td:nth-child(3)').textContent.trim();
+                    const date = row.querySelector('td:nth-child(4)').textContent.trim();
+                    const status = row.querySelector('.status-badge').textContent.trim();
+                    csv += `${month},${hours},${date},${status}\n`;
+                });
+
+                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `Selected_TimeLogs_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                Utils.showToast(`Generated manifest for ${selectedCheckboxes.length} time log(s)`, 'success');
+                selectedCheckboxes.forEach(cb => cb.checked = false);
+
+                // Re-render time logs to keep unread on top
+                if (AppState.currentStudentId) {
+                    this.renderTimeLogsForStudent(AppState.currentStudentId);
+                }
+            }
+        };
+
+        // ===== TIME LOG FUNCTIONS (GLOBAL) =====
         window.downloadTimeLogSubmission = function(submissionId) {
             const submission = AppState.timeLogs.find(s => s.id === submissionId);
             if (!submission) return;
@@ -1170,6 +1400,10 @@
                 }
 
                 const { student, card } = Utils.getStudentInfo(submission.studentId);
+
+                // Get current status from the row
+                const row = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
+                const currentStatus = row ? row.querySelector('.status-badge').textContent.trim() : (submission.status || 'Unread');
 
                 // Create Excel/CSV content
                 let csv = "STUDENT TIME LOG REPORT\n";
@@ -1189,7 +1423,7 @@
                 csv += "-".repeat(40) + "\n";
                 csv += "Month," + submission.monthName + "\n";
                 csv += "Total Hours Rendered," + submission.totalHours + "\n";
-                csv += "Status," + (submission.status || 'Pending') + "\n";
+                csv += "Status," + currentStatus + "\n";
                 csv += "Submission Date," + new Date(submission.submissionDate).toLocaleDateString() + "\n\n";
 
                 if (submission.adminRemarks) {
@@ -1243,192 +1477,43 @@
             }
         };
 
-        window.viewTimeLogSubmission = function(submissionId) {
-            const submission = AppState.timeLogs.find(s => s.id === submissionId);
-            if (!submission) return;
-
-            try {
-                let logsData = submission.logs;
-                if (typeof logsData === 'string') {
-                    try {
-                        logsData = JSON.parse(logsData);
-                    } catch (e) {
-                        logsData = [];
-                    }
-                }
-
-                let logsHtml = '<div class="modal fade" id="timeLogModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Time Log Details - ' + submission.monthName + '</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">';
-                logsHtml += '<p><strong>Student:</strong> ' + submission.studentName + '</p>';
-                logsHtml += '<p><strong>Total Hours:</strong> ' + submission.totalHours + '</p>';
-                logsHtml += '<p><strong>Status:</strong> <span class="badge ' + (submission.status === 'Approved' ? 'bg-success' : submission.status === 'Rejected' ? 'bg-danger' : 'bg-warning') + '">' + (submission.status || 'Pending') + '</span></p>';
-
-                if (submission.adminRemarks) {
-                    logsHtml += '<p><strong>Admin Remarks:</strong> ' + submission.adminRemarks + '</p>';
-                }
-
-                logsHtml += '<hr><h6>Daily Logs:</h6><div class="table-responsive"><table class="table table-sm table-bordered"><thead><tr><th>Day</th><th>AM In</th><th>AM Out</th><th>PM In</th><th>PM Out</th><th>OT In</th><th>OT Out</th><th>Total</th><th>Type</th></tr></thead><tbody>';
-
-                if (Array.isArray(logsData) && logsData.length > 0) {
-                    logsData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(log => {
-                        const date = new Date(log.date);
-                        const day = date.getDate();
-
-                        if (log.type === 'regular') {
-                            logsHtml += `<tr>
-                                <td>${day}</td>
-                                <td>${log.amIn || '-'}</td>
-                                <td>${log.amOut || '-'}</td>
-                                <td>${log.pmIn || '-'}</td>
-                                <td>${log.pmOut || '-'}</td>
-                                <td>${log.otIn || '-'}</td>
-                                <td>${log.otOut || '-'}</td>
-                                <td>${log.totalHours || 0}</td>
-                                <td>Regular</td>
-                            </tr>`;
-                        } else {
-                            logsHtml += `<tr>
-                                <td>${day}</td>
-                                <td colspan="7" class="text-center">${log.type}</td>
-                                <td>-</td>
-                            </tr>`;
-                        }
-                    });
-                } else {
-                    logsHtml += '<tr><td colspan="9" class="text-center">No detailed logs available</td></tr>';
-                }
-
-                logsHtml += '</tbody></table></div>';
-                logsHtml += '</div><div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div></div></div></div>';
-
-                // Remove existing modal if any
-                const existingModal = document.getElementById('timeLogModal');
-                if (existingModal) existingModal.remove();
-
-                // Add modal to body
-                document.body.insertAdjacentHTML('beforeend', logsHtml);
-
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('timeLogModal'));
-                modal.show();
-                Utils.showToast('Time log details loaded', 'success');
-            } catch (error) {
-                console.error('Error viewing submission:', error);
-                Utils.showToast('Error viewing submission details', 'error');
-            }
-        };
-
-        window.deleteTimeLogSubmission = async function(submissionId, studentId) {
-            if (!confirm('Are you sure you want to delete this time log submission? This action cannot be undone.')) return;
-
-            try {
-                const token = Utils.getAntiForgeryToken();
-                const response = await fetch(`/Admin/DeleteTimeLogSubmission/${submissionId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'RequestVerificationToken': token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Server returned ${response.status}: ${response.statusText}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const row = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
-                    if (row) {
-                        row.remove();
-
-                        const remainingRows = document.querySelectorAll('#documentsTableBody tr').length;
-                        if (remainingRows === 0) {
-                            document.getElementById('documentsTableBody').innerHTML =
-                                '<tr><td colspan="5" class="text-center text-muted py-4">No documents or submissions found for this student</td></tr>';
-                        }
-
-                        // Remove from state
-                        AppState.timeLogs = AppState.timeLogs.filter(s => s.id !== submissionId);
-
-                        Utils.showToast('Time log submission deleted successfully!', 'success');
-                    }
-                } else {
-                    Utils.showToast('Failed to delete: ' + (data.message || 'Unknown error'), 'error');
-                }
-            } catch (error) {
-                console.error('Error deleting submission:', error);
-                Utils.showToast('Error deleting submission: ' + error.message, 'error');
-            }
-        };
-
-        window.downloadDocument = function(docId, studentId) {
-            window.location.href = `/Admin/DownloadDocument/${docId}`;
-        };
-
-        window.deleteDocument = async function(docId, studentId) {
-            if (!confirm('Are you sure you want to delete this document? This action cannot be undone.')) return;
-
-            try {
-                const token = Utils.getAntiForgeryToken();
-                const response = await fetch(`/Admin/DeleteDocument/${docId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'RequestVerificationToken': token,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    const row = document.querySelector(`tr[data-doc-id="${docId}"]`);
-                    if (row) {
-                        row.remove();
-
-                        const remainingRows = document.querySelectorAll('#documentsTableBody tr').length;
-                        if (remainingRows === 0) {
-                            document.getElementById('documentsTableBody').innerHTML =
-                                '<tr><td colspan="5" class="text-center text-muted py-4">No documents or submissions found for this student</td></tr>';
-                        }
-
-                        // Remove from state
-                        AppState.documents = AppState.documents.filter(d => d.id !== docId);
-
-                        Utils.showToast('Document deleted successfully!', 'success');
-                    }
-                } else {
-                    Utils.showToast('Failed to delete document: ' + data.message, 'error');
-                }
-            } catch (error) {
-                console.error('Error deleting document:', error);
-                Utils.showToast('Error deleting document', 'error');
-            }
-        };
-
         // ===== STUDENT FUNCTIONS =====
         const StudentManager = {
-            updateMainCardStatus(studentId) {
+            updateMainCardStatusFromAllSources(studentId) {
                 const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
                 if (!card) return;
 
-                const statusContainer = card.querySelector('.status-container .status-badge');
-                const studentTasks = AppState.tasks.filter(t => t.studentId === studentId);
+                // Check if any tasks are unread
+                const hasUnreadTasks = AppState.tasks.some(t => t.studentId === studentId && t.status === 'Unread');
 
-                const hasUnread = studentTasks.some(task => task.status === 'Unread');
+                // Check if any documents are unread
+                const hasUnreadDocuments = AppState.documents.some(d => d.studentId === studentId && !d.isRead);
+
+                // Check if any time logs are unread
+                const hasUnreadTimeLogs = AppState.timeLogs.some(t => t.studentId === studentId && !t.isRead);
+
+                const hasUnread = hasUnreadTasks || hasUnreadDocuments || hasUnreadTimeLogs;
                 const newStatus = hasUnread ? 'Unread' : 'Read';
 
+                const statusContainer = card.querySelector('.status-container .status-badge');
                 statusContainer.className = `status-badge ${hasUnread ? 'status-unread' : 'status-read'}`;
                 statusContainer.textContent = newStatus;
                 card.dataset.status = newStatus;
+                card.dataset.hasunread = hasUnread ? 'true' : 'false';
 
                 FilterManager.filterCards();
+            },
+
+            updateMainCardStatus(studentId) {
+                this.updateMainCardStatusFromAllSources(studentId);
             },
 
             showPreview(card) {
                 AppState.currentStudentId = card.dataset.studentKey;
 
                 TaskManager.renderTasksForStudent(AppState.currentStudentId);
-                DocumentManager.renderDocumentsAndTimeLogs(AppState.currentStudentId);
+                DocumentManager.renderDocumentsForStudent(AppState.currentStudentId);
+                TimeLogManager.renderTimeLogsForStudent(AppState.currentStudentId);
 
                 // Update profile picture
                 document.getElementById('previewProfilePic').src = card.dataset.profile && card.dataset.profile.trim() !== ''
@@ -1541,6 +1626,11 @@
             AppState.elements.downloadDocumentsBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 DocumentManager.downloadSelected();
+            });
+
+            AppState.elements.downloadTimeLogsBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                TimeLogManager.downloadSelected();
             });
 
             console.log('Application initialized successfully');

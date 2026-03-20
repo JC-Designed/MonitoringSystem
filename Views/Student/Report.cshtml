@@ -7,8 +7,8 @@
     var reportList = Model ?? new List<MonitoringSystem.Models.StudentTask>();
 }
 
-<div class="container-fluid py-5">
-    <div class="card shadow-sm rounded-4 p-4" style="overflow: visible;">
+<div class="container-fluid p-0 m-0" style="background: transparent;">
+    <div class="card shadow-sm rounded-4 p-4 m-3" style="overflow: visible; background: white;">
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -31,7 +31,6 @@
                     <tr>
                         <th class="py-3">Document Type</th>
                         <th class="py-3">Date Uploaded</th>
-                        <th class="py-3">Attached File</th>
                         <th class="py-3 text-center">Action</th>
                     </tr>
                 </thead>
@@ -40,21 +39,9 @@
                     {
                         foreach (var task in reportList)
                         {
-                            <tr data-id="@task.Id" data-title="@task.Title" data-deadline="@task.Deadline.ToString("yyyy-MM-dd")" data-file="@task.AttachmentPath">
+                            <tr data-id="@task.Id" data-title="@task.Title" data-datefrom="@task.DateFrom.ToString("yyyy-MM-dd")">
                                 <td class="py-3">@task.Title</td>
-                                <td class="py-3">@task.Deadline.ToString("yyyy-MM-dd")</td>
-                                <td class="py-3">
-                                    @if (!string.IsNullOrEmpty(task.AttachmentPath))
-                                    {
-                                        <a href="@task.AttachmentPath" target="_blank">
-                                            @System.IO.Path.GetFileName(task.AttachmentPath)
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <a href="/uploads/sample.pdf" target="_blank">sample.pdf</a>
-                                    }
-                                </td>
+                                <td class="py-3">@task.DateFrom.ToString("yyyy-MM-dd")</td>
                                 <td class="text-center py-3">
                                     <div class="dropdown">
                                         <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown"></button>
@@ -72,9 +59,6 @@
                         <tr>
                             <td class="py-3">Sample Report</td>
                             <td class="py-3">2026-02-26</td>
-                            <td class="py-3">
-                                <a href="/uploads/sample.pdf" target="_blank">sample.pdf</a>
-                            </td>
                             <td class="text-center py-3">
                                 <div class="dropdown">
                                     <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown"></button>
@@ -102,7 +86,7 @@
                 <button class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <form asp-action="CreateReport" asp-controller="Student" method="post" enctype="multipart/form-data" id="reportForm">
+            <form asp-action="CreateReport" asp-controller="Student" method="post" id="reportForm">
                 <input type="hidden" name="Id" id="reportId" />
                 <div class="modal-body">
 
@@ -114,12 +98,7 @@
 
                         <div class="col-md-6">
                             <label>Date Uploaded</label>
-                            <input type="date" name="Deadline" id="reportDeadline" class="form-control" required />
-                        </div>
-
-                        <div class="col-md-6">
-                            <label>Attach File</label>
-                            <input type="file" name="Attachment" id="reportAttachment" class="form-control" />
+                            <input type="date" name="DateFrom" id="reportDateFrom" class="form-control" required />
                         </div>
                     </div>
 
@@ -135,6 +114,50 @@
     </div>
 </div>
 
+<style>
+    /* Remove all padding and margins from container */
+    .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+    }
+
+    /* Ensure the top bar/navbar is visible */
+    .navbar, .top-bar, header {
+        position: relative;
+        z-index: 1000;
+    }
+
+    /* Card styling with proper margins */
+    .card {
+        margin: 15px !important;
+        background: white !important;
+        border: none !important;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* Remove any extra spacing from the row */
+    .row {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    /* Dropdown styling */
+    .dropdown-menu {
+        z-index: 9999;
+    }
+
+    /* Table hover effect */
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+
+    /* Ensure no white background on body */
+    body {
+        background: #f0f2f5 !important;
+    }
+</style>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
 
@@ -143,8 +166,7 @@
         const modalSubmitBtn = document.getElementById("modalSubmitBtn");
         const reportId = document.getElementById("reportId");
         const reportTitle = document.getElementById("reportTitle");
-        const reportDeadline = document.getElementById("reportDeadline");
-        const reportAttachment = document.getElementById("reportAttachment");
+        const reportDateFrom = document.getElementById("reportDateFrom");
 
         // Open modal for Create
         document.getElementById("createReportBtn").addEventListener("click", () => {
@@ -152,8 +174,7 @@
             modalSubmitBtn.textContent = "Create";
             reportId.value = "";
             reportTitle.value = "";
-            reportDeadline.value = "";
-            reportAttachment.value = "";
+            reportDateFrom.value = "";
             modal.show();
         });
 
@@ -166,8 +187,7 @@
                 modalSubmitBtn.textContent = "Update";
                 reportId.value = row.dataset.id;
                 reportTitle.value = row.dataset.title;
-                reportDeadline.value = row.dataset.deadline;
-                reportAttachment.value = ""; // file cannot be pre-filled
+                reportDateFrom.value = row.dataset.datefrom;
                 modal.show();
             });
         });
