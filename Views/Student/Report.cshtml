@@ -1,10 +1,10 @@
-﻿@model List<MonitoringSystem.Models.StudentTask>
+﻿@model List<MonitoringSystem.Models.Report>
 
 @{
     Layout = "_StudentLayout";
     ViewData["Title"] = "Report";
     // Fix: Create a local variable to handle null Model
-    var reportList = Model ?? new List<MonitoringSystem.Models.StudentTask>();
+    var reportList = Model ?? new List<MonitoringSystem.Models.Report>();
 }
 
 <div class="container-fluid p-0 m-0" style="background: transparent;">
@@ -12,16 +12,19 @@
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
+                <h4 class="mb-0 fw-semibold">My Reports</h4>
+            </div>
+            <div>
                 <button class="btn btn-primary" id="createReportBtn" data-bs-toggle="modal" data-bs-target="#createReportModal">
-                    Create Report
+                    <i class="bi bi-plus-circle"></i> Create Report
                 </button>
             </div>
         </div>
 
         <div class="row g-3 mb-4 align-items-end">
             <div class="col-md-4">
-                <label class="form-label fw-semibold">Search by Task</label>
-                <input type="text" id="reportSearchInput" class="form-control" placeholder="Type task title..." />
+                <label class="form-label fw-semibold">Search by Report</label>
+                <input type="text" id="reportSearchInput" class="form-control" placeholder="Type report title..." />
             </div>
         </div>
 
@@ -31,23 +34,46 @@
                     <tr>
                         <th class="py-3">Document Type</th>
                         <th class="py-3">Date Uploaded</th>
+                        <th class="py-3">File</th>
                         <th class="py-3 text-center">Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     @if (reportList.Any())
                     {
-                        foreach (var task in reportList)
+                        foreach (var report in reportList)
                         {
-                            <tr data-id="@task.Id" data-title="@task.Title" data-datefrom="@task.DateFrom.ToString("yyyy-MM-dd")">
-                                <td class="py-3">@task.Title</td>
-                                <td class="py-3">@task.DateFrom.ToString("yyyy-MM-dd")</td>
+                            <tr data-id="@report.Id" data-title="@report.Title" data-datefrom="@report.DateFrom.ToString("yyyy-MM-dd")" data-file="@report.FilePath">
+                                <td class="py-3">@report.Title</td>
+                                <td class="py-3">@report.DateFrom.ToString("yyyy-MM-dd")</td>
+                                <td class="py-3">
+                                    @if (!string.IsNullOrEmpty(report.FilePath))
+                                    {
+                                        <a href="@report.FilePath" target="_blank" class="btn btn-sm btn-outline-info">
+                                            <i class="bi bi-file-earmark-text"></i> View File
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No file</span>
+                                    }
+                                </td>
                                 <td class="text-center py-3">
                                     <div class="dropdown">
-                                        <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown"></button>
-                                        <ul class="dropdown-menu shadow" style="z-index:9999;">
-                                            <li><a class="dropdown-item edit-report" href="#">Edit</a></li>
-                                            <li><a class="dropdown-item text-danger" href="/Student/Delete/@task.Id">Delete</a></li>
+                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-chevron-down"></i>
+                                        </button>
+                                        <ul class="dropdown-menu shadow">
+                                            <li>
+                                                <a class="dropdown-item edit-report" href="#" data-id="@report.Id" data-title="@report.Title" data-datefrom="@report.DateFrom.ToString("yyyy-MM-dd")" data-file="@report.FilePath">
+                                                    <i class="bi bi-pencil"></i> Edit
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item text-danger delete-report" href="#" data-id="@report.Id" data-title="@report.Title">
+                                                    <i class="bi bi-trash"></i> Delete
+                                                </a>
+                                            </li>
                                         </ul>
                                     </div>
                                 </td>
@@ -57,16 +83,10 @@
                     else
                     {
                         <tr>
-                            <td class="py-3">Sample Report</td>
-                            <td class="py-3">2026-02-26</td>
-                            <td class="text-center py-3">
-                                <div class="dropdown">
-                                    <button class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown"></button>
-                                    <ul class="dropdown-menu shadow" style="z-index:9999;">
-                                        <li><a class="dropdown-item edit-report" href="#">Edit</a></li>
-                                        <li><a class="dropdown-item text-danger" href="#">Delete</a></li>
-                                    </ul>
-                                </div>
+                            <td colspan="4" class="text-center py-5">
+                                <i class="bi bi-folder2-open" style="font-size: 48px; color: #ccc;"></i>
+                                <p class="text-muted mt-2 mb-0">No reports found</p>
+                                <small class="text-muted">Click "Create Report" to add your first report</small>
                             </td>
                         </tr>
                     }
@@ -76,40 +96,81 @@
     </div>
 </div>
 
-<!-- CREATE REPORT MODAL -->
+<!-- CREATE/EDIT REPORT MODAL - LARGER SIZE -->
 <div class="modal fade" id="createReportModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content p-4 rounded-4">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4">
 
-            <div class="modal-header">
-                <h5 id="modalTitle">Create Report</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header border-0 pb-0">
+                <h5 id="modalTitle" class="fw-semibold">Create Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
 
-            <form asp-action="CreateReport" asp-controller="Student" method="post" id="reportForm">
+            <form asp-action="CreateReport" asp-controller="Student" method="post" id="reportForm" enctype="multipart/form-data">
                 <input type="hidden" name="Id" id="reportId" />
-                <div class="modal-body">
+                <div class="modal-body pt-0">
 
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label>Report Type</label>
-                            <input type="text" name="Title" id="reportTitle" class="form-control" required />
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Report Type</label>
+                        <input type="text" name="Title" id="reportTitle" class="form-control form-control-lg" placeholder="Enter report title" required />
+                    </div>
 
-                        <div class="col-md-6">
-                            <label>Date Uploaded</label>
-                            <input type="date" name="DateFrom" id="reportDateFrom" class="form-control" required />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date Uploaded</label>
+                        <input type="date" name="DateFrom" id="reportDateFrom" class="form-control form-control-lg" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Attachment File</label>
+                        <input type="file" name="AttachmentFile" id="attachmentFile" class="form-control form-control-lg" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> Supported formats: PDF, DOC, DOCX, JPG, PNG (Max size: 10MB)
+                        </small>
+                        <div id="currentFileDisplay" style="display:none; margin-top: 10px;">
+                            <span class="badge bg-info">
+                                <i class="bi bi-file-earmark"></i> Current file: <span id="currentFileName"></span>
+                            </span>
                         </div>
                     </div>
 
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn text-white" style="background-color:#FE5252;" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn text-white" style="background-color:#02B508;" id="modalSubmitBtn">Create</button>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success" id="modalSubmitBtn">
+                        <i class="bi bi-check-circle"></i> Create
+                    </button>
                 </div>
             </form>
 
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle text-danger"></i> Confirm Delete
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete "<span id="deleteReportTitle" class="fw-semibold"></span>"?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-circle"></i> This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                    <i class="bi bi-trash"></i> Delete
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -156,25 +217,85 @@
     body {
         background: #f0f2f5 !important;
     }
+
+    /* Button icons spacing */
+    .btn i {
+        margin-right: 5px;
+    }
+
+    /* Dropdown item icons */
+    .dropdown-item i {
+        margin-right: 8px;
+    }
+
+    /* Empty state styling */
+    .table tbody tr td {
+        padding: 40px 20px;
+    }
+
+    /* Modal styling */
+    .modal-content {
+        border: none;
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    /* Larger form controls */
+    .form-control-lg {
+        font-size: 1rem;
+        padding: 0.75rem 1rem;
+    }
+
+    /* Button styles */
+    .btn-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: white;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background-color: #c82333;
+        border-color: #bd2130;
+    }
+
+    .btn-success:hover {
+        background-color: #218838;
+        border-color: #1e7e34;
+    }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
 
         const modal = new bootstrap.Modal(document.getElementById("createReportModal"));
+        const deleteModal = new bootstrap.Modal(document.getElementById("deleteConfirmModal"));
         const modalTitle = document.getElementById("modalTitle");
         const modalSubmitBtn = document.getElementById("modalSubmitBtn");
         const reportId = document.getElementById("reportId");
         const reportTitle = document.getElementById("reportTitle");
         const reportDateFrom = document.getElementById("reportDateFrom");
+        const attachmentFile = document.getElementById("attachmentFile");
+        const currentFileDisplay = document.getElementById("currentFileDisplay");
+        const currentFileName = document.getElementById("currentFileName");
+        const reportForm = document.getElementById("reportForm");
+
+        let deleteId = null;
 
         // Open modal for Create
         document.getElementById("createReportBtn").addEventListener("click", () => {
             modalTitle.textContent = "Create Report";
-            modalSubmitBtn.textContent = "Create";
+            modalSubmitBtn.innerHTML = '<i class="bi bi-check-circle"></i> Create';
             reportId.value = "";
             reportTitle.value = "";
             reportDateFrom.value = "";
+            attachmentFile.value = "";
+            currentFileDisplay.style.display = "none";
+            reportForm.action = "/Student/CreateReport";
             modal.show();
         });
 
@@ -182,23 +303,131 @@
         document.querySelectorAll(".edit-report").forEach(btn => {
             btn.addEventListener("click", function (e) {
                 e.preventDefault();
-                const row = e.target.closest("tr");
+
                 modalTitle.textContent = "Edit Report";
-                modalSubmitBtn.textContent = "Update";
-                reportId.value = row.dataset.id;
-                reportTitle.value = row.dataset.title;
-                reportDateFrom.value = row.dataset.datefrom;
+                modalSubmitBtn.innerHTML = '<i class="bi bi-pencil"></i> Update';
+                reportId.value = this.dataset.id;
+                reportTitle.value = this.dataset.title;
+                reportDateFrom.value = this.dataset.datefrom;
+                attachmentFile.value = "";
+
+                // Show current file if exists
+                if (this.dataset.file && this.dataset.file !== "") {
+                    currentFileName.textContent = this.dataset.file.split('/').pop();
+                    currentFileDisplay.style.display = "block";
+                } else {
+                    currentFileDisplay.style.display = "none";
+                }
+
+                reportForm.action = "/Student/EditReport";
                 modal.show();
             });
         });
 
-        // Search
-        document.getElementById("reportSearchInput").addEventListener("input", function () {
-            let value = this.value.toLowerCase();
-            document.querySelectorAll("#reportTable tbody tr").forEach(row => {
-                row.style.display = row.dataset.title?.toLowerCase().includes(value) ? "" : "none";
+        // Handle Delete with confirmation
+        document.querySelectorAll(".delete-report").forEach(btn => {
+            btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                deleteId = this.dataset.id;
+                const title = this.dataset.title;
+                document.getElementById("deleteReportTitle").textContent = title;
+                deleteModal.show();
             });
         });
 
+        // Confirm delete
+        document.getElementById("confirmDeleteBtn").addEventListener("click", function() {
+            if (deleteId) {
+                window.location.href = `/Student/DeleteReport/${deleteId}`;
+            }
+        });
+
+        // Search functionality
+        document.getElementById("reportSearchInput").addEventListener("input", function () {
+            let value = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll("#reportTable tbody tr");
+            let hasVisibleRows = false;
+
+            rows.forEach(row => {
+                // Skip the "no results" row if it exists
+                if (row.classList && row.classList.contains("no-results-row")) return;
+
+                const title = row.dataset.title;
+                if (title && title.toLowerCase().includes(value)) {
+                    row.style.display = "";
+                    hasVisibleRows = true;
+                } else if (row.dataset.title) {
+                    row.style.display = "none";
+                }
+            });
+
+            // Show "no results" message if needed
+            const tbody = document.querySelector("#reportTable tbody");
+            let noResultsRow = tbody.querySelector(".no-results-row");
+
+            if (!hasVisibleRows && document.querySelectorAll("#reportTable tbody tr[data-id]").length > 0) {
+                if (!noResultsRow) {
+                    noResultsRow = document.createElement("tr");
+                    noResultsRow.className = "no-results-row";
+                    noResultsRow.innerHTML = '<td colspan="4" class="text-center py-5"><i class="bi bi-search" style="font-size: 48px; color: #ccc;"></i><p class="text-muted mt-2 mb-0">No matching reports found</p>';
+                    tbody.appendChild(noResultsRow);
+                }
+            } else if (noResultsRow) {
+                noResultsRow.remove();
+            }
+        });
+
+        // File validation
+        attachmentFile.addEventListener("change", function() {
+            const file = this.files[0];
+            if (file) {
+                const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/jpeg', 'image/png'];
+                const maxSize = 10 * 1024 * 1024; // 10MB
+
+                if (!allowedTypes.includes(file.type)) {
+                    alert("Invalid file type. Please upload PDF, DOC, DOCX, JPG, or PNG files only.");
+                    this.value = "";
+                    return;
+                }
+
+                if (file.size > maxSize) {
+                    alert("File size too large. Maximum size is 10MB.");
+                    this.value = "";
+                    return;
+                }
+            }
+        });
+
+        // Form validation before submit
+        reportForm.addEventListener("submit", function(e) {
+            if (!reportTitle.value.trim()) {
+                e.preventDefault();
+                alert("Please enter a report title");
+                reportTitle.focus();
+                return false;
+            }
+            if (!reportDateFrom.value) {
+                e.preventDefault();
+                alert("Please select a date");
+                reportDateFrom.focus();
+                return false;
+            }
+            return true;
+        });
+
+        // Show success/error messages
+        @if (TempData["SuccessMessage"] != null)
+        {
+                <text>
+                alert('@TempData["SuccessMessage"]');
+                </text>
+        }
+
+        @if (TempData["ErrorMessage"] != null)
+        {
+                <text>
+                alert('@TempData["ErrorMessage"]');
+                </text>
+        }
     });
 </script>

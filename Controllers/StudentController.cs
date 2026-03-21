@@ -44,9 +44,189 @@ namespace MonitoringSystem.Controllers
         }
 
         // GET: /Student/Report
-        public IActionResult Report()
+        public async Task<IActionResult> Report()
         {
-            return View();
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                var reports = await _context.Reports
+                    .Where(r => r.StudentId == userId)
+                    .OrderByDescending(r => r.DateFrom)
+                    .ToListAsync();
+
+                return View(reports);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting reports: {ex.Message}");
+                return View(new List<Report>());
+            }
+        }
+
+        // POST: Student/CreateReport
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateReport(Report model, IFormFile AttachmentFile)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "User not authenticated";
+                    return RedirectToAction("Report");
+                }
+
+                // Handle file upload
+                if (AttachmentFile != null && AttachmentFile.Length > 0)
+                {
+                    string uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "reports");
+                    if (!Directory.Exists(uploadFolder))
+                    {
+                        Directory.CreateDirectory(uploadFolder);
+                    }
+
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + AttachmentFile.FileName;
+                    string filePath = Path.Combine(uploadFolder, uniqueFileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await AttachmentFile.CopyToAsync(stream);
+                    }
+
+                    model.FilePath = "/uploads/reports/" + uniqueFileName;
+                }
+
+                model.StudentId = userId;
+                model.DateFrom = model.DateFrom.Date;
+
+                _context.Reports.Add(model);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Report created successfully!";
+                return RedirectToAction("Report");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error creating report: {ex.Message}");
+                TempData["ErrorMessage"] = "Error creating report";
+                return RedirectToAction("Report");
+            }
+        }
+
+        // POST: Student/EditReport
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditReport(Report model, IFormFile AttachmentFile)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "User not authenticated";
+                    return RedirectToAction("Report");
+                }
+
+                var existingReport = await _context.Reports
+                    .FirstOrDefaultAsync(r => r.Id == model.Id && r.StudentId == userId);
+
+                if (existingReport == null)
+                {
+                    TempData["ErrorMessage"] = "Report not found";
+                    return RedirectToAction("Report");
+                }
+
+                existingReport.Title = model.Title;
+                existingReport.DateFrom = model.DateFrom.Date;
+
+                // Handle new file upload
+                if (AttachmentFile != null && AttachmentFile.Length > 0)
+                {
+                    // Delete old file if exists
+                    if (!string.IsNullOrEmpty(existingReport.FilePath))
+                    {
+                        string oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", existingReport.FilePath.TrimStart('/'));
+                        if (System.IO.File.Exists(oldFilePath))
+                        {
+                            System.IO.File.Delete(oldFilePath);
+                        }
+                    }
+
+                    // Upload new file
+                    string uploadFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "reports");
+                    if (!Directory.Exists(uploadFolder))
+                    {
+                        Directory.CreateDirectory(uploadFolder);
+                    }
+
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + AttachmentFile.FileName;
+                    string filePath = Path.Combine(uploadFolder, uniqueFileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await AttachmentFile.CopyToAsync(stream);
+                    }
+
+                    existingReport.FilePath = "/uploads/reports/" + uniqueFileName;
+                }
+
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Report updated successfully!";
+                return RedirectToAction("Report");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating report: {ex.Message}");
+                TempData["ErrorMessage"] = "Error updating report";
+                return RedirectToAction("Report");
+            }
+        }
+
+        // GET: Student/DeleteReport/5
+        public async Task<IActionResult> DeleteReport(int id)
+        {
+            try
+            {
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    TempData["ErrorMessage"] = "User not authenticated";
+                    return RedirectToAction("Report");
+                }
+
+                var report = await _context.Reports
+                    .FirstOrDefaultAsync(r => r.Id == id && r.StudentId == userId);
+
+                if (report == null)
+                {
+                    TempData["ErrorMessage"] = "Report not found";
+                    return RedirectToAction("Report");
+                }
+
+                // Delete file from server
+                if (!string.IsNullOrEmpty(report.FilePath))
+                {
+                    string filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", report.FilePath.TrimStart('/'));
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+
+                _context.Reports.Remove(report);
+                await _context.SaveChangesAsync();
+
+                TempData["SuccessMessage"] = "Report deleted successfully!";
+                return RedirectToAction("Report");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error deleting report: {ex.Message}");
+                TempData["ErrorMessage"] = "Error deleting report";
+                return RedirectToAction("Report");
+            }
         }
 
         // ===================== TEST REPORT ACTION =====================

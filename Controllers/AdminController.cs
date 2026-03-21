@@ -894,7 +894,7 @@ namespace MonitoringSystem.Controllers
             ", "text/html");
         }
 
-        // API: Get dashboard data for charts
+        // API: Get dashboard data for charts - UPDATED WITH REPORTS DATA
         [HttpGet]
         public async Task<IActionResult> GetDashboardData(int year)
         {
@@ -926,6 +926,7 @@ namespace MonitoringSystem.Controllers
 
                 var pendingUsers = new List<int>();
                 var tasksSubmitted = new List<int>();
+                var reportsSubmitted = new List<int>(); // NEW: For reports data
                 var monthlyUsers = new List<int>();
                 var monthlyCompanies = new List<int>();
 
@@ -941,7 +942,15 @@ namespace MonitoringSystem.Controllers
                             && u.CreatedAt <= endDate);
                     pendingUsers.Add(pendingCount);
 
-                    tasksSubmitted.Add(pendingCount + new Random().Next(1, 5));
+                    // Tasks submitted count
+                    var tasksCount = await _context.StudentTasks
+                        .CountAsync(t => t.DateFrom >= startDate && t.DateFrom <= endDate);
+                    tasksSubmitted.Add(tasksCount);
+
+                    // NEW: Reports submitted count
+                    var reportsCount = await _context.Reports
+                        .CountAsync(r => r.DateFrom >= startDate && r.DateFrom <= endDate);
+                    reportsSubmitted.Add(reportsCount);
 
                     var usersCount = await _userManager.Users
                         .CountAsync(u => u.Role != "Admin"
@@ -960,6 +969,7 @@ namespace MonitoringSystem.Controllers
                 {
                     pendingUsers = pendingUsers,
                     tasksSubmitted = tasksSubmitted,
+                    reportsSubmitted = reportsSubmitted, // NEW: Include reports data
                     totalUsers = monthlyUsers,
                     totalCompanies = monthlyCompanies,
                     year = year,
@@ -1291,7 +1301,7 @@ namespace MonitoringSystem.Controllers
             return Ok(new { success = true, message = "Profile updated successfully" });
         }
 
-        // API: Delete user
+        // API: Delete user - UPDATED WITH CASCADING DELETE
         [HttpPost]
         public async Task<IActionResult> DeleteUser([FromBody] string userId)
         {
@@ -1309,16 +1319,115 @@ namespace MonitoringSystem.Controllers
                     return Json(new { success = false, message = "You cannot delete your own account" });
                 }
 
-                var result = await _userManager.DeleteAsync(user);
-                if (result.Succeeded)
+                // First, delete all related data for this user
+                try
                 {
-                    return Json(new { success = true, message = "User deleted successfully" });
-                }
+                    // Delete Reports and their physical files
+                    var reports = await _context.Reports.Where(r => r.StudentId == user.Id).ToListAsync();
+                    if (reports.Any())
+                    {
+                        foreach (var report in reports)
+                        {
+                            if (!string.IsNullOrEmpty(report.FilePath))
+                            {
+                                var filePath = Path.Combine(_webHostEnvironment.WebRootPath, report.FilePath.TrimStart('/'));
+                                if (System.IO.File.Exists(filePath))
+                                {
+                                    System.IO.File.Delete(filePath);
+                                }
+                            }
+                        }
+                        _context.Reports.RemoveRange(reports);
+                    }
 
-                return Json(new { success = false, message = "Failed to delete user" });
+                    // Delete StudentTasks
+                    var studentTasks = await _context.StudentTasks.Where(t => t.UserId == user.Id).ToListAsync();
+                    if (studentTasks.Any())
+                    {
+                        _context.StudentTasks.RemoveRange(studentTasks);
+                    }
+
+                    // Delete TimeLogs
+                    var timeLogs = await _context.TimeLogs.Where(t => t.UserId == user.Id).ToListAsync();
+                    if (timeLogs.Any())
+                    {
+                        _context.TimeLogs.RemoveRange(timeLogs);
+                    }
+
+                    // Delete TimeLogSubmissions
+                    var timeLogSubmissions = await _context.StudentTimeLogs.Where(t => t.StudentId == user.Id).ToListAsync();
+                    if (timeLogSubmissions.Any())
+                    {
+                        _context.StudentTimeLogs.RemoveRange(timeLogSubmissions);
+                    }
+
+                    // Delete Tasks (assigned tasks)
+                    var tasks = await _context.Tasks.Where(t => t.StudentId == user.Id).ToListAsync();
+                    if (tasks.Any())
+                    {
+                        _context.Tasks.RemoveRange(tasks);
+                    }
+
+                    // Delete Documents uploaded by this user
+                    var documents = await _context.Documents.Where(d => d.UploadedBy == user.Id).ToListAsync();
+                    if (documents.Any())
+                    {
+                        _context.Documents.RemoveRange(documents);
+                    }
+
+                    // If user is a Company, delete company record
+                    if (user.Role == "Company")
+                    {
+                        var company = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == user.Id);
+                        if (company != null)
+                        {
+                            _context.Companies.Remove(company);
+                        }
+                    }
+
+                    // If user is a Student, delete student record
+                    if (user.Role == "Student")
+                    {
+                        var student = await _context.Students.FirstOrDefaultAsync(s => s.UserId == user.Id);
+                        if (student != null)
+                        {
+                            _context.Students.Remove(student);
+                        }
+                    }
+
+                    // If user is an Admin, delete admin record
+                    if (user.Role == "Admin")
+                    {
+                        var admin = await _context.Admins.FirstOrDefaultAsync(a => a.UserId == user.Id);
+                        if (admin != null)
+                        {
+                            _context.Admins.Remove(admin);
+                        }
+                    }
+
+                    // Save all changes before deleting the user
+                    await _context.SaveChangesAsync();
+
+                    // Finally, delete the user
+                    var result = await _userManager.DeleteAsync(user);
+                    if (result.Succeeded)
+                    {
+                        _logger.LogInformation($"User deleted successfully: {user.Email}");
+                        return Json(new { success = true, message = "User deleted successfully" });
+                    }
+
+                    return Json(new { success = false, message = "Failed to delete user: " + string.Join(", ", result.Errors.Select(e => e.Description)) });
+                }
+                catch (DbUpdateException ex)
+                {
+                    var innerException = ex.InnerException?.Message ?? "No inner exception";
+                    _logger.LogError($"Database error while deleting user {user.Email}: {ex.Message}. Inner: {innerException}");
+                    return Json(new { success = false, message = $"Database error: {innerException}" });
+                }
             }
             catch (Exception ex)
             {
+                _logger.LogError($"Error deleting user: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }

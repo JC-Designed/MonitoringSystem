@@ -31,6 +31,9 @@ namespace MonitoringSystem.Models
         // ===== ADD STUDENT TIME LOGS DbSet (RENAMED) =====
         public DbSet<TimeLogSubmission> StudentTimeLogs { get; set; }
 
+        // ===== ADD REPORTS DbSet =====
+        public DbSet<Report> Reports { get; set; }  // ADD THIS LINE
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -73,6 +76,10 @@ namespace MonitoringSystem.Models
             builder.Entity<TimeLogSubmission>()
                 .ToTable(tb => tb.HasTrigger("StudentTimeLogs_Trigger"));
 
+            // ===== ADD TRIGGER CONFIGURATION FOR REPORTS TABLE =====
+            builder.Entity<Report>()
+                .ToTable(tb => tb.HasTrigger("Reports_Trigger"));
+
             // ===================== CONFIGURE ONE-TO-ONE RELATIONSHIPS =====================
 
             // Student - User (one-to-one)
@@ -110,6 +117,9 @@ namespace MonitoringSystem.Models
 
             // ===== RENAMED TABLE: TimeLogSubmissions -> StudentTimeLogs =====
             builder.Entity<TimeLogSubmission>().ToTable("StudentTimeLogs");
+
+            // ===== CONFIGURE TABLE NAME FOR REPORTS =====
+            builder.Entity<Report>().ToTable("Reports");
 
             // ===================== CONFIGURE INDEXES =====================
             builder.Entity<Student>()
@@ -172,7 +182,16 @@ namespace MonitoringSystem.Models
                 .HasIndex(t => t.SubmissionDate)
                 .HasDatabaseName("IX_StudentTimeLogs_SubmissionDate");
 
-            // ===== CONFIGURE STUDENT TASK PROPERTIES (UPDATED) =====
+            // ===== ADD INDEXES FOR REPORTS =====
+            builder.Entity<Report>()
+                .HasIndex(r => r.StudentId)
+                .HasDatabaseName("IX_Reports_StudentId");
+
+            builder.Entity<Report>()
+                .HasIndex(r => r.DateFrom)
+                .HasDatabaseName("IX_Reports_DateFrom");
+
+            // ===== CONFIGURE STUDENT TASK PROPERTIES =====
             builder.Entity<StudentTask>()
                 .Property(t => t.Title)
                 .IsRequired()
@@ -211,6 +230,25 @@ namespace MonitoringSystem.Models
             builder.Entity<TimeLogSubmission>()
                 .Property(t => t.IsRead)
                 .HasDefaultValue(false);
+
+            // ===== CONFIGURE REPORT PROPERTIES =====
+            builder.Entity<Report>()
+                .Property(r => r.Title)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            builder.Entity<Report>()
+                .Property(r => r.DateFrom)
+                .IsRequired();
+
+            builder.Entity<Report>()
+                .Property(r => r.FilePath)
+                .HasMaxLength(500);
+
+            builder.Entity<Report>()
+                .Property(r => r.StudentId)
+                .IsRequired()
+                .HasMaxLength(450);
         }
     }
 }

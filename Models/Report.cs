@@ -1,14 +1,22 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace MonitoringSystem.Models
 {
     public class Report
     {
+        [Key]
         public int Id { get; set; }
-        public string ReporterName { get; set; } = string.Empty;
-        public string ReporterType { get; set; } = string.Empty;
-        public string Status { get; set; } = "Unread";
-        public string Details { get; set; } = string.Empty;
-        public DateTime DateSubmitted { get; set; }
+
+        [Required]
+        public string Title { get; set; }
+
+        [Required]
+        [DataType(DataType.Date)]
+        public DateTime DateFrom { get; set; }
+
+        public string FilePath { get; set; }
+
+        public string StudentId { get; set; }
     }
 }

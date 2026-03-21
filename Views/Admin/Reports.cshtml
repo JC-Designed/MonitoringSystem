@@ -12,9 +12,9 @@
 @inject ApplicationDbContext Context
 
 @{
-    // Get all students with their related data
+    // Get all APPROVED students with their related data
     var students = await Context.Users
-        .Where(u => u.Role == "Student")
+        .Where(u => u.Role == "Student" && u.Status == "Approved")
         .OrderBy(u => u.FullName)
         .Select(u => new
         {
@@ -50,8 +50,9 @@
         companies = new Dictionary<int, string>();
     }
 
-    // Get all tasks for students
+    // Get all tasks for APPROVED students
     var tasks = await Context.Tasks
+        .Where(t => Context.Users.Any(u => u.Id == t.StudentId && u.Status == "Approved"))
         .OrderByDescending(t => t.CreatedAt)
         .Select(t => new
         {
@@ -66,8 +67,9 @@
         })
         .ToListAsync();
 
-    // Get all documents for students with Read/Unread status
+    // Get all documents for APPROVED students with Read/Unread status
     var documents = await Context.Documents
+        .Where(d => Context.Users.Any(u => u.Id == d.UploadedBy && u.Status == "Approved"))
         .OrderByDescending(d => d.UploadedAt)
         .Select(d => new
         {
@@ -85,8 +87,9 @@
         })
         .ToListAsync();
 
-    // Get all time log submissions with Read/Unread status
+    // Get all time log submissions for APPROVED students with Read/Unread status
     var timeLogSubmissions = await Context.StudentTimeLogs
+        .Where(s => Context.Users.Any(u => u.Id == s.StudentId && u.Status == "Approved"))
         .OrderByDescending(s => s.SubmissionDate)
         .Select(s => new
         {
@@ -105,6 +108,23 @@
             AdminRemarks = s.AdminRemarks ?? "",
             ProcessedDate = s.ProcessedDate,
             MonthName = GetMonthName(s.Month)
+        })
+        .ToListAsync();
+
+    // Get all reports for APPROVED students
+    var reports = await Context.Reports
+        .Where(r => Context.Users.Any(u => u.Id == r.StudentId && u.Status == "Approved"))
+        .OrderByDescending(r => r.DateFrom)
+        .Select(r => new
+        {
+            r.Id,
+            r.Title,
+            r.DateFrom,
+            r.FilePath,
+            r.StudentId,
+            Type = "Report",
+            Status = "Unread",
+            IsRead = false
         })
         .ToListAsync();
 }
@@ -575,10 +595,9 @@
         <div style="width:20%;" class="text-end">Action</div>
     </div>
 
-    <!-- CARDS CONTAINER - UPDATED TO SORT UNREAD ON TOP WITH SAFE COMPANY NAME -->
+    <!-- CARDS CONTAINER -->
     <div id="cardsContainer">
         @{
-            // Create a list of students with their unread status and sort unread first
             var studentsWithStatus = new List<dynamic>();
 
             foreach (var student in students)
@@ -586,8 +605,9 @@
                 bool hasUnreadTasks = tasks.Any(t => t.StudentId == student.Id && t.Status == "Unread");
                 bool hasUnreadDocuments = documents.Any(d => d.StudentId == student.Id && !d.IsRead);
                 bool hasUnreadTimeLogs = timeLogSubmissions.Any(t => t.StudentId == student.Id && !t.IsRead);
+                bool hasUnreadReports = reports.Any(r => r.StudentId == student.Id && r.Status == "Unread");
 
-                bool hasUnread = hasUnreadTasks || hasUnreadDocuments || hasUnreadTimeLogs;
+                bool hasUnread = hasUnreadTasks || hasUnreadDocuments || hasUnreadTimeLogs || hasUnreadReports;
                 string status = hasUnread ? "Unread" : "Read";
 
                 studentsWithStatus.Add(new
@@ -595,11 +615,10 @@
                     Student = student,
                     HasUnread = hasUnread,
                     Status = status,
-                    SortOrder = hasUnread ? 0 : 1 // Unread first (0), then Read (1)
+                    SortOrder = hasUnread ? 0 : 1
                 });
             }
 
-            // Sort by HasUnread (true first) then by name
             var sortedStudents = studentsWithStatus
             .OrderBy(s => s.SortOrder)
             .ThenBy(s => s.Student.FullName)
@@ -611,7 +630,6 @@
             var student = item.Student;
             var status = item.Status;
 
-            // ULTRA SAFE way to get company name - with multiple null checks
             string companyName = "";
             try
             {
@@ -647,7 +665,6 @@
                  data-student-key="@student.Id"
                  data-hasunread="@(status == "Unread" ? "true" : "false")">
 
-                <!-- STUDENT INFO -->
                 <div class="student-section">
                     <img src="@(string.IsNullOrEmpty(student.ProfileImage) ? "/images/defaultpicture.jpg" : student.ProfileImage)"
                          class="profile-thumb"
@@ -661,19 +678,16 @@
                     </div>
                 </div>
 
-                <!-- PROGRAM -->
                 <div class="program">
                     @student.Program
                 </div>
 
-                <!-- STATUS -->
                 <div style="width:20%;" class="status-container">
                     <span class="status-badge @(status == "Unread" ? "status-unread" : "status-read")">
                         @status
                     </span>
                 </div>
 
-                <!-- ACTION -->
                 <div style="width:20%;" class="text-end">
                     <button class="action-icon preview-btn" title="View Student Details">
                         <i class="bi bi-eye"></i>
@@ -690,7 +704,6 @@
         <i class="bi bi-arrow-left"></i> Back to Reports
     </button>
 
-    <!-- Profile Picture -->
     <div class="mb-4 text-center text-md-start">
         <img id="previewProfilePic" src="/images/defaultpicture.jpg"
              class="rounded-circle shadow"
@@ -699,7 +712,6 @@
              onerror="this.src='/images/defaultpicture.jpg';">
     </div>
 
-    <!-- Student Info Card -->
     <div class="card shadow-sm rounded-4 p-4 student-info-card">
         <h5 class="fw-bold border-bottom pb-2 mb-4">Student Information</h5>
         <div class="row g-4">
@@ -738,18 +750,17 @@
                         <th>Date Uploaded</th>
                         <th>Read Status</th>
                         <th>Download</th>
-                    </tr>
                 </thead>
                 <tbody id="tasksTableBody">
-                    <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view tasks</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view tasks</td>
                 </tbody>
             </table>
         </div>
     </div>
 
-    <!-- DOCUMENTS SECTION -->
+    <!-- DOCUMENTS & REPORTS SECTION -->
     <div class="d-flex justify-content-between align-items-center mt-5">
-        <h5 class="fw-bold mb-0">Documents</h5>
+        <h5 class="fw-bold mb-0">Documents & Reports</h5>
         <div>
             <button id="downloadDocumentsBtn" class="btn btn-danger">
                 <i class="bi bi-download"></i> Download Selected
@@ -767,10 +778,9 @@
                         <th>Date</th>
                         <th>Read Status</th>
                         <th>Download</th>
-                    </tr>
                 </thead>
                 <tbody id="documentsTableBody">
-                    <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view documents</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">Select a student to view documents and reports</td>
                 </tbody>
             </table>
         </div>
@@ -797,32 +807,29 @@
                         <th>Submission Date</th>
                         <th>Read Status</th>
                         <th>Download</th>
-                    </tr>
                 </thead>
                 <tbody id="timeLogsTableBody">
-                    <tr><td colspan="6" class="text-center text-muted py-4">Select a student to view time logs</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted py-4">Select a student to view time logs</td>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Hidden anti-forgery token for AJAX requests -->
 @Html.AntiForgeryToken()
 
 <script>
     (function() {
         'use strict';
 
-        // ===== STATE MANAGEMENT =====
         const AppState = {
             currentStudentId: null,
             students: @Html.Raw(Json.Serialize(students)),
             tasks: @Html.Raw(Json.Serialize(tasks)),
             documents: @Html.Raw(Json.Serialize(documents)),
             timeLogs: @Html.Raw(Json.Serialize(timeLogSubmissions)),
+            reports: @Html.Raw(Json.Serialize(reports)),
 
-            // Cache DOM elements
             elements: {
                 cardsContainer: document.getElementById('cardsContainer'),
                 mainReports: document.getElementById('studentsTab'),
@@ -841,7 +848,6 @@
             }
         };
 
-        // ===== UTILITY FUNCTIONS =====
         const Utils = {
             formatDate(dateString) {
                 if (!dateString) return '—';
@@ -857,10 +863,8 @@
             },
 
             getMonthName(month) {
-                const months = [
-                    'January', 'February', 'March', 'April', 'May', 'June',
-                    'July', 'August', 'September', 'October', 'November', 'December'
-                ];
+                const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'];
                 return months[month - 1] || 'Unknown';
             },
 
@@ -883,7 +887,6 @@
                 `;
 
                 toastContainer.appendChild(toast);
-
                 setTimeout(() => {
                     if (toast.parentElement) {
                         toast.style.animation = 'slideOut 0.3s ease';
@@ -899,52 +902,52 @@
             getStudentInfo(studentId) {
                 const student = AppState.students.find(s => s.id === studentId);
                 const studentCard = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
-                return {
-                    student: student,
-                    card: studentCard
-                };
+                return { student: student, card: studentCard };
             },
 
-            // API call to mark document as read
             async markDocumentAsRead(docId) {
                 try {
                     const token = this.getAntiForgeryToken();
                     const response = await fetch(`/Admin/MarkDocumentAsRead/${docId}`, {
                         method: 'POST',
-                        headers: {
-                            'RequestVerificationToken': token,
-                            'Content-Type': 'application/json'
-                        }
+                        headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
                     });
-                    const data = await response.json();
-                    return data;
+                    return await response.json();
                 } catch (error) {
                     console.error('Error marking document as read:', error);
                     return { success: false };
                 }
             },
 
-            // API call to mark time log as read
             async markTimeLogAsRead(submissionId) {
                 try {
                     const token = this.getAntiForgeryToken();
                     const response = await fetch(`/Admin/MarkTimeLogAsRead/${submissionId}`, {
                         method: 'POST',
-                        headers: {
-                            'RequestVerificationToken': token,
-                            'Content-Type': 'application/json'
-                        }
+                        headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
                     });
-                    const data = await response.json();
-                    return data;
+                    return await response.json();
                 } catch (error) {
                     console.error('Error marking time log as read:', error);
+                    return { success: false };
+                }
+            },
+
+            async markReportAsRead(reportId) {
+                try {
+                    const token = this.getAntiForgeryToken();
+                    const response = await fetch(`/Admin/MarkReportAsRead/${reportId}`, {
+                        method: 'POST',
+                        headers: { 'RequestVerificationToken': token, 'Content-Type': 'application/json' }
+                    });
+                    return await response.json();
+                } catch (error) {
+                    console.error('Error marking report as read:', error);
                     return { success: false };
                 }
             }
         };
 
-        // ===== FILTER FUNCTIONS =====
         const FilterManager = {
             filterCards() {
                 const searchTerm = AppState.elements.searchName.value.toLowerCase();
@@ -976,7 +979,6 @@
             }
         };
 
-        // ===== TASK FUNCTIONS - DOWNLOAD ONLY WITH TEXT BUTTON =====
         const TaskManager = {
             renderTasksForStudent(studentId) {
                 const studentTasks = AppState.tasks.filter(t => t.studentId === studentId);
@@ -987,13 +989,9 @@
                     return;
                 }
 
-                // Sort tasks: Unread first, then by date (newest first)
                 const sortedTasks = [...studentTasks].sort((a, b) => {
-                    // First by status (Unread comes first)
                     if (a.status === 'Unread' && b.status !== 'Unread') return -1;
                     if (a.status !== 'Unread' && b.status === 'Unread') return 1;
-
-                    // Then by date (newest first)
                     return new Date(b.createdAt) - new Date(a.createdAt);
                 });
 
@@ -1008,13 +1006,10 @@
                             <td class="text-center">${task.title || 'Untitled'}</td>
                             <td class="text-center">${date}</td>
                             <td class="text-center"><span class="status-badge ${statusClass}">${status}</span></td>
-                            <td class="text-center">
-                                <button class="download-link download-task-btn">DOWNLOAD</button>
-                            </td>
+                            <td class="text-center"><button class="download-link download-task-btn">DOWNLOAD</button></td>
                         </tr>
                     `;
                 }).join('');
-
                 this.attachDownloadListeners();
             },
 
@@ -1026,13 +1021,8 @@
 
             generateTaskExcel(taskTitle, studentId) {
                 const { student, card } = Utils.getStudentInfo(studentId);
-
-                // Create CSV content
-                let csv = "STUDENT TASK REPORT\n";
-                csv += "=".repeat(50) + "\n\n";
-
-                csv += "STUDENT INFORMATION\n";
-                csv += "-".repeat(30) + "\n";
+                let csv = "STUDENT TASK REPORT\n" + "=".repeat(50) + "\n\n";
+                csv += "STUDENT INFORMATION\n" + "-".repeat(30) + "\n";
                 csv += "Full Name," + (student?.fullName || card?.dataset.name || 'N/A') + "\n";
                 csv += "Student ID," + (student?.studentId || card?.dataset.studentid || 'N/A') + "\n";
                 csv += "Program," + (student?.program || card?.dataset.course || 'N/A') + "\n";
@@ -1040,19 +1030,15 @@
                 csv += "Email," + (student?.email || card?.dataset.email || 'N/A') + "\n";
                 csv += "Mobile Number," + (student?.mobileNumber || card?.dataset.mobilenumber || 'N/A') + "\n";
                 csv += "Company," + (card?.dataset.company || 'N/A') + "\n\n";
-
-                csv += "TASK INFORMATION\n";
-                csv += "-".repeat(30) + "\n";
+                csv += "TASK INFORMATION\n" + "-".repeat(30) + "\n";
                 csv += "Task Title," + taskTitle + "\n";
                 csv += "Status,Completed\n";
                 csv += "Download Date," + new Date().toLocaleDateString() + "\n";
                 csv += "Download Time," + new Date().toLocaleTimeString() + "\n";
 
-                // Create filename
                 const studentName = (student?.fullName || card?.dataset.name || 'Student').replace(/\s+/g, '_');
                 const fileName = `Task_${studentName}_${taskTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.csv`;
 
-                // Download file
                 const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -1062,8 +1048,7 @@
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-
-                Utils.showToast(`Task downloaded as Excel with student information`, 'success');
+                Utils.showToast(`Task downloaded as Excel`, 'success');
             },
 
             handleTaskDownload(e) {
@@ -1079,203 +1064,173 @@
                     statusBadge.classList.add('status-read');
                     statusBadge.textContent = 'Read';
                     row.dataset.taskStatus = 'Read';
-
                     const task = AppState.tasks.find(t => t.id == taskId);
                     if (task) task.status = 'Read';
-
-                    // Update main card status checking ALL sources
                     StudentManager.updateMainCardStatusFromAllSources(studentId);
-
-                    // Re-render tasks to keep unread on top
                     this.renderTasksForStudent(studentId);
                 }
-
                 this.generateTaskExcel(taskTitle, studentId);
-            },
-
-            downloadSelected() {
-                const selectedCheckboxes = document.querySelectorAll('#tasksTable tbody tr .task-checkbox:checked');
-
-                if (selectedCheckboxes.length === 0) {
-                    Utils.showToast('Please select at least one task.', 'error');
-                    return;
-                }
-
-                selectedCheckboxes.forEach(cb => {
-                    const row = cb.closest('tr');
-                    const statusBadge = row.querySelector('.status-badge');
-                    const taskId = row.dataset.taskId;
-                    const taskTitle = row.querySelector('td:nth-child(2)').textContent.trim();
-                    const studentId = row.dataset.studentId;
-
-                    if (statusBadge.classList.contains('status-unread')) {
-                        statusBadge.classList.remove('status-unread');
-                        statusBadge.classList.add('status-read');
-                        statusBadge.textContent = 'Read';
-                        row.dataset.taskStatus = 'Read';
-
-                        const task = AppState.tasks.find(t => t.id == taskId);
-                        if (task) task.status = 'Read';
-
-                        if (studentId) {
-                            StudentManager.updateMainCardStatusFromAllSources(studentId);
-                        }
-                    }
-
-                    this.generateTaskExcel(taskTitle, studentId);
-                });
-
-                // Re-render tasks to keep unread on top
-                if (AppState.currentStudentId) {
-                    this.renderTasksForStudent(AppState.currentStudentId);
-                }
             }
         };
 
-        // ===== DOCUMENT FUNCTIONS - DOWNLOAD ONLY WITH TEXT BUTTON =====
         const DocumentManager = {
             renderDocumentsForStudent(studentId) {
                 const studentDocs = AppState.documents.filter(d => d.studentId === studentId);
+                const studentReports = AppState.reports.filter(r => r.studentId === studentId);
+
+                const allItems = [
+                    ...studentDocs.map(d => ({ ...d, itemType: 'document' })),
+                    ...studentReports.map(r => ({ ...r, itemType: 'report' }))
+                ].sort((a, b) => {
+                    if (a.status === 'Unread' && b.status !== 'Unread') return -1;
+                    if (a.status !== 'Unread' && b.status === 'Unread') return 1;
+                    const dateA = a.uploadedAt || a.dateFrom;
+                    const dateB = b.uploadedAt || b.dateFrom;
+                    return new Date(dateB) - new Date(dateA);
+                });
+
                 const tbody = AppState.elements.documentsTableBody;
 
-                if (studentDocs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No documents found for this student</td></tr>';
+                if (allItems.length === 0) {
+                    tbody.innerHTML = '=<td colspan="5" class="text-center text-muted py-4">No documents or reports found for this student<!td>';
                     return;
                 }
 
-                // Sort documents: Unread first, then by date (newest first)
-                const sortedDocs = [...studentDocs].sort((a, b) => {
-                    // First by status (Unread comes first)
-                    if (!a.isRead && b.isRead) return -1;
-                    if (a.isRead && !b.isRead) return 1;
-
-                    // Then by date (newest first)
-                    return new Date(b.uploadedAt) - new Date(a.uploadedAt);
-                });
-
-                tbody.innerHTML = sortedDocs.map(doc => {
-                    const date = Utils.formatDate(doc.uploadedAt);
-                    const status = doc.status || 'Unread';
+                tbody.innerHTML = allItems.map(item => {
+                    const date = Utils.formatDate(item.uploadedAt || item.dateFrom);
+                    const status = item.status || 'Unread';
                     const statusClass = status === 'Unread' ? 'status-unread' : 'status-read';
+                    const name = item.name || item.title;
+                    const itemType = item.itemType;
+                    const typeIcon = itemType === 'document' ? 'bi-file-earmark-text' : 'bi-file-earmark-post';
+                    const typeColor = itemType === 'document' ? '#0d6efd' : '#198754';
+                    const hasFile = itemType === 'document' ? true : (item.filePath && item.filePath !== '');
 
                     return `
-                        <tr data-doc-id="${doc.id}" data-item-type="document" data-student-id="${studentId}" data-doc-status="${status}">
-                            <td class="text-center"><input type="checkbox" class="doc-checkbox" value="${doc.id}"></td>
-                            <td>
-                                <i class="bi bi-file-earmark-text me-2" style="color: #0d6efd;"></i>
-                                ${doc.name}
-                            </td>
-                            <td>${date}</td>
-                            <td><span class="status-badge ${statusClass}">${status}</span></td>
+                        <tr data-${itemType}-id="${item.id}" data-student-id="${studentId}" data-item-type="${itemType}" data-status="${status}">
+                            <td class="text-center"><input type="checkbox" class="${itemType}-checkbox" value="${item.id}" data-type="${itemType}">\(
                             <td class="text-center">
-                                <button class="download-link download-doc-btn">DOWNLOAD</button>
+                                <i class="bi ${typeIcon} me-2" style="color: ${typeColor};"></i>
+                                <span class="badge bg-secondary">${itemType === 'document' ? 'Document' : 'Report'}</span>
+                                ${name}
+                                </td>
+                            <td class="text-center">${date}</td>
+                            <td class="text-center"><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td class="text-center">
+                                ${hasFile ? `<button class="download-link download-${itemType}-btn" data-id="${item.id}" data-type="${itemType}">DOWNLOAD</button>` : '<span class="text-muted">No file</span>'}
                             </td>
-                        </tr>
+                         </tr>
                     `;
                 }).join('');
-
                 this.attachDownloadListeners();
             },
 
             attachDownloadListeners() {
-                document.querySelectorAll('.download-doc-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => this.handleDocumentDownload(e));
+                document.querySelectorAll('.download-document-btn, .download-report-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => this.handleItemDownload(e));
                 });
             },
 
-            async handleDocumentDownload(e) {
+            async handleItemDownload(e) {
                 e.preventDefault();
                 const row = e.currentTarget.closest('tr');
                 const statusBadge = row.querySelector('.status-badge');
-                const docId = row.dataset.docId;
+                const itemId = e.currentTarget.dataset.id;
+                const itemType = e.currentTarget.dataset.type;
                 const studentId = row.dataset.studentId;
 
-                // If document is unread, mark it as read via API
                 if (statusBadge.classList.contains('status-unread')) {
-                    const result = await Utils.markDocumentAsRead(docId);
+                    let result;
+                    if (itemType === 'document') {
+                        result = await Utils.markDocumentAsRead(itemId);
+                        if (result.success) {
+                            const doc = AppState.documents.find(d => d.id == itemId);
+                            if (doc) { doc.status = 'Read'; doc.isRead = true; }
+                        }
+                    } else {
+                        result = await Utils.markReportAsRead(itemId);
+                        if (result.success) {
+                            const report = AppState.reports.find(r => r.id == parseInt(itemId));
+                            if (report) { report.status = 'Read'; report.isRead = true; }
+                        }
+                    }
 
                     if (result.success) {
                         statusBadge.classList.remove('status-unread');
                         statusBadge.classList.add('status-read');
                         statusBadge.textContent = 'Read';
-                        row.dataset.docStatus = 'Read';
-
-                        // Update in AppState
-                        const doc = AppState.documents.find(d => d.id == docId);
-                        if (doc) {
-                            doc.status = 'Read';
-                            doc.isRead = true;
-                        }
-
-                        // Update main card status checking ALL sources
+                        row.dataset.status = 'Read';
                         StudentManager.updateMainCardStatusFromAllSources(studentId);
-
-                        // Re-render documents to keep unread on top
                         this.renderDocumentsForStudent(studentId);
                     }
                 }
 
-                // Download the document
-                window.location.href = `/Admin/DownloadDocument/${docId}`;
+                if (itemType === 'document') {
+                    window.location.href = `/Admin/DownloadDocument/${itemId}`;
+                    Utils.showToast('Downloading document...', 'info');
+                } else {
+                    const report = AppState.reports.find(r => r.id == parseInt(itemId));
+                    if (report && report.filePath) {
+                        const link = document.createElement('a');
+                        link.href = report.filePath;
+                        link.download = report.filePath.split('/').pop();
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        Utils.showToast('Report downloaded successfully!', 'success');
+                    } else {
+                        Utils.showToast('No file attached to this report', 'error');
+                    }
+                }
             },
 
             downloadSelected() {
-                const docCheckboxes = document.querySelectorAll('#documentsTable tbody tr .doc-checkbox:checked');
-
-                if (docCheckboxes.length === 0) {
-                    Utils.showToast('Please select at least one document to download.', 'error');
+                const selectedItems = document.querySelectorAll('#documentsTable tbody tr input:checked');
+                if (selectedItems.length === 0) {
+                    Utils.showToast('Please select at least one item to download.', 'error');
                     return;
                 }
 
-                // Create manifest Excel file
-                let csv = "SELECTED DOCUMENTS MANIFEST\n";
-                csv += "=".repeat(50) + "\n";
+                let csv = "SELECTED ITEMS MANIFEST\n" + "=".repeat(50) + "\n";
                 csv += "Generated on:," + new Date().toLocaleString() + "\n\n";
-                csv += "Document Name,Status\n";
+                csv += "Type,Name,Date,Status\n";
 
-                docCheckboxes.forEach(cb => {
+                selectedItems.forEach(cb => {
                     const row = cb.closest('tr');
-                    const name = row.querySelector('td:nth-child(2)').textContent.trim();
+                    const typeCell = row.querySelector('td:nth-child(2)');
+                    const type = typeCell.querySelector('.badge')?.textContent || 'Item';
+                    const name = typeCell.textContent.replace(type, '').trim();
+                    const date = row.querySelector('td:nth-child(3)').textContent.trim();
                     const status = row.querySelector('.status-badge').textContent.trim();
-                    csv += `${name},${status}\n`;
+                    csv += `${type},${name},${date},${status}\n`;
                 });
 
                 const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `Selected_Documents_${new Date().toISOString().split('T')[0]}.csv`;
+                link.download = `Selected_Items_${new Date().toISOString().split('T')[0]}.csv`;
                 link.click();
                 URL.revokeObjectURL(url);
-
-                Utils.showToast(`Generated manifest for ${docCheckboxes.length} document(s)`, 'success');
-                docCheckboxes.forEach(cb => cb.checked = false);
-
-                // Re-render documents to keep unread on top
-                if (AppState.currentStudentId) {
-                    this.renderDocumentsForStudent(AppState.currentStudentId);
-                }
+                Utils.showToast(`Generated manifest for ${selectedItems.length} item(s)`, 'success');
+                selectedItems.forEach(cb => cb.checked = false);
+                if (AppState.currentStudentId) this.renderDocumentsForStudent(AppState.currentStudentId);
             }
         };
 
-        // ===== TIME LOG FUNCTIONS - DOWNLOAD ONLY WITH TEXT BUTTON =====
         const TimeLogManager = {
             renderTimeLogsForStudent(studentId) {
                 const studentTimeLogs = AppState.timeLogs.filter(t => t.studentId === studentId);
                 const tbody = AppState.elements.timeLogsTableBody;
 
                 if (studentTimeLogs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">No time logs found for this student</td></tr>';
+                    tbody.innerHTML = '=<td colspan="6" class="text-center text-muted py-4">No time logs found for this student<!td>';
                     return;
                 }
 
-                // Sort time logs: Unread first, then by date (newest first)
                 const sortedLogs = [...studentTimeLogs].sort((a, b) => {
-                    // First by status (Unread comes first)
                     if (!a.isRead && b.isRead) return -1;
                     if (a.isRead && !b.isRead) return 1;
-
-                    // Then by date (newest first)
                     return new Date(b.submissionDate) - new Date(a.submissionDate);
                 });
 
@@ -1286,18 +1241,15 @@
 
                     return `
                         <tr data-submission-id="${log.id}" data-student-id="${studentId}" data-submission-status="${status}">
-                            <td class="text-center"><input type="checkbox" class="timelog-checkbox" value="${log.id}"></td>
-                            <td>${log.monthName}</td>
-                            <td>${log.totalHours} hrs</td>
-                            <td>${date}</td>
-                            <td><span class="status-badge ${statusClass}">${status}</span></td>
-                            <td class="text-center">
-                                <button class="download-link download-timelog-btn">DOWNLOAD</button>
-                            </td>
-                        </tr>
+                            <td class="text-center"><input type="checkbox" class="timelog-checkbox" value="${log.id}">\(
+                            <td class="text-center">${log.monthName}</td>
+                            <td class="text-center">${log.totalHours} hrs</td>
+                            <td class="text-center">${date}</td>
+                            <td class="text-center"><span class="status-badge ${statusClass}">${status}</span></td>
+                            <td class="text-center"><button class="download-link download-timelog-btn">DOWNLOAD</button></td>
+                         </tr>
                     `;
                 }).join('');
-
                 this.attachDownloadListeners();
             },
 
@@ -1314,77 +1266,23 @@
                 const submissionId = row.dataset.submissionId;
                 const studentId = row.dataset.studentId;
 
-                // If time log is unread, mark it as read via API
                 if (statusBadge.classList.contains('status-unread')) {
                     const result = await Utils.markTimeLogAsRead(submissionId);
-
                     if (result.success) {
                         statusBadge.classList.remove('status-unread');
                         statusBadge.classList.add('status-read');
                         statusBadge.textContent = 'Read';
                         row.dataset.submissionStatus = 'Read';
-
-                        // Update in AppState
                         const timeLog = AppState.timeLogs.find(t => t.id == submissionId);
-                        if (timeLog) {
-                            timeLog.status = 'Read';
-                            timeLog.isRead = true;
-                        }
-
-                        // Update main card status checking ALL sources
+                        if (timeLog) { timeLog.status = 'Read'; timeLog.isRead = true; }
                         StudentManager.updateMainCardStatusFromAllSources(studentId);
-
-                        // Re-render time logs to keep unread on top
                         this.renderTimeLogsForStudent(studentId);
                     }
                 }
-
-                // Download the time log
                 window.downloadTimeLogSubmission(submissionId);
-            },
-
-            downloadSelected() {
-                const selectedCheckboxes = document.querySelectorAll('#timeLogsTable tbody tr .timelog-checkbox:checked');
-
-                if (selectedCheckboxes.length === 0) {
-                    Utils.showToast('Please select at least one time log to download.', 'error');
-                    return;
-                }
-
-                // Create manifest Excel file
-                let csv = "SELECTED TIME LOGS MANIFEST\n";
-                csv += "=".repeat(50) + "\n";
-                csv += "Generated on:," + new Date().toLocaleString() + "\n\n";
-                csv += "Month,Total Hours,Submission Date,Status\n";
-
-                selectedCheckboxes.forEach(cb => {
-                    const row = cb.closest('tr');
-                    const month = row.querySelector('td:nth-child(2)').textContent.trim();
-                    const hours = row.querySelector('td:nth-child(3)').textContent.trim();
-                    const date = row.querySelector('td:nth-child(4)').textContent.trim();
-                    const status = row.querySelector('.status-badge').textContent.trim();
-                    csv += `${month},${hours},${date},${status}\n`;
-                });
-
-                const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `Selected_TimeLogs_${new Date().toISOString().split('T')[0]}.csv`;
-                link.click();
-                URL.revokeObjectURL(url);
-
-                Utils.showToast(`Generated manifest for ${selectedCheckboxes.length} time log(s)`, 'success');
-                selectedCheckboxes.forEach(cb => cb.checked = false);
-
-                // Re-render time logs to keep unread on top
-                if (AppState.currentStudentId) {
-                    this.renderTimeLogsForStudent(AppState.currentStudentId);
-                }
             }
         };
 
-        // ===== TIME LOG FUNCTIONS (GLOBAL) =====
         window.downloadTimeLogSubmission = function(submissionId) {
             const submission = AppState.timeLogs.find(s => s.id === submissionId);
             if (!submission) return;
@@ -1392,25 +1290,15 @@
             try {
                 let logsData = submission.logs;
                 if (typeof logsData === 'string') {
-                    try {
-                        logsData = JSON.parse(logsData);
-                    } catch (e) {
-                        logsData = [];
-                    }
+                    try { logsData = JSON.parse(logsData); } catch (e) { logsData = []; }
                 }
 
                 const { student, card } = Utils.getStudentInfo(submission.studentId);
-
-                // Get current status from the row
                 const row = document.querySelector(`tr[data-submission-id="${submissionId}"]`);
                 const currentStatus = row ? row.querySelector('.status-badge').textContent.trim() : (submission.status || 'Unread');
 
-                // Create Excel/CSV content
-                let csv = "STUDENT TIME LOG REPORT\n";
-                csv += "=".repeat(60) + "\n\n";
-
-                csv += "STUDENT INFORMATION\n";
-                csv += "-".repeat(40) + "\n";
+                let csv = "STUDENT TIME LOG REPORT\n" + "=".repeat(60) + "\n\n";
+                csv += "STUDENT INFORMATION\n" + "-".repeat(40) + "\n";
                 csv += "Full Name," + (submission.studentName || student?.fullName || card?.dataset.name || 'N/A') + "\n";
                 csv += "Student ID," + (student?.studentId || card?.dataset.studentid || 'N/A') + "\n";
                 csv += "Program," + (student?.program || submission.course || card?.dataset.course || 'N/A') + "\n";
@@ -1418,28 +1306,18 @@
                 csv += "Section," + (submission.section || 'N/A') + "\n";
                 csv += "Email," + (student?.email || card?.dataset.email || 'N/A') + "\n";
                 csv += "Mobile Number," + (student?.mobileNumber || card?.dataset.mobilenumber || 'N/A') + "\n\n";
-
-                csv += "TIME LOG DETAILS\n";
-                csv += "-".repeat(40) + "\n";
+                csv += "TIME LOG DETAILS\n" + "-".repeat(40) + "\n";
                 csv += "Month," + submission.monthName + "\n";
                 csv += "Total Hours Rendered," + submission.totalHours + "\n";
                 csv += "Status," + currentStatus + "\n";
                 csv += "Submission Date," + new Date(submission.submissionDate).toLocaleDateString() + "\n\n";
-
-                if (submission.adminRemarks) {
-                    csv += "Admin Remarks," + submission.adminRemarks + "\n\n";
-                }
-
-                csv += "DAILY TIME RECORD\n";
-                csv += "=".repeat(100) + "\n";
-                csv += "Day,AM In,AM Out,PM In,PM Out,OT In,OT Out,Total Hours,Type\n";
-                csv += "-".repeat(100) + "\n";
+                if (submission.adminRemarks) csv += "Admin Remarks," + submission.adminRemarks + "\n\n";
+                csv += "DAILY TIME RECORD\n" + "=".repeat(100) + "\n";
+                csv += "Day,AM In,AM Out,PM In,PM Out,OT In,OT Out,Total Hours,Type\n" + "-".repeat(100) + "\n";
 
                 if (Array.isArray(logsData) && logsData.length > 0) {
                     logsData.sort((a, b) => new Date(a.date) - new Date(b.date)).forEach(log => {
-                        const date = new Date(log.date);
-                        const day = date.getDate();
-
+                        const day = new Date(log.date).getDate();
                         if (log.type === 'regular') {
                             csv += `${day},${log.amIn || '-'},${log.amOut || '-'},${log.pmIn || '-'},${log.pmOut || '-'},${log.otIn || '-'},${log.otOut || '-'},${log.totalHours || 0},Regular\n`;
                         } else {
@@ -1448,18 +1326,14 @@
                     });
                 }
 
-                csv += "\n" + "=".repeat(60) + "\n";
-                csv += "SUMMARY\n";
-                csv += "=".repeat(60) + "\n";
+                csv += "\n" + "=".repeat(60) + "\nSUMMARY\n" + "=".repeat(60) + "\n";
                 csv += "Total Days Worked," + logsData.length + "\n";
                 csv += "Total Hours Rendered," + submission.totalHours + "\n";
                 csv += "Average Hours Per Day," + (logsData.length > 0 ? (submission.totalHours / logsData.length).toFixed(2) : '0') + "\n";
 
-                // Create filename
                 const studentName = (submission.studentName || student?.fullName || 'Student').replace(/\s+/g, '_');
                 const fileName = `TimeLog_${studentName}_${submission.monthName}_${new Date().toISOString().split('T')[0]}.csv`;
 
-                // Download file
                 const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
@@ -1469,30 +1343,24 @@
                 link.click();
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-
-                Utils.showToast('Time log downloaded as Excel with student information!', 'success');
+                Utils.showToast('Time log downloaded!', 'success');
             } catch (error) {
                 console.error('Error downloading time log:', error);
                 Utils.showToast('Error downloading time log', 'error');
             }
         };
 
-        // ===== STUDENT FUNCTIONS =====
         const StudentManager = {
             updateMainCardStatusFromAllSources(studentId) {
                 const card = document.querySelector(`.report-card[data-student-key="${studentId}"]`);
                 if (!card) return;
 
-                // Check if any tasks are unread
                 const hasUnreadTasks = AppState.tasks.some(t => t.studentId === studentId && t.status === 'Unread');
-
-                // Check if any documents are unread
                 const hasUnreadDocuments = AppState.documents.some(d => d.studentId === studentId && !d.isRead);
-
-                // Check if any time logs are unread
                 const hasUnreadTimeLogs = AppState.timeLogs.some(t => t.studentId === studentId && !t.isRead);
+                const hasUnreadReports = AppState.reports.some(r => r.studentId === studentId && r.status === 'Unread');
 
-                const hasUnread = hasUnreadTasks || hasUnreadDocuments || hasUnreadTimeLogs;
+                const hasUnread = hasUnreadTasks || hasUnreadDocuments || hasUnreadTimeLogs || hasUnreadReports;
                 const newStatus = hasUnread ? 'Unread' : 'Read';
 
                 const statusContainer = card.querySelector('.status-container .status-badge');
@@ -1500,40 +1368,26 @@
                 statusContainer.textContent = newStatus;
                 card.dataset.status = newStatus;
                 card.dataset.hasunread = hasUnread ? 'true' : 'false';
-
                 FilterManager.filterCards();
-            },
-
-            updateMainCardStatus(studentId) {
-                this.updateMainCardStatusFromAllSources(studentId);
             },
 
             showPreview(card) {
                 AppState.currentStudentId = card.dataset.studentKey;
-
                 TaskManager.renderTasksForStudent(AppState.currentStudentId);
                 DocumentManager.renderDocumentsForStudent(AppState.currentStudentId);
                 TimeLogManager.renderTimeLogsForStudent(AppState.currentStudentId);
 
-                // Update profile picture
-                document.getElementById('previewProfilePic').src = card.dataset.profile && card.dataset.profile.trim() !== ''
-                    ? card.dataset.profile
-                    : '/images/defaultpicture.jpg';
-
-                // Update student info
+                document.getElementById('previewProfilePic').src = card.dataset.profile && card.dataset.profile.trim() !== '' ? card.dataset.profile : '/images/defaultpicture.jpg';
                 document.getElementById('pName').textContent = card.dataset.name || '—';
                 document.getElementById('pStudentID').textContent = card.dataset.studentid || '—';
                 document.getElementById('pCourse').textContent = card.dataset.course || '—';
                 document.getElementById('pYear').textContent = card.dataset.year || '—';
 
-                // Facebook
                 const fbSpan = document.getElementById('pFacebook');
                 const fbUsername = card.dataset.facebook;
                 if (fbUsername && fbUsername.trim() !== '') {
                     fbSpan.innerHTML = `<a href="https://facebook.com/${fbUsername}" target="_blank" class="info-link">${fbUsername}</a>`;
-                } else {
-                    fbSpan.textContent = '—';
-                }
+                } else { fbSpan.textContent = '—'; }
 
                 document.getElementById('pMobileNumber').textContent = card.dataset.mobilenumber || '—';
                 document.getElementById('pAddress').textContent = card.dataset.address || '—';
@@ -1541,18 +1395,13 @@
                 document.getElementById('pBirthdate').textContent = card.dataset.birthdate || '—';
                 document.getElementById('pEmail').textContent = card.dataset.email || '—';
 
-                // Company
                 const companySpan = document.getElementById('pCompany');
                 const company = card.dataset.company;
                 if (company && company.trim() !== '') {
                     companySpan.innerHTML = `<a href="https://www.google.com/search?q=${encodeURIComponent(company)}" target="_blank" class="info-link">${company}</a>`;
-                } else {
-                    companySpan.textContent = '—';
-                }
+                } else { companySpan.textContent = '—'; }
 
                 document.getElementById('pTotalHours').textContent = card.dataset.totalhours || '0';
-
-                // Switch views
                 AppState.elements.mainReports.style.display = 'none';
                 AppState.elements.previewSection.style.display = 'block';
             },
@@ -1561,47 +1410,35 @@
                 document.querySelectorAll('.preview-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         e.preventDefault();
-                        const card = e.currentTarget.closest('.report-card');
-                        this.showPreview(card);
+                        this.showPreview(e.currentTarget.closest('.report-card'));
                     });
                 });
             }
         };
 
-        // ===== INITIALIZATION =====
         function init() {
             FilterManager.init();
             StudentManager.init();
 
-            // Back button
             AppState.elements.backBtn.addEventListener('click', () => {
                 AppState.elements.previewSection.style.display = 'none';
                 AppState.elements.mainReports.style.display = 'block';
                 AppState.currentStudentId = null;
             });
 
-            // Download buttons
             AppState.elements.downloadTemplateBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-
                 if (!AppState.currentStudentId) {
                     Utils.showToast('Please select a student first', 'error');
                     return;
                 }
-
                 const { student, card } = Utils.getStudentInfo(AppState.currentStudentId);
-
-                // Generate template Excel
-                let csv = "TASK TEMPLATE\n";
-                csv += "=".repeat(50) + "\n\n";
+                let csv = "TASK TEMPLATE\n" + "=".repeat(50) + "\n\n";
                 csv += "Generated for:," + (student?.fullName || card?.dataset.name || 'Student') + "\n";
                 csv += "Student ID:," + (student?.studentId || card?.dataset.studentid || 'N/A') + "\n";
                 csv += "Program:," + (student?.program || card?.dataset.course || 'N/A') + "\n";
                 csv += "Date:," + new Date().toLocaleDateString() + "\n\n";
-
-                csv += "TASK TEMPLATE - INSTRUCTIONS\n";
-                csv += "Please fill in the following information:\n\n";
-
+                csv += "TASK TEMPLATE - INSTRUCTIONS\nPlease fill in the following information:\n\n";
                 csv += "Task Name,Description,Due Date,Status,Remarks\n";
                 csv += "Sample Task 1,Enter task description here,YYYY-MM-DD,Pending,\n";
                 csv += "Sample Task 2,Enter task description here,YYYY-MM-DD,Pending,\n";
@@ -1609,34 +1446,22 @@
 
                 const studentName = (student?.fullName || card?.dataset.name || 'Student').replace(/\s+/g, '_');
                 const fileName = `Task_Template_${studentName}_${new Date().toISOString().split('T')[0]}.csv`;
-
                 const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = fileName;
-                document.body.appendChild(link);
                 link.click();
-                document.body.removeChild(link);
                 URL.revokeObjectURL(url);
-
-                Utils.showToast('Task template downloaded as Excel', 'success');
+                Utils.showToast('Task template downloaded', 'success');
             });
 
-            AppState.elements.downloadDocumentsBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                DocumentManager.downloadSelected();
-            });
-
-            AppState.elements.downloadTimeLogsBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                TimeLogManager.downloadSelected();
-            });
+            AppState.elements.downloadDocumentsBtn.addEventListener('click', () => DocumentManager.downloadSelected());
+            AppState.elements.downloadTimeLogsBtn.addEventListener('click', () => TimeLogManager.downloadSelected?.());
 
             console.log('Application initialized successfully');
         }
 
-        // Start the application when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {

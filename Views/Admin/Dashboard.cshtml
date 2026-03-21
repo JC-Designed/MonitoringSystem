@@ -17,7 +17,7 @@
 
     <!-- ===== CHARTS SECTION ===== -->
     <div class="row g-4 mb-4">
-        <!-- Pending Users vs Task Submitted (Pink & Blue) -->
+        <!-- Pending Users vs Reports Submitted -->
         <div class="col-12">
             <div class="card shadow-sm p-4">
                 <h5 class="fw-bold mb-3" id="pendingTaskTitle"></h5>
@@ -61,7 +61,6 @@
                                             <th>Program Code</th>
                                             <th>Required Hours</th>
                                             <th>Actions</th>
-                                        </tr>
                                     </thead>
                                     <tbody id="programHoursBody">
                                         <!-- Will be populated from database -->
@@ -148,7 +147,6 @@
                                         <th>Size</th>
                                         <th>Uploaded</th>
                                         <th>Actions</th>
-                                    </tr>
                                 </thead>
                                 <tbody id="documentsTableBody">
                                     <!-- Will be populated from database -->
@@ -213,23 +211,47 @@
 
         const premiumBarStyle = {
             borderRadius: 8,
-            barPercentage: 0.9,
+            barPercentage: 0.8,
             categoryPercentage: 0.9,
-            maxBarThickness: 60
+            maxBarThickness: 50
         };
 
         const premiumOptions = {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'top' }
+                legend: { position: 'top' },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.raw.toLocaleString();
+                            return label;
+                        }
+                    }
+                }
             },
             scales: {
                 y: {
                     beginAtZero: true,
-                    grid: { color: "rgba(0,0,0,0.05)" }
+                    grid: { color: "rgba(0,0,0,0.05)" },
+                    title: {
+                        display: true,
+                        text: 'Number of Submissions',
+                        font: { weight: 'bold' }
+                    }
                 },
-                x: { grid: { display: false } }
+                x: {
+                    grid: { display: false },
+                    title: {
+                        display: true,
+                        text: 'Month',
+                        font: { weight: 'bold' }
+                    }
+                }
             }
         };
 
@@ -244,8 +266,22 @@
                 data: {
                     labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
                     datasets: [
-                        { label: 'Pending Users', data: [], backgroundColor: '#FA90D3', ...premiumBarStyle },
-                        { label: 'Task Submitted', data: [], backgroundColor: '#55D2FF', ...premiumBarStyle }
+                        {
+                            label: 'Pending Users',
+                            data: [],
+                            backgroundColor: '#FA90D3',
+                            ...premiumBarStyle,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Reports Submitted',
+                            data: [],
+                            backgroundColor: '#55D2FF',
+                            ...premiumBarStyle,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }
                     ]
                 },
                 options: premiumOptions
@@ -256,8 +292,22 @@
                 data: {
                     labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
                     datasets: [
-                        { label: 'Total Users', data: [], backgroundColor: '#90FAD5', ...premiumBarStyle },
-                        { label: 'Total Companies', data: [], backgroundColor: '#FFC355', ...premiumBarStyle }
+                        {
+                            label: 'Total Users',
+                            data: [],
+                            backgroundColor: '#90FAD5',
+                            ...premiumBarStyle,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        },
+                        {
+                            label: 'Total Companies',
+                            data: [],
+                            backgroundColor: '#FFC355',
+                            ...premiumBarStyle,
+                            borderRadius: 8,
+                            borderSkipped: false
+                        }
                     ]
                 },
                 options: premiumOptions
@@ -274,14 +324,14 @@
                 const data = await response.json();
 
                 pendingTaskChart.data.datasets[0].data = data.pendingUsers || [];
-                pendingTaskChart.data.datasets[1].data = data.tasksSubmitted || [];
+                pendingTaskChart.data.datasets[1].data = data.reportsSubmitted || [];
                 pendingTaskChart.update();
 
                 totalUsersCompaniesChart.data.datasets[0].data = data.totalUsers || [];
                 totalUsersCompaniesChart.data.datasets[1].data = data.totalCompanies || [];
                 totalUsersCompaniesChart.update();
 
-                document.getElementById('pendingTaskTitle').textContent = `${year} Pending Users vs Task Submitted`;
+                document.getElementById('pendingTaskTitle').textContent = `${year} Dashboard - Pending Users vs Reports Submitted`;
                 document.getElementById('totalUsersCompaniesTitle').textContent = `${year} Total Users vs Total Companies`;
 
             } catch (error) {
