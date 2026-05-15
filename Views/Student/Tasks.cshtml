@@ -68,6 +68,18 @@
     </div>
 </div>
 
+<!-- TOAST NOTIFICATION -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    <div id="notificationToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="3000">
+        <div class="d-flex">
+            <div class="toast-body" id="toastMessage">
+                Notification message
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <!-- CREATE/EDIT TASK MODAL -->
 <div class="modal fade" id="createModal" tabindex="-1" aria-labelledby="createModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -252,6 +264,25 @@
     .table-responsive {
         flex: 1;
     }
+
+    /* Toast styles */
+    .toast {
+        background-color: #28a745;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+        .toast.error {
+            background-color: #dc3545;
+        }
+
+        .toast.warning {
+            background-color: #ffc107;
+        }
+
+        .toast.info {
+            background-color: #17a2b8;
+        }
 </style>
 
 <script>
@@ -259,6 +290,44 @@
     let editingRow = null;
     let deletingRow = null;
     let createModalInstance = null;
+    let toastInstance = null;
+
+    // ============ TOAST FUNCTIONS ============
+    function showToast(message, type = 'success') {
+        const toastElement = document.getElementById('notificationToast');
+        const toastMessage = document.getElementById('toastMessage');
+
+        if (!toastElement || !toastMessage) return;
+
+        // Set message
+        toastMessage.textContent = message;
+
+        // Set color based on type
+        toastElement.classList.remove('error', 'warning', 'info', 'bg-success');
+        if (type === 'error') {
+            toastElement.classList.add('error');
+            toastElement.style.backgroundColor = '#dc3545';
+        } else if (type === 'warning') {
+            toastElement.classList.add('warning');
+            toastElement.style.backgroundColor = '#ffc107';
+        } else if (type === 'info') {
+            toastElement.classList.add('info');
+            toastElement.style.backgroundColor = '#17a2b8';
+        } else {
+            toastElement.classList.add('bg-success');
+            toastElement.style.backgroundColor = '#28a745';
+        }
+
+        // Initialize or show toast
+        if (toastInstance) {
+            toastInstance.dispose();
+        }
+        toastInstance = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 3000
+        });
+        toastInstance.show();
+    }
 
     // ============ HELPER FUNCTIONS ============
     function getToken() {
@@ -491,12 +560,12 @@
                 const learning = document.getElementById("learning");
 
                 if (!taskTitle.value || !dateFrom.value || !dateTo.value || !taskStatus.value) {
-                    alert("Please fill in all required fields!");
+                    showToast("Please fill in all required fields!", "warning");
                     return;
                 }
 
                 if (new Date(dateFrom.value) > new Date(dateTo.value)) {
-                    alert("Date To must be after Date From!");
+                    showToast("Date To must be after Date From!", "warning");
                     return;
                 }
 
@@ -526,7 +595,7 @@
                         editingRow.querySelector("td:nth-child(4)").textContent = taskData.Status;
 
                         editingRow = null;
-                        alert('Task updated successfully!');
+                        showToast("Task updated successfully!");
                     } else {
                         const result = await createTaskInDatabase(taskData);
                         addTaskToTable({
@@ -539,7 +608,7 @@
                             taskContent: cleanHtmlContent(taskEditor.innerHTML),
                             learningContent: learning.value
                         });
-                        alert('Task created successfully!');
+                        showToast("Task created successfully!");
                     }
 
                     if (createModalInstance) createModalInstance.hide();
@@ -548,7 +617,7 @@
                     filterTable();
                     checkNoTasksRow();
                 } catch (err) {
-                    alert('Error: ' + err.message);
+                    showToast("Error: " + err.message, "error");
                     console.error(err);
                 }
             });
@@ -655,9 +724,9 @@
                             }
                         }
 
-                        alert('Task deleted successfully!');
+                        showToast("Task deleted successfully!");
                     } catch (err) {
-                        alert('Error deleting task: ' + err.message);
+                        showToast("Error deleting task: " + err.message, "error");
                         console.error(err);
                     }
                 }

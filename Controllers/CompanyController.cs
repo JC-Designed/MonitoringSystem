@@ -7,6 +7,7 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using System;
+using System.Collections.Generic;
 
 namespace MonitoringSystem.Controllers
 {
@@ -15,11 +16,13 @@ namespace MonitoringSystem.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ILogger<CompanyController> _logger;
 
-        public CompanyController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public CompanyController(ApplicationDbContext context, UserManager<ApplicationUser> userManager, ILogger<CompanyController> logger)
         {
             _context = context;
             _userManager = userManager;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Dashboard()
@@ -99,7 +102,7 @@ namespace MonitoringSystem.Controllers
                     profileImage = user.ProfileImage ?? "/images/defaultpicture.jpg",
                     bannerImage = user.BannerImage ?? "/images/banner-placeholder.jpg",
 
-                    // Company info - matching your database columns exactly
+                    // Company info
                     companyName = company?.CompanyName,
                     companyId = company?.CompanyId,
                     companyDescription = company?.CompanyDescription,
@@ -151,13 +154,12 @@ namespace MonitoringSystem.Controllers
                     return Json(new { success = false, message = "Failed to update user" });
                 }
 
-                // Update company information - ONLY using columns that exist in your database
+                // Update company information
                 var company = await _context.Companies
                     .FirstOrDefaultAsync(c => c.UserId == user.Id);
 
                 if (company != null)
                 {
-                    // Update only the columns that exist in your database
                     company.CompanyName = model.CompanyName ?? company.CompanyName;
                     company.Industry = model.Industry ?? company.Industry;
                     company.Website = model.Website ?? company.Website;
@@ -184,54 +186,254 @@ namespace MonitoringSystem.Controllers
             return View();
         }
 
-        // GET: /Company/Trainees - FIXED to use ManageOJT.cshtml
+        // GET: /Company/Trainees
         public IActionResult Trainees()
         {
-            return View("ManageOJT"); // This will look for ManageOJT.cshtml instead of Trainees.cshtml
+            return View("ManageOJT");
         }
 
-        // GET: /Company/ManageOJT - Alternative route if needed
+        // GET: /Company/ManageOJT
         public IActionResult ManageOJT()
         {
             return View();
         }
 
-        // GET: /Company/Trainees/GetTrainees
+        // ===== FIXED: GET TRAINEES ASSIGNED TO THIS COMPANY USING INT COMPANY ID =====
         [HttpGet]
         public async Task<IActionResult> GetTrainees()
         {
             try
             {
                 var userEmail = User.Identity.Name;
-                var user = await _userManager.FindByEmailAsync(userEmail);
+                var currentUser = await _userManager.FindByEmailAsync(userEmail);
 
-                if (user == null)
-                    return Json(new { success = false, message = "User not found" });
+                if (currentUser == null)
+                    return Json(new { success = false, message = "User not found", data = new List<object>() });
 
-                var company = await _context.Companies
-                    .FirstOrDefaultAsync(c => c.UserId == user.Id);
+                _logger?.LogInformation($"Fetching trainees for company: {currentUser.Email}");
 
-                if (company == null)
-                    return Json(new { success = false, message = "Company not found" });
+                // Get the company record to get the integer ID
+                var companyRecord = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == currentUser.Id);
+                if (companyRecord == null)
+                {
+                    return Json(new { success = false, message = "Company record not found", data = new List<object>() });
+                }
 
-                var trainees = await _context.Users
-                    .Where(u => u.CompanyID.ToString() == company.CompanyId && u.Role == "Student")
+                int companyIdValue = companyRecord.Id;
+
+                // Get all students assigned to this company using the integer CompanyID
+                var trainees = await _userManager.Users
+                    .Where(u => u.CompanyID.HasValue && u.CompanyID.Value == companyIdValue && u.Role == "Student" && u.Status == "Approved")
                     .Select(u => new
                     {
-                        u.Id,
-                        u.StudentId,
-                        u.FullName,
-                        u.Email,
-                        u.Program,
-                        u.MobileNumber,
-                        u.Status
+                        id = u.Id,
+                        studentId = u.StudentId ?? "",
+                        fullName = u.FullName ?? "",
+                        email = u.Email ?? "",
+                        program = u.Program ?? "",
+                        year = u.Year ?? 0,
+                        mobileNumber = u.MobileNumber ?? "",
+                        address = u.Address ?? "",
+                        contactPerson = u.ContactPerson ?? "",
+                        birthDate = u.BirthDate.HasValue ? u.BirthDate.Value.ToString("yyyy-MM-dd") : "",
+                        facebook = u.Facebook ?? "",
+                        status = u.Status ?? "Active"
                     })
+                    .OrderBy(u => u.fullName)
                     .ToListAsync();
+
+                _logger?.LogInformation($"Found {trainees.Count} trainees for company");
 
                 return Json(new { success = true, data = trainees });
             }
             catch (Exception ex)
             {
+                _logger?.LogError($"Error getting trainees: {ex.Message}");
+                return Json(new { success = false, message = ex.Message, data = new List<object>() });
+            }
+        }
+
+        // ===== FIXED: GET SINGLE TRAINEE DETAILS USING INT COMPANY ID =====
+        [HttpGet]
+        public async Task<IActionResult> GetTraineeDetails(string studentId)
+        {
+            try
+            {
+                var userEmail = User.Identity.Name;
+                var currentUser = await _userManager.FindByEmailAsync(userEmail);
+
+                if (currentUser == null)
+                    return Json(new { success = false, message = "User not found" });
+
+                // Get the company record to get the integer ID
+                var companyRecord = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == currentUser.Id);
+                if (companyRecord == null)
+                {
+                    return Json(new { success = false, message = "Company record not found" });
+                }
+
+                int companyIdValue = companyRecord.Id;
+
+                var student = await _userManager.Users
+                    .Where(u => u.Id == studentId && u.CompanyID.HasValue && u.CompanyID.Value == companyIdValue && u.Role == "Student")
+                    .Select(u => new
+                    {
+                        id = u.Id,
+                        studentId = u.StudentId ?? "",
+                        fullName = u.FullName ?? "",
+                        email = u.Email ?? "",
+                        program = u.Program ?? "",
+                        year = u.Year ?? 0,
+                        mobileNumber = u.MobileNumber ?? "",
+                        address = u.Address ?? "",
+                        contactPerson = u.ContactPerson ?? "",
+                        birthDate = u.BirthDate.HasValue ? u.BirthDate.Value.ToString("yyyy-MM-dd") : "",
+                        facebook = u.Facebook ?? "",
+                        companyId = u.CompanyID.HasValue ? u.CompanyID.Value.ToString() : ""
+                    })
+                    .FirstOrDefaultAsync();
+
+                if (student == null)
+                {
+                    return Json(new { success = false, message = "Student not found or not assigned to your company" });
+                }
+
+                return Json(new { success = true, data = student });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"Error getting trainee details: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===== FIXED: CREATE REPORT ABOUT A TRAINEE USING INT COMPANY ID =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateReport([FromBody] CreateReportModel model)
+        {
+            try
+            {
+                if (model == null || string.IsNullOrEmpty(model.StudentId) || string.IsNullOrEmpty(model.Incident))
+                {
+                    return Json(new { success = false, message = "Invalid report data" });
+                }
+
+                var userEmail = User.Identity.Name;
+                var currentUser = await _userManager.FindByEmailAsync(userEmail);
+
+                if (currentUser == null)
+                    return Json(new { success = false, message = "User not found" });
+
+                // Get the company record to get the integer ID
+                var companyRecord = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == currentUser.Id);
+                if (companyRecord == null)
+                {
+                    return Json(new { success = false, message = "Company record not found" });
+                }
+
+                int companyIdValue = companyRecord.Id;
+
+                // Verify the student is assigned to this company
+                var student = await _userManager.Users
+                    .FirstOrDefaultAsync(u => u.Id == model.StudentId && u.CompanyID.HasValue && u.CompanyID.Value == companyIdValue && u.Role == "Student");
+
+                if (student == null)
+                {
+                    return Json(new { success = false, message = "Student not found or not assigned to your company" });
+                }
+
+                // Create the report using CompanyReport table
+                var report = new CompanyReport
+                {
+                    StudentId = model.StudentId,
+                    CompanyId = currentUser.Id,
+                    StudentName = student.FullName,
+                    Incident = model.Incident,
+                    Status = "Pending",
+                    CreatedAt = DateTime.Now
+                };
+
+                _context.CompanyReports.Add(report);
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation($"Report created for student {student.Email} by company {currentUser.Email}");
+
+                return Json(new { success = true, message = "Report created successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"Error creating report: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ===== FIXED: TERMINATE TRAINEE USING INT COMPANY ID =====
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TerminateTrainee([FromBody] TerminateTraineeModel model)
+        {
+            try
+            {
+                if (model == null || string.IsNullOrEmpty(model.StudentId))
+                {
+                    return Json(new { success = false, message = "Invalid termination data" });
+                }
+
+                var userEmail = User.Identity.Name;
+                var currentUser = await _userManager.FindByEmailAsync(userEmail);
+
+                if (currentUser == null)
+                    return Json(new { success = false, message = "User not found" });
+
+                // Get the company record to get the integer ID
+                var companyRecord = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == currentUser.Id);
+                if (companyRecord == null)
+                {
+                    return Json(new { success = false, message = "Company record not found" });
+                }
+
+                int companyIdValue = companyRecord.Id;
+
+                // Verify the student is assigned to this company
+                var student = await _userManager.Users
+                    .FirstOrDefaultAsync(u => u.Id == model.StudentId && u.CompanyID.HasValue && u.CompanyID.Value == companyIdValue && u.Role == "Student");
+
+                if (student == null)
+                {
+                    return Json(new { success = false, message = "Student not found or not assigned to your company" });
+                }
+
+                // Remove the company assignment
+                student.CompanyID = null;
+                student.Status = "Terminated";
+                student.UpdatedAt = DateTime.Now;
+
+                await _userManager.UpdateAsync(student);
+
+                // Create a termination report using CompanyReport table
+                var report = new CompanyReport
+                {
+                    StudentId = model.StudentId,
+                    CompanyId = currentUser.Id,
+                    StudentName = student.FullName,
+                    Incident = "Student Terminated",
+                    Remarks = model.Remarks ?? "Student terminated by company",
+                    Status = "Resolved",
+                    CreatedAt = DateTime.Now,
+                    ResolvedAt = DateTime.Now
+                };
+
+                _context.CompanyReports.Add(report);
+                await _context.SaveChangesAsync();
+
+                _logger?.LogInformation($"Trainee {student.Email} terminated by company {currentUser.Email}");
+
+                return Json(new { success = true, message = "Student terminated successfully" });
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError($"Error terminating trainee: {ex.Message}");
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -254,13 +456,20 @@ namespace MonitoringSystem.Controllers
                 if (user == null)
                     return Json(new { success = false, message = "User not found" });
 
-                var reports = new
-                {
-                    totalTrainees = 0,
-                    activeTasks = 0,
-                    completedHours = 0,
-                    pendingEvaluations = 0
-                };
+                // Get all reports created by this company from CompanyReports table
+                var reports = await _context.CompanyReports
+                    .Where(r => r.CompanyId == user.Id)
+                    .OrderByDescending(r => r.CreatedAt)
+                    .Select(r => new
+                    {
+                        r.Id,
+                        r.StudentName,
+                        r.Incident,
+                        r.Status,
+                        r.CreatedAt,
+                        r.ResolvedAt
+                    })
+                    .ToListAsync();
 
                 return Json(new { success = true, data = reports });
             }
@@ -272,7 +481,7 @@ namespace MonitoringSystem.Controllers
     }
 }
 
-// CompanyProfileModel - WITHOUT ContactPersonMobile
+// CompanyProfileModel
 public class CompanyProfileModel
 {
     public string FullName { get; set; }
@@ -285,4 +494,17 @@ public class CompanyProfileModel
     public string ContactPersonName { get; set; }
     public string TaxId { get; set; }
     public string SecId { get; set; }
+}
+
+// Models for API requests
+public class CreateReportModel
+{
+    public string StudentId { get; set; }
+    public string Incident { get; set; }
+}
+
+public class TerminateTraineeModel
+{
+    public string StudentId { get; set; }
+    public string Remarks { get; set; }
 }

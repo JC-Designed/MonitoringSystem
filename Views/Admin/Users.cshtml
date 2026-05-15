@@ -41,7 +41,6 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5 class="mb-0">Users</h5>
                 <div>
-                    <!-- EXPORT ALL BUTTON - Exports all users organized by program -->
                     <a href="/Admin/ExportUsersToExcel" class="btn btn-success me-2">
                         <i class="bi bi-file-excel"></i> Export Excel
                     </a>
@@ -49,7 +48,7 @@
                 </div>
             </div>
 
-            <!-- FILTERS (now with Program) -->
+            <!-- FILTERS -->
             <div class="row g-3 mb-4 align-items-end">
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Year</label>
@@ -74,7 +73,6 @@
                     </select>
                 </div>
 
-                <!-- Program Filter -->
                 <div class="col-md-3">
                     <label class="form-label fw-semibold">Program</label>
                     <select id="programFilter" class="form-select filter-box">
@@ -109,9 +107,7 @@
                                 data-companyid="@user.CompanyID"
                                 data-program="@user.Program"
                                 data-birthdate="@(user.BirthDate.HasValue? user.BirthDate.Value.ToString("yyyy-MM-dd") : "")"
-                                data-contactperson="@user.ContactPerson"
-                                data-task="Complete the monthly report and submit to manager."
-                                data-learning="Learned how to summarize data and meet deadlines.">
+                                data-contactperson="@user.ContactPerson">
                                 <td>@user.FullName</td>
                                 <td>@user.Email</td>
                                 <td>@role</td>
@@ -133,7 +129,7 @@
         </div>
     </div>
 
-    <!-- ================= SIMPLIFIED CREATE COMPANY WRAPPER ================= -->
+    <!-- ================= CREATE COMPANY WRAPPER ================= -->
     <div id="createCompanyWrapper" style="display: none;">
         <div class="card shadow-sm rounded-4 p-4 mb-4">
             <h5>Create Company</h5>
@@ -167,7 +163,6 @@
                     </div>
                 </div>
 
-                <!-- Hidden fields with default values -->
                 <input type="hidden" id="companyTypePage" value="Commercial">
                 <input type="hidden" id="companySecIdPage" value="">
                 <input type="hidden" id="companyWebsitePage" value="">
@@ -252,7 +247,6 @@
                     </div>
                 </div>
 
-                <!-- NEW ROW: Hours Summary (read-only) -->
                 <div class="row g-3 mt-2">
                     <div class="col-md-4">
                         <label class="form-label fw-bold">Rendered Hours</label>
@@ -278,17 +272,15 @@
                         <input type="text" class="form-control" id="editStudentRole" readonly>
                     </div>
                     <div class="col-md-4">
-                        <!-- Empty column to maintain 3-column layout -->
                     </div>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ================= REDESIGNED EDIT COMPANY WRAPPER (MATCHING COMPANY LAYOUT) ================= -->
+    <!-- ================= EDIT COMPANY WRAPPER ================= -->
     <div id="editCompanyWrapper" style="display:none; margin:0; padding:0;">
 
-        <!-- FULL-WIDTH COVER PHOTO WITH CAMERA ICON -->
         <div style="position:relative; width:100%; height:240px; overflow:hidden;">
             <img id="editCompanyBanner"
                  src="/images/banner-placeholder.jpg"
@@ -299,7 +291,6 @@
             <input type="file" id="companyBannerInput" hidden accept="image/*">
         </div>
 
-        <!-- PROFILE IMAGE OVER BANNER WITH CAMERA ICON -->
         <div class="position-relative" style="margin-top:-85px; margin-left:40px; width:170px; z-index:10;">
             <img id="editCompanyProfilePic"
                  src="/images/defaultpicture.jpg"
@@ -311,7 +302,6 @@
             <input type="file" id="companyPicInput" hidden accept="image/*">
         </div>
 
-        <!-- EDIT BUTTON AT THE TOP RIGHT -->
         <div class="container mt-3">
             <div class="d-flex justify-content-end">
                 <button id="editCompanyInfoBtn" class="btn" style="background-color:#0d6efd; color:white;">
@@ -320,7 +310,6 @@
             </div>
         </div>
 
-        <!-- COMPANY INFORMATION CARD -->
         <div class="container mt-3">
             <h4 class="fw-bold mb-3">COMPANY INFORMATION</h4>
             <div class="card shadow-sm p-4 mb-4">
@@ -363,7 +352,6 @@
             </div>
         </div>
 
-        <!-- CONTACT PERSON CARD (Combined with User Information) -->
         <div class="container mt-4">
             <h4 class="fw-bold mb-3">CONTACT PERSON</h4>
             <div class="card shadow-sm p-4">
@@ -400,7 +388,6 @@
             </div>
         </div>
 
-        <!-- ADD TRAINEE BUTTON -->
         <div class="d-flex justify-content-start mt-3 mb-4" style="margin-left: 10px;">
             <button id="addTraineeBtn" class="btn" style="background-color: #2A91FF; color: #fff;">
                 + Add Trainee
@@ -428,7 +415,6 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Rows will be populated dynamically via JS -->
                                 </tbody>
                             </table>
                         </div>
@@ -455,21 +441,16 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- No example data - will be populated dynamically -->
                     </tbody>
                 </table>
             </div>
         </div>
 
-        <!-- BUTTONS BELOW THE TABLE -->
-        <div class="d-flex justify-content-end gap-2 mt-3">
-            <button id="saveTraineesChanges" class="btn btn-success">Save Changes</button>
-            <button id="resetTraineesPassword" class="btn btn-warning">Reset Password</button>
-        </div>
-
-        <!-- SAVE CHANGES BUTTON AT BOTTOM RIGHT -->
         <div class="container mt-4 mb-4">
-            <div class="d-flex justify-content-end">
+            <div class="d-flex justify-content-end gap-2">
+                <button id="cancelCompanyChangesBtn" class="btn" style="background-color:#6c757d; color:white; display:none;">
+                    <i class="bi bi-x-circle"></i> Cancel
+                </button>
                 <button id="saveCompanyChangesBtn" class="btn" style="background-color:#07B618; color:white; display:none; padding: 10px 30px;">
                     <i class="bi bi-check-circle"></i> Save Changes
                 </button>
@@ -477,7 +458,6 @@
         </div>
     </div>
 
-    <!-- Styles for camera icons -->
     <style>
         .camera-overlay {
             position: absolute;
@@ -527,7 +507,7 @@
             }
     </style>
 
-    <!-- ================= TASKS TABLE WRAPPER ================= -->
+    <!-- ================= TASKS WRAPPER ================= -->
     <div id="tasksWrapper" style="display: none; margin-top:20px;">
         <div class="card shadow-sm rounded-4 p-4">
             <h5 class="mb-3">Tasks</h5>
@@ -560,7 +540,7 @@
         </div>
     </div>
 
-    <!-- ================= VIEW TASK MODAL ================= -->
+    <!-- VIEW TASK MODAL -->
     <div class="modal fade" id="viewTaskModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content rounded-4">
@@ -607,41 +587,41 @@
         </div>
     </div>
 
-    <!-- ================= DELETE CONFIRMATION MODAL ================= -->
-    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <!-- DELETE CONFIRMATION MODAL -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold" id="deleteConfirmModalLabel" style="color: white; font-size: 1.1rem;">Confirm Delete</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.8rem;"></button>
+                    <h5 class="modal-title fw-bold" style="color: white;">Confirm Delete</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-2">
-                    <p class="mb-1" style="font-size: 0.95rem;">Are you sure you want to delete?</p>
-                    <p class="fw-bold text-center mb-0" id="deleteUserInfo" style="color: white; word-break: break-word; font-size: 1.1rem;"></p>
+                    <p class="mb-1">Are you sure you want to delete?</p>
+                    <p class="fw-bold text-center mb-0" id="deleteUserInfo" style="color: white;"></p>
                 </div>
                 <div class="modal-footer border-0 justify-content-center gap-2 pt-0 pb-3">
-                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmDeleteBtn">YES</button>
-                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white;" id="confirmDeleteBtn">YES</button>
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white;" data-bs-dismiss="modal">NO</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ================= MAKE ADMIN CONFIRMATION MODAL ================= -->
+    <!-- MAKE ADMIN CONFIRMATION MODAL -->
     <div class="modal fade" id="makeAdminConfirmModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered" style="max-width: 650px;">
-            <div class="modal-content" style="background-color: #8B0000; color: white; border: none; min-height: 160px;">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="background-color: #8B0000; color: white; border: none;">
                 <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.9rem;"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-3">
-                    <p class="mb-0" style="font-size: 1rem; text-align: center; line-height: 1.4; white-space: nowrap;">
-                        Are you sure you want to make <strong id="makeAdminUserInfo" style="color: white; font-weight: 700;"></strong> an Administrator?
+                    <p class="mb-0 text-center">
+                        Are you sure you want to make <strong id="makeAdminUserInfo" style="color: white;"></strong> an Administrator?
                     </p>
                 </div>
                 <div class="modal-footer border-0 justify-content-end gap-3 pt-0 pb-3">
-                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white; border: none; min-width: 80px; font-size: 0.9rem;" id="confirmMakeAdminBtn">YES</button>
-                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white; border: none; min-width: 80px; font-size: 0.9rem;" data-bs-dismiss="modal">NO</button>
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #02B508; color: white;" id="confirmMakeAdminBtn">YES</button>
+                    <button type="button" class="btn px-3 py-1 fw-bold" style="background-color: #FD0606; color: white;" data-bs-dismiss="modal">NO</button>
                 </div>
             </div>
         </div>
@@ -652,6 +632,9 @@
         // Global variables
         const tbody = document.querySelector("#usersTable tbody");
         let rowToEdit = null;
+        let currentCompanyId = null;
+        let hasUnsavedChanges = false;
+
         const yearFilter = document.getElementById("yearFilter");
         const searchName = document.getElementById("searchName");
         const roleFilter = document.getElementById("roleFilter");
@@ -668,10 +651,33 @@
         const miniCamera = document.querySelector(".change-pic-icon");
         const profileInput = document.getElementById("editStudentPicInput");
 
-        // Toast elements - will be initialized after DOM is loaded
         let successToast, errorToast, toastMessage, errorToastMessage;
 
-        // ===== POPULATE PROGRAM FILTER =====
+        // ===== HELPER FUNCTIONS =====
+        function showSaveButton() {
+            const saveBtn = document.getElementById("saveCompanyChangesBtn");
+            const cancelBtn = document.getElementById("cancelCompanyChangesBtn");
+            const editBtn = document.getElementById("editCompanyInfoBtn");
+            if (saveBtn && editBtn) {
+                saveBtn.style.display = 'block';
+                cancelBtn.style.display = 'block';
+                editBtn.style.display = 'none';
+                hasUnsavedChanges = true;
+            }
+        }
+
+        function hideSaveButton() {
+            const saveBtn = document.getElementById("saveCompanyChangesBtn");
+            const cancelBtn = document.getElementById("cancelCompanyChangesBtn");
+            const editBtn = document.getElementById("editCompanyInfoBtn");
+            if (saveBtn && editBtn) {
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                editBtn.style.display = 'block';
+                hasUnsavedChanges = false;
+            }
+        }
+
         function populateProgramFilter() {
             const programSet = new Set();
             [...tbody.rows].forEach(row => {
@@ -691,7 +697,6 @@
         }
         populateProgramFilter();
 
-        // ===== FILTER TABLE =====
         function filterTable() {
             const yearVal = yearFilter.value;
             const nameVal = searchName.value.toLowerCase();
@@ -710,13 +715,72 @@
         }
         [yearFilter, searchName, roleFilter, programFilter].forEach(el => el.addEventListener("input", filterTable));
 
-        // ===== CLEAR ALL FILTERS FUNCTION =====
         function clearAllFilters() {
             yearFilter.value = "";
             searchName.value = "";
             roleFilter.value = "";
             programFilter.value = "";
             filterTable();
+        }
+
+        // ===== LOAD COMPANY TRAINEES =====
+        async function loadCompanyTrainees(companyUserId) {
+            try {
+                const response = await fetch(`/Admin/GetCompanyTrainees?companyUserId=${companyUserId}`);
+                const result = await response.json();
+
+                const traineesTableBody = document.querySelector("#traineesTable tbody");
+                traineesTableBody.innerHTML = '';
+
+                if (result.success && result.data && result.data.length > 0) {
+                    result.data.forEach(trainee => {
+                        const tr = document.createElement("tr");
+                        tr.setAttribute('data-student-id', trainee.id);
+                        tr.innerHTML = `
+                            <td>${trainee.studentId || trainee.id}</td>
+                            <td>${trainee.fullName}</td>
+                            <td>${trainee.email}</td>
+                            <td>${trainee.program || ''}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </td>
+                        `;
+                        traineesTableBody.appendChild(tr);
+                    });
+                } else {
+                    traineesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No trainees assigned yet</td></tr>';
+                }
+
+                attachRemoveTraineeEvents();
+
+            } catch (error) {
+                console.error('Error loading company trainees:', error);
+                const traineesTableBody = document.querySelector("#traineesTable tbody");
+                traineesTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Error loading trainees</td></tr>';
+            }
+        }
+
+        function attachRemoveTraineeEvents() {
+            const removeButtons = document.querySelectorAll('.remove-trainee-btn');
+            removeButtons.forEach(btn => {
+                btn.removeEventListener('click', handleRemoveTrainee);
+                btn.addEventListener('click', handleRemoveTrainee);
+            });
+        }
+
+        function handleRemoveTrainee(e) {
+            e.preventDefault();
+            const row = e.currentTarget.closest('tr');
+            if (row) {
+                row.remove();
+                showSaveButton(); // Show save button when trainee is removed
+                const tbody = document.querySelector("#traineesTable tbody");
+                if (tbody.rows.length === 0) {
+                    tbody.innerHTML = ' hilab<td colspan="5" class="text-center text-muted">No trainees assigned yet</td></tr>';
+                }
+            }
         }
 
         // ===== SHOW CREATE COMPANY =====
@@ -728,6 +792,7 @@
             tasksWrapper.style.display = "none";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
+
         document.getElementById("cancelCreateCompany").addEventListener("click", () => {
             createCompanyWrapper.style.display = "none";
             usersSection.style.display = "block";
@@ -758,7 +823,6 @@
                     document.getElementById("editStudentContactPerson").value = rowToEdit.dataset.contactperson || "";
                     profilePic.src = "/images/defaultpicture.jpg";
 
-                    // Fetch hours summary for the student
                     fetch(`/Admin/GetStudentHoursSummary?userId=${rowToEdit.dataset.id}`)
                         .then(response => response.json())
                         .then(data => {
@@ -766,30 +830,20 @@
                                 document.getElementById('editStudentRenderedHours').value = data.rendered.toFixed(1) + ' hrs';
                                 document.getElementById('editStudentRemainingHours').value = data.remaining.toFixed(1) + ' hrs';
                                 document.getElementById('editStudentTotalHours').value = data.total + ' hrs';
-                            } else {
-                                // Set defaults
-                                document.getElementById('editStudentRenderedHours').value = '0 hrs';
-                                document.getElementById('editStudentRemainingHours').value = '0 hrs';
-                                document.getElementById('editStudentTotalHours').value = '0 hrs';
                             }
                         })
-                        .catch(error => {
-                            console.error('Error fetching hours:', error);
-                            document.getElementById('editStudentRenderedHours').value = 'Error';
-                            document.getElementById('editStudentRemainingHours').value = 'Error';
-                            document.getElementById('editStudentTotalHours').value = 'Error';
-                        });
+                        .catch(error => console.error('Error fetching hours:', error));
 
                     editStudentWrapper.style.display = "block";
                     tasksWrapper.style.display = "block";
                 } else if(role === "Company"){
-                    // Load company data from database
+                    currentCompanyId = rowToEdit.dataset.id;
+                    hasUnsavedChanges = false;
+
                     fetch(`/Admin/GetCompanyDetails?userId=${rowToEdit.dataset.id}`)
                         .then(response => response.json())
                         .then(data => {
-                            console.log("Company data received:", data);
                             if (data.success) {
-                                // Company Information
                                 document.getElementById("editCompanyName").value = data.companyName || '';
                                 document.getElementById("editCompanyMobile").value = data.mobileNumber || '';
                                 document.getElementById("editCompanyAddress").value = data.address || '';
@@ -797,36 +851,25 @@
                                 document.getElementById("editCompanyIndustry").value = data.industry || '';
                                 document.getElementById("editCompanyWebsite").value = data.website || '';
                                 document.getElementById("editCompanyDescription").value = data.companyDescription || '';
-
-                                // Contact Person (Combined)
-                                document.getElementById("contactPersonName").value = data.fullName || data.contactPersonName || '';
+                                document.getElementById("contactPersonName").value = data.fullName || '';
                                 document.getElementById("contactPersonEmail").value = data.email || '';
-                                document.getElementById("contactPersonMobile").value = data.mobileNumber || data.contactPersonMobile || '';
-                                document.getElementById("contactPersonRole").value = 'Company';
+                                document.getElementById("contactPersonMobile").value = data.mobileNumber || '';
                                 document.getElementById("contactPersonDepartment").value = data.contactPersonPosition || '';
                                 document.getElementById("contactPersonFacebook").value = data.contactPersonFacebook || '';
-
-                                // Images
                                 document.getElementById("editCompanyProfilePic").src = data.profileImage || '/images/defaultpicture.jpg';
                                 document.getElementById("editCompanyBanner").src = data.bannerImage || '/images/banner-placeholder.jpg';
+                                loadCompanyTrainees(currentCompanyId);
                             } else {
-                                // Fallback to dataset values
-                                document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
-                                document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
-                                document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
-                                document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                                loadCompanyTrainees(currentCompanyId);
                             }
                         })
                         .catch(error => {
                             console.error('Error loading company details:', error);
-                            // Fallback to dataset values
-                            document.getElementById("editCompanyName").value = rowToEdit.dataset.fullname;
-                            document.getElementById("editCompanyMobile").value = rowToEdit.dataset.mobile || "";
-                            document.getElementById("editCompanyAddress").value = rowToEdit.dataset.address || "";
-                            document.getElementById("editCompanyID").value = rowToEdit.dataset.companyid || "";
+                            loadCompanyTrainees(currentCompanyId);
                         });
 
                     editCompanyWrapper.style.display = "block";
+                    hideSaveButton();
                 }
 
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -851,25 +894,13 @@
             }
         });
 
-        // ===== VIEW TASK MODAL =====
-        document.querySelectorAll(".view-task-btn").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const row = btn.closest("tr");
-                document.getElementById("modalTaskTitle").value = row.cells[0].textContent;
-                document.getElementById("modalTaskFrom").value = row.cells[1].textContent;
-                document.getElementById("modalTaskTo").value = row.cells[2].textContent;
-                document.getElementById("modalTaskTask").value = row.dataset.task || "No task provided.";
-                document.getElementById("modalTaskLearning").value = row.dataset.learning || "No learning provided.";
-                document.getElementById("modalTaskStatus").value = row.dataset.status || "Ongoing";
-            });
-        });
-
         // ===== COMPANY IMAGE PREVIEW =====
         document.getElementById("companyPicInput").addEventListener("change", e => {
             if (e.target.files[0]) {
                 const reader = new FileReader();
                 reader.onload = ev => document.getElementById("editCompanyProfilePic").src = ev.target.result;
                 reader.readAsDataURL(e.target.files[0]);
+                showSaveButton();
             }
         });
 
@@ -878,92 +909,184 @@
                 const reader = new FileReader();
                 reader.onload = ev => document.getElementById("editCompanyBanner").src = ev.target.result;
                 reader.readAsDataURL(e.target.files[0]);
+                showSaveButton();
             }
         });
 
-        // ===== EDIT COMPANY BUTTON FUNCTIONALITY =====
+        // ===== EDIT COMPANY BUTTON =====
         document.getElementById("editCompanyInfoBtn")?.addEventListener("click", function() {
-            // Make all inputs editable
             const inputs = document.querySelectorAll('#editCompanyWrapper input, #editCompanyWrapper textarea');
             inputs.forEach(input => input.removeAttribute('readonly'));
-
-            // Hide edit button, show save button
-            document.getElementById("editCompanyInfoBtn").style.display = 'none';
-            document.getElementById("saveCompanyChangesBtn").style.display = 'block';
+            showSaveButton();
         });
 
-        // ===== SAVE COMPANY CHANGES BUTTON FUNCTIONALITY =====
+        // ===== CANCEL BUTTON =====
+        document.getElementById("cancelCompanyChangesBtn")?.addEventListener("click", async function() {
+            if (currentCompanyId) {
+                // Reload original data
+                const response = await fetch(`/Admin/GetCompanyDetails?userId=${currentCompanyId}`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById("editCompanyName").value = data.companyName || '';
+                    document.getElementById("editCompanyMobile").value = data.mobileNumber || '';
+                    document.getElementById("editCompanyAddress").value = data.address || '';
+                    document.getElementById("editCompanyID").value = data.companyId || '';
+                    document.getElementById("editCompanyIndustry").value = data.industry || '';
+                    document.getElementById("editCompanyWebsite").value = data.website || '';
+                    document.getElementById("editCompanyDescription").value = data.companyDescription || '';
+                    document.getElementById("contactPersonName").value = data.fullName || '';
+                    document.getElementById("contactPersonEmail").value = data.email || '';
+                    document.getElementById("contactPersonMobile").value = data.mobileNumber || '';
+                    document.getElementById("contactPersonDepartment").value = data.contactPersonPosition || '';
+                    document.getElementById("contactPersonFacebook").value = data.contactPersonFacebook || '';
+                    document.getElementById("editCompanyProfilePic").src = data.profileImage || '/images/defaultpicture.jpg';
+                    document.getElementById("editCompanyBanner").src = data.bannerImage || '/images/banner-placeholder.jpg';
+                    await loadCompanyTrainees(currentCompanyId);
+                }
+
+                const inputs = document.querySelectorAll('#editCompanyWrapper input, #editCompanyWrapper textarea');
+                inputs.forEach(input => input.setAttribute('readonly', true));
+                hideSaveButton();
+
+                if (toastMessage) toastMessage.textContent = 'Changes cancelled';
+                if (successToast) successToast.show();
+            }
+        });
+
+        // ===== SAVE COMPANY CHANGES BUTTON =====
         document.getElementById("saveCompanyChangesBtn")?.addEventListener("click", async function() {
-            // Collect all updated data
-            const updatedData = {
+            const traineesTableBody = document.querySelector("#traineesTable tbody");
+            const traineeIds = [];
+
+            for (let i = 0; i < traineesTableBody.rows.length; i++) {
+                const row = traineesTableBody.rows[i];
+                const studentId = row.getAttribute('data-student-id');
+                if (studentId && studentId !== 'null' && studentId !== 'undefined') {
+                    traineeIds.push(studentId);
+                }
+            }
+
+            if (!currentCompanyId) {
+                if (errorToastMessage) errorToastMessage.textContent = 'Error: No company selected.';
+                if (errorToast) errorToast.show();
+                return;
+            }
+
+            const companyInfoData = {
                 companyName: document.getElementById("editCompanyName").value,
-                mobileNumber: document.getElementById("editCompanyMobile").value,
+                userMobile: document.getElementById("editCompanyMobile").value,
                 address: document.getElementById("editCompanyAddress").value,
                 companyId: document.getElementById("editCompanyID").value,
                 industry: document.getElementById("editCompanyIndustry").value,
                 website: document.getElementById("editCompanyWebsite").value,
                 companyDescription: document.getElementById("editCompanyDescription").value,
-                // Contact Person fields
-                fullName: document.getElementById("contactPersonName").value,
-                email: document.getElementById("contactPersonEmail").value,
-                contactPersonMobile: document.getElementById("contactPersonMobile").value,
-                contactPersonRole: document.getElementById("contactPersonRole").value,
+                contactPersonName: document.getElementById("contactPersonName").value,
                 contactPersonPosition: document.getElementById("contactPersonDepartment").value,
-                contactPersonFacebook: document.getElementById("contactPersonFacebook").value
+                fullName: document.getElementById("contactPersonName").value,
+                email: document.getElementById("contactPersonEmail").value
             };
+
+            const traineesData = {
+                companyUserId: currentCompanyId,
+                traineeIds: traineeIds
+            };
+
+            const saveBtn = document.getElementById("saveCompanyChangesBtn");
+            const originalText = saveBtn.innerHTML;
 
             try {
                 const token = document.getElementById('__RequestVerificationToken').value;
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
 
-                const response = await fetch('/Admin/UpdateCompany', {
+                const companyResponse = await fetch('/Admin/UpdateCompany', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'RequestVerificationToken': token
                     },
-                    body: JSON.stringify(updatedData)
+                    body: JSON.stringify(companyInfoData)
                 });
 
-                const result = await response.json();
+                const companyResult = await companyResponse.json();
 
-                if (result.success) {
-                    if (toastMessage) toastMessage.textContent = 'Company updated successfully!';
+                if (!companyResult.success) {
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to update company info: ' + (companyResult.message || 'Unknown error');
+                    if (errorToast) errorToast.show();
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = originalText;
+                    return;
+                }
+
+                const traineesResponse = await fetch('/Admin/UpdateCompanyTrainees', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify(traineesData)
+                });
+
+                const traineesResult = await traineesResponse.json();
+
+                if (traineesResult.success) {
+                    if (toastMessage) toastMessage.textContent = `✅ Saved! Added: ${traineesResult.added || 0}, Removed: ${traineesResult.removed || 0}`;
                     if (successToast) successToast.show();
 
-                    // Make inputs readonly again
                     const inputs = document.querySelectorAll('#editCompanyWrapper input, #editCompanyWrapper textarea');
                     inputs.forEach(input => input.setAttribute('readonly', true));
+                    hideSaveButton();
 
-                    // Hide save button, show edit button
-                    document.getElementById("editCompanyInfoBtn").style.display = 'block';
-                    document.getElementById("saveCompanyChangesBtn").style.display = 'none';
+                    if (companyInfoData.fullName && rowToEdit) {
+                        rowToEdit.cells[0].textContent = companyInfoData.fullName;
+                        rowToEdit.dataset.fullname = companyInfoData.fullName;
+                    }
                 } else {
-                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to update company: ' + (result.message || 'Unknown error');
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to update trainees: ' + (traineesResult.message || 'Unknown error');
                     if (errorToast) errorToast.show();
                 }
+
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+
             } catch (error) {
-                console.error('Error updating company:', error);
-                if (errorToastMessage) errorToastMessage.textContent = 'Error updating company: ' + error.message;
+                console.error('Error in save process:', error);
+                if (errorToastMessage) errorToastMessage.textContent = 'Error: ' + (error.message || 'Unknown error occurred');
                 if (errorToast) errorToast.show();
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
             }
         });
 
+        // ===== ADD TRAINEE MODAL =====
         const addTraineeBtn = document.getElementById("addTraineeBtn");
         const modalStudentsTbody = document.querySelector("#modalStudentsTable tbody");
 
-        // Open modal and populate with student users
         addTraineeBtn.addEventListener("click", () => {
             modalStudentsTbody.innerHTML = "";
 
             [...tbody.rows].forEach(row => {
                 if(row.dataset.role === "Student") {
+                    const studentId = row.dataset.id;
+                    const studentCode = row.dataset.studentid || studentId;
+                    const fullName = row.dataset.fullname;
+                    const email = row.dataset.email;
+                    const program = row.dataset.program || '';
+
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td><input type="checkbox" class="select-trainee-checkbox" data-id="${row.dataset.id}" data-studentid="${row.dataset.studentid || ''}" data-fullname="${row.dataset.fullname}" data-email="${row.dataset.email}" data-program="${row.dataset.program || ''}"></td>
-                        <td>${row.dataset.studentid || row.dataset.id || ''}</td>
-                        <td>${row.dataset.fullname}</td>
-                        <td>${row.dataset.email}</td>
-                        <td>${row.dataset.program || ''}</td>
+                        <td class="text-center">
+                            <input type="checkbox" class="select-trainee-checkbox"
+                                   data-id="${studentId}"
+                                   data-studentid="${studentCode}"
+                                   data-fullname="${fullName}"
+                                   data-email="${email}"
+                                   data-program="${program}">
+                        </td>
+                         <td>${studentCode}</td>
+                         <td>${fullName}</td>
+                         <td>${email}</td>
+                         <td>${program}</td>
                     `;
                     modalStudentsTbody.appendChild(tr);
                 }
@@ -973,58 +1096,77 @@
             modal.show();
         });
 
-        // ===== Add Selected Trainees to Trainees Table =====
+        // ===== ADD SELECTED TRAINEES =====
         document.getElementById("addSelectedTrainees").addEventListener("click", () => {
             const checkboxes = document.querySelectorAll(".select-trainee-checkbox:checked");
             const traineesTableBody = document.querySelector("#traineesTable tbody");
 
+            if (traineesTableBody.children.length === 1 && traineesTableBody.children[0].innerText.includes("No trainees assigned")) {
+                traineesTableBody.innerHTML = '';
+            }
+
+            let addedCount = 0;
+
             checkboxes.forEach(cb => {
-                if(![...traineesTableBody.rows].some(r => r.cells[1].textContent === cb.dataset.fullname)) {
+                const traineeId = cb.getAttribute('data-id');
+                const fullName = cb.getAttribute('data-fullname');
+                const email = cb.getAttribute('data-email');
+                const studentCode = cb.getAttribute('data-studentid');
+                const program = cb.getAttribute('data-program');
+
+                const exists = [...traineesTableBody.rows].some(r =>
+                    r.getAttribute('data-student-id') === traineeId
+                );
+
+                if(!exists && traineeId) {
                     const tr = document.createElement("tr");
+                    tr.setAttribute('data-student-id', traineeId);
                     tr.innerHTML = `
-                        <td>${cb.dataset.studentid || cb.dataset.id || ''}</td>
-                        <td>${cb.dataset.fullname}</td>
-                        <td>${cb.dataset.email}</td>
-                        <td>${cb.dataset.program || ''}</td>
+                         <td>${studentCode || traineeId}</td>
+                         <td>${fullName}</td>
+                         <td>${email}</td>
+                         <td>${program || ''}</td>
                         <td class="text-end">
-                            <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">Remove</button>
-                        </td>
+                            <button class="btn btn-sm remove-trainee-btn" style="background: transparent; border: none; color: #FD0606; cursor: pointer;">
+                                <i class="bi bi-trash"></i> Remove
+                            </button>
+                         </td>
                     `;
                     traineesTableBody.appendChild(tr);
+                    addedCount++;
                 }
             });
 
+            attachRemoveTraineeEvents();
+
+            if (addedCount > 0) {
+                showSaveButton();
+                if (toastMessage) toastMessage.textContent = `${addedCount} trainee(s) added. Click "Save Changes" to save permanently.`;
+                if (successToast) successToast.show();
+            }
+
             const modalEl = document.getElementById('addTraineeModal');
             const modalInstance = bootstrap.Modal.getInstance(modalEl);
-            modalInstance.hide();
+            if (modalInstance) modalInstance.hide();
         });
 
-        // ===== DELETE USER MODAL FUNCTIONALITY =====
+        // ===== DELETE USER =====
         let userToDelete = null;
 
-        // Open delete modal when delete button is clicked
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('delete-btn')) {
                 e.preventDefault();
-                e.stopPropagation();
-
                 const row = e.target.closest('tr');
                 userToDelete = {
                     id: row.dataset.id,
                     fullName: row.dataset.fullname,
                     row: row
                 };
-
-                // Display user fullname in modal
                 document.getElementById('deleteUserInfo').textContent = `${userToDelete.fullName}`;
-
-                // Show the modal
-                const deleteModal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
-                deleteModal.show();
+                new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
             }
         });
 
-        // Handle confirm delete button
         document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
             if (!userToDelete) return;
 
@@ -1041,17 +1183,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Remove the row from table
                     if (userToDelete.row) {
                         userToDelete.row.remove();
-                        // Reprogram filter after deletion
                         populateProgramFilter();
                         filterTable();
                     }
                     if (toastMessage) toastMessage.textContent = 'User deleted successfully';
                     if (successToast) successToast.show();
                 } else {
-                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to delete user: ' + (data.message || 'Unknown error');
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to delete user';
                     if (errorToast) errorToast.show();
                 }
             })
@@ -1061,41 +1201,28 @@
                 if (errorToast) errorToast.show();
             })
             .finally(() => {
-                // Hide modal
-                const deleteModal = bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'));
-                if (deleteModal) {
-                    deleteModal.hide();
-                }
+                bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal'))?.hide();
                 userToDelete = null;
             });
         });
 
-        // ===== MAKE ADMIN MODAL FUNCTIONALITY =====
+        // ===== MAKE ADMIN =====
         let userToMakeAdmin = null;
 
-        // Open make admin modal when make-admin button is clicked
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('make-admin-btn')) {
                 e.preventDefault();
-                e.stopPropagation();
-
                 const row = e.target.closest('tr');
                 userToMakeAdmin = {
                     id: row.dataset.id,
                     fullName: row.dataset.fullname,
                     row: row
                 };
-
-                // Display user fullname in modal
                 document.getElementById('makeAdminUserInfo').textContent = `${userToMakeAdmin.fullName}`;
-
-                // Show the modal
-                const makeAdminModal = new bootstrap.Modal(document.getElementById('makeAdminConfirmModal'));
-                makeAdminModal.show();
+                new bootstrap.Modal(document.getElementById('makeAdminConfirmModal')).show();
             }
         });
 
-        // Handle confirm make admin button
         document.getElementById('confirmMakeAdminBtn').addEventListener('click', function() {
             if (!userToMakeAdmin) return;
 
@@ -1103,7 +1230,6 @@
             const confirmBtn = this;
             const originalText = confirmBtn.textContent;
 
-            // Disable button to prevent double submission
             confirmBtn.disabled = true;
             confirmBtn.textContent = 'Processing...';
 
@@ -1115,43 +1241,24 @@
                 },
                 body: JSON.stringify({ userId: userToMakeAdmin.id })
             })
-            .then(async response => {
-                if (!response.ok) {
-                    const contentType = response.headers.get('content-type');
-                    if (contentType && contentType.includes('application/json')) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || `Server error: ${response.status}`);
-                    } else {
-                        const errorText = await response.text();
-                        throw new Error(`HTTP ${response.status}: ${errorText.substring(0, 100)}`);
-                    }
-                }
-                return response.json();
-            })
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update the role in the table
                     if (userToMakeAdmin.row) {
-                        const roleCell = userToMakeAdmin.row.cells[2];
-                        roleCell.textContent = 'Admin';
+                        userToMakeAdmin.row.cells[2].textContent = 'Admin';
                         userToMakeAdmin.row.dataset.role = 'Admin';
                     }
                     if (toastMessage) toastMessage.textContent = 'User is now an Admin.';
                     if (successToast) successToast.show();
-
-                    // Hide modal
-                    const makeAdminModal = bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'));
-                    if (makeAdminModal) {
-                        makeAdminModal.hide();
-                    }
+                    bootstrap.Modal.getInstance(document.getElementById('makeAdminConfirmModal'))?.hide();
                 } else {
-                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to make user Admin: ' + (data.message || 'Unknown error');
+                    if (errorToastMessage) errorToastMessage.textContent = 'Failed to make user Admin';
                     if (errorToast) errorToast.show();
                 }
             })
             .catch(error => {
                 console.error('Make Admin Error:', error);
-                if (errorToastMessage) errorToastMessage.textContent = 'An error occurred. ' + error.message;
+                if (errorToastMessage) errorToastMessage.textContent = 'An error occurred';
                 if (errorToast) errorToast.show();
             })
             .finally(() => {
@@ -1161,125 +1268,8 @@
             });
         });
 
-        // ===== FUNCTION TO ADD NEW COMPANY TO TABLE =====
-        function addNewCompanyToTable(company) {
-            const tbody = document.querySelector("#usersTable tbody");
-
-            const newRow = document.createElement("tr");
-            newRow.setAttribute("data-id", company.id);
-            newRow.setAttribute("data-fullname", company.fullName);
-            newRow.setAttribute("data-email", company.email);
-            newRow.setAttribute("data-role", "Company");
-            newRow.setAttribute("data-mobile", company.mobileNumber || "");
-            newRow.setAttribute("data-address", company.address || "");
-            newRow.setAttribute("data-companyid", company.companyId || "");
-            newRow.setAttribute("data-program", "");
-            newRow.setAttribute("data-birthdate", "");
-            newRow.setAttribute("data-contactperson", "");
-
-            newRow.innerHTML = `
-                <td>${company.fullName}</td>
-                <td>${company.email}</td>
-                <td>Company</td>
-                <td class="text-end">
-                    <div class="dropdown dropend d-inline-block">
-                        <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
-                        <ul class="dropdown-menu shadow-sm">
-                            <li><a class="dropdown-item edit-btn" href="javascript:void(0);">Edit</a></li>
-                            <li><a class="dropdown-item delete-btn" href="javascript:void(0);">Delete</a></li>
-                            <li><a class="dropdown-item make-admin-btn" href="javascript:void(0);">Make Admin</a></li>
-                        </ul>
-                    </div>
-                </td>
-            `;
-
-            tbody.appendChild(newRow);
-
-            // Re-attach event listeners for the new row
-            attachEventListenersToNewRow(newRow);
-
-            // Repopulate program filter if needed
-            populateProgramFilter();
-
-            // Apply current filters
-            filterTable();
-        }
-
-        // ===== ATTACH EVENT LISTENERS TO NEW ROW =====
-        function attachEventListenersToNewRow(row) {
-            const editBtn = row.querySelector('.edit-btn');
-            const deleteBtn = row.querySelector('.delete-btn');
-            const makeAdminBtn = row.querySelector('.make-admin-btn');
-
-            if (editBtn) {
-                editBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    // Trigger the same edit functionality
-                    // You can call the existing edit logic here
-                    // For now, we'll just log
-                    console.log('Edit clicked for new row');
-                });
-            }
-
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    // Trigger delete functionality
-                    const row = this.closest('tr');
-                    userToDelete = {
-                        id: row.dataset.id,
-                        fullName: row.dataset.fullname,
-                        row: row
-                    };
-                    document.getElementById('deleteUserInfo').textContent = `${userToDelete.fullName}`;
-                    new bootstrap.Modal(document.getElementById('deleteConfirmModal')).show();
-                });
-            }
-
-            if (makeAdminBtn) {
-                makeAdminBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    // Trigger make admin functionality
-                    const row = this.closest('tr');
-                    userToMakeAdmin = {
-                        id: row.dataset.id,
-                        fullName: row.dataset.fullname,
-                        row: row
-                    };
-                    document.getElementById('makeAdminUserInfo').textContent = `${userToMakeAdmin.fullName}`;
-                    new bootstrap.Modal(document.getElementById('makeAdminConfirmModal')).show();
-                });
-            }
-        }
-
-        // ===== INITIALIZE TOASTS WHEN DOM IS LOADED =====
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check if Bootstrap is available
-            if (typeof bootstrap !== 'undefined') {
-                const successToastEl = document.getElementById('successToast');
-                const errorToastEl = document.getElementById('errorToast');
-
-                if (successToastEl) {
-                    successToast = new bootstrap.Toast(successToastEl);
-                }
-                if (errorToastEl) {
-                    errorToast = new bootstrap.Toast(errorToastEl);
-                }
-
-                toastMessage = document.getElementById('toastMessage');
-                errorToastMessage = document.getElementById('errorToastMessage');
-
-                console.log('Toasts initialized successfully');
-            } else {
-                console.error('Bootstrap not loaded');
-            }
-        });
-
-        // ===== CREATE COMPANY FUNCTIONALITY WITH DYNAMIC ADD =====
+        // ===== CREATE COMPANY =====
         document.getElementById("submitCreateCompany").addEventListener("click", async () => {
-            console.log("Create button clicked");
-
-            // Get form values
             const companyData = {
                 companyName: document.getElementById("companyNamePage").value,
                 email: document.getElementById("companyEmailPage").value,
@@ -1293,16 +1283,12 @@
                 description: ""
             };
 
-            console.log("Company Data:", companyData);
-
-            // Validate required fields
             if (!companyData.companyName || !companyData.email || !companyData.password) {
-                if (errorToastMessage) errorToastMessage.textContent = "Please fill in all required fields (Company Name, Email, and Password)";
+                if (errorToastMessage) errorToastMessage.textContent = "Please fill in all required fields";
                 if (errorToast) errorToast.show();
                 return;
             }
 
-            // Validate email format
             const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
             if (!emailRegex.test(companyData.email)) {
                 if (errorToastMessage) errorToastMessage.textContent = "Please enter a valid email address";
@@ -1310,7 +1296,6 @@
                 return;
             }
 
-            // Validate password length
             if (companyData.password.length < 6) {
                 if (errorToastMessage) errorToastMessage.textContent = "Password must be at least 6 characters long";
                 if (errorToast) errorToast.show();
@@ -1318,16 +1303,12 @@
             }
 
             const token = document.getElementById('__RequestVerificationToken').value;
-            console.log("Token:", token);
-
             const submitBtn = document.getElementById("submitCreateCompany");
             const originalText = submitBtn.textContent;
 
             try {
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Creating...';
-
-                console.log("Sending fetch request...");
 
                 const response = await fetch('/Account/RegisterCompany', {
                     method: 'POST',
@@ -1338,13 +1319,9 @@
                     body: JSON.stringify(companyData)
                 });
 
-                console.log("Response status:", response.status);
-
                 const result = await response.json();
-                console.log("Result:", result);
 
                 if (result.success) {
-                    // Create a new company object for the table
                     const newCompany = {
                         id: result.userId || 'temp-id-' + Date.now(),
                         fullName: companyData.companyName,
@@ -1354,24 +1331,43 @@
                         companyId: result.companyId || 'COMP' + Math.floor(Math.random() * 1000)
                     };
 
-                    // Add the new company to the table
-                    addNewCompanyToTable(newCompany);
+                    const tbody = document.querySelector("#usersTable tbody");
+                    const newRow = document.createElement("tr");
+                    newRow.setAttribute("data-id", newCompany.id);
+                    newRow.setAttribute("data-fullname", newCompany.fullName);
+                    newRow.setAttribute("data-email", newCompany.email);
+                    newRow.setAttribute("data-role", "Company");
+                    newRow.setAttribute("data-mobile", newCompany.mobileNumber || "");
+                    newRow.setAttribute("data-address", newCompany.address || "");
+                    newRow.setAttribute("data-companyid", newCompany.companyId || "");
+                    newRow.innerHTML = `
+                         <td>${newCompany.fullName}</td>
+                         <td>${newCompany.email}</td>
+                         <td>Company</td>
+                        <td class="text-end">
+                            <div class="dropdown dropend d-inline-block">
+                                <button class="btn btn-sm btn-light dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
+                                <ul class="dropdown-menu shadow-sm">
+                                    <li><a class="dropdown-item edit-btn" href="javascript:void(0);">Edit</a></li>
+                                    <li><a class="dropdown-item delete-btn" href="javascript:void(0);">Delete</a></li>
+                                    <li><a class="dropdown-item make-admin-btn" href="javascript:void(0);">Make Admin</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(newRow);
 
-                    // Clear the form
                     document.getElementById("companyNamePage").value = '';
                     document.getElementById("companyEmailPage").value = '';
                     document.getElementById("companyPasswordPage").value = '';
                     document.getElementById("companyMobilePage").value = '';
                     document.getElementById("companyAddressPage").value = '';
 
-                    // Hide create company form and show users section
                     createCompanyWrapper.style.display = "none";
                     usersSection.style.display = "block";
-
-                    // Clear all filters
                     clearAllFilters();
+                    populateProgramFilter();
 
-                    // Show success toast
                     if (toastMessage) toastMessage.textContent = 'Company created successfully!';
                     if (successToast) successToast.show();
                 } else {
@@ -1385,6 +1381,16 @@
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = originalText;
+            }
+        });
+
+        // ===== INITIALIZE TOASTS =====
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof bootstrap !== 'undefined') {
+                successToast = new bootstrap.Toast(document.getElementById('successToast'));
+                errorToast = new bootstrap.Toast(document.getElementById('errorToast'));
+                toastMessage = document.getElementById('toastMessage');
+                errorToastMessage = document.getElementById('errorToastMessage');
             }
         });
     </script>

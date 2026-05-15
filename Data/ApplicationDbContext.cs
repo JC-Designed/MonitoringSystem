@@ -32,7 +32,10 @@ namespace MonitoringSystem.Models
         public DbSet<TimeLogSubmission> StudentTimeLogs { get; set; }
 
         // ===== ADD REPORTS DbSet =====
-        public DbSet<Report> Reports { get; set; }  // ADD THIS LINE
+        public DbSet<Report> Reports { get; set; }
+
+        // ===== ADD COMPANY REPORTS DbSet (NEW) =====
+        public DbSet<CompanyReport> CompanyReports { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -80,6 +83,10 @@ namespace MonitoringSystem.Models
             builder.Entity<Report>()
                 .ToTable(tb => tb.HasTrigger("Reports_Trigger"));
 
+            // ===== ADD TRIGGER CONFIGURATION FOR COMPANY REPORTS TABLE =====
+            builder.Entity<CompanyReport>()
+                .ToTable(tb => tb.HasTrigger("CompanyReports_Trigger"));
+
             // ===================== CONFIGURE ONE-TO-ONE RELATIONSHIPS =====================
 
             // Student - User (one-to-one)
@@ -120,6 +127,9 @@ namespace MonitoringSystem.Models
 
             // ===== CONFIGURE TABLE NAME FOR REPORTS =====
             builder.Entity<Report>().ToTable("Reports");
+
+            // ===== CONFIGURE TABLE NAME FOR COMPANY REPORTS =====
+            builder.Entity<CompanyReport>().ToTable("CompanyReports");
 
             // ===================== CONFIGURE INDEXES =====================
             builder.Entity<Student>()
@@ -191,7 +201,24 @@ namespace MonitoringSystem.Models
                 .HasIndex(r => r.DateFrom)
                 .HasDatabaseName("IX_Reports_DateFrom");
 
-            // ===== CONFIGURE STUDENT TASK PROPERTIES =====
+            // ===== ADD INDEXES FOR COMPANY REPORTS =====
+            builder.Entity<CompanyReport>()
+                .HasIndex(cr => cr.StudentId)
+                .HasDatabaseName("IX_CompanyReports_StudentId");
+
+            builder.Entity<CompanyReport>()
+                .HasIndex(cr => cr.CompanyId)
+                .HasDatabaseName("IX_CompanyReports_CompanyId");
+
+            builder.Entity<CompanyReport>()
+                .HasIndex(cr => cr.Status)
+                .HasDatabaseName("IX_CompanyReports_Status");
+
+            builder.Entity<CompanyReport>()
+                .HasIndex(cr => cr.CreatedAt)
+                .HasDatabaseName("IX_CompanyReports_CreatedAt");
+
+            // ===================== CONFIGURE STUDENT TASK PROPERTIES =====================
             builder.Entity<StudentTask>()
                 .Property(t => t.Title)
                 .IsRequired()
@@ -249,6 +276,45 @@ namespace MonitoringSystem.Models
                 .Property(r => r.StudentId)
                 .IsRequired()
                 .HasMaxLength(450);
+
+            // ===== CONFIGURE COMPANY REPORT PROPERTIES =====
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.StudentId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.CompanyId)
+                .IsRequired()
+                .HasMaxLength(450);
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.StudentName)
+                .IsRequired()
+                .HasMaxLength(200);
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.Incident)
+                .IsRequired()
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.Remarks)
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.Status)
+                .IsRequired()
+                .HasMaxLength(50)
+                .HasDefaultValue("Pending");
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.CreatedAt)
+                .IsRequired();
+
+            builder.Entity<CompanyReport>()
+                .Property(cr => cr.ResolvedAt)
+                .IsRequired(false);
         }
     }
 }

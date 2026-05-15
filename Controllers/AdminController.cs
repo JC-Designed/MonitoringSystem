@@ -1537,6 +1537,136 @@ namespace MonitoringSystem.Controllers
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        // ========== FIXED: GET COMPANY TRAINEES ==========
+        [HttpGet]
+        public async Task<IActionResult> GetCompanyTrainees(string companyUserId)
+        {
+            try
+            {
+                _logger.LogInformation($"Getting trainees for company: {companyUserId}");
+
+                // Get the company record to get the int ID
+                var company = await _userManager.FindByIdAsync(companyUserId);
+                if (company == null)
+                {
+                    return Json(new { success = false, message = "Company not found", data = new List<object>() });
+                }
+
+                var companyRecord = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == company.Id);
+                if (companyRecord == null)
+                {
+                    return Json(new { success = false, message = "Company record not found", data = new List<object>() });
+                }
+
+                int companyIdValue = companyRecord.Id;
+
+                // Get all students assigned to this company
+                var trainees = await _userManager.Users
+                    .Where(u => u.CompanyID.HasValue && u.CompanyID.Value == companyIdValue && u.Role == "Student" && u.Status == "Approved")
+                    .Select(u => new
+                    {
+                        id = u.Id,
+                        studentId = u.StudentId ?? "",
+                        fullName = u.FullName ?? "",
+                        email = u.Email ?? "",
+                        program = u.Program ?? "",
+                        year = u.Year ?? 0
+                    })
+                    .OrderBy(u => u.fullName)
+                    .ToListAsync();
+
+                _logger.LogInformation($"Found {trainees.Count} trainees for company");
+
+                return Json(new { success = true, data = trainees });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error getting company trainees: {ex.Message}");
+                return Json(new { success = false, message = ex.Message, data = new List<object>() });
+            }
+        }
+
+        // ========== FIXED: UPDATE COMPANY TRAINEES ==========
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateCompanyTrainees([FromBody] UpdateCompanyTraineesModel model)
+        {
+            try
+            {
+                _logger.LogInformation($"Updating trainees for company: {model.CompanyUserId}");
+                _logger.LogInformation($"Trainee IDs to assign: {string.Join(", ", model.TraineeIds ?? new List<string>())}");
+
+                if (string.IsNullOrEmpty(model.CompanyUserId))
+                {
+                    return Json(new { success = false, message = "Company user ID is required" });
+                }
+
+                // Verify the company exists
+                var company = await _userManager.FindByIdAsync(model.CompanyUserId);
+                if (company == null || company.Role != "Company")
+                {
+                    return Json(new { success = false, message = "Company not found" });
+                }
+
+                // Get the company record to get the int ID
+                var companyRecord = await _context.Companies.FirstOrDefaultAsync(c => c.UserId == company.Id);
+                if (companyRecord == null)
+                {
+                    return Json(new { success = false, message = "Company record not found" });
+                }
+
+                int companyIdValue = companyRecord.Id;
+
+                // Get all students
+                var allStudents = await _userManager.Users
+                    .Where(u => u.Role == "Student" && u.Status == "Approved")
+                    .ToListAsync();
+
+                int removedCount = 0;
+                int addedCount = 0;
+
+                foreach (var student in allStudents)
+                {
+                    bool isCurrentlyAssigned = student.CompanyID.HasValue && student.CompanyID.Value == companyIdValue;
+                    bool shouldBeAssigned = model.TraineeIds.Contains(student.Id);
+
+                    if (isCurrentlyAssigned && !shouldBeAssigned)
+                    {
+                        // Remove assignment
+                        student.CompanyID = null;
+                        student.UpdatedAt = DateTime.Now;
+                        removedCount++;
+                        _logger.LogInformation($"Removing trainee {student.Email} from company {company.Email}");
+                    }
+                    else if (!isCurrentlyAssigned && shouldBeAssigned)
+                    {
+                        // Add assignment - store the int ID
+                        student.CompanyID = companyIdValue;
+                        student.UpdatedAt = DateTime.Now;
+                        addedCount++;
+                        _logger.LogInformation($"Adding trainee {student.Email} to company {company.Email}");
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Updated trainees: Removed {removedCount}, Added {addedCount}");
+
+                return Json(new
+                {
+                    success = true,
+                    message = $"Trainees updated successfully. Added: {addedCount}, Removed: {removedCount}",
+                    added = addedCount,
+                    removed = removedCount
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error updating company trainees: {ex.Message}");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
     }
 
     public class MakeAdminRequest
@@ -1591,5 +1721,12 @@ namespace MonitoringSystem.Controllers
         public string Id { get; set; }
         public string Status { get; set; }
         public string Remarks { get; set; }
+    }
+
+    // ===== NEW MODEL FOR COMPANY TRAINEES UPDATE =====
+    public class UpdateCompanyTraineesModel
+    {
+        public string CompanyUserId { get; set; }
+        public List<string> TraineeIds { get; set; }
     }
 }

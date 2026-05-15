@@ -3,6 +3,9 @@
     ViewData["Title"] = "Manage Interns";
 }
 
+<!-- Add Anti-Forgery Token -->
+<input type="hidden" id="__RequestVerificationToken" value="@ViewData["RequestVerificationToken"]" />
+
 <div class="container-fluid my-4" id="manageInternContainer">
 
     <!-- Filters and Search Row -->
@@ -27,6 +30,10 @@
                 <i class="bi bi-arrow-repeat"></i> Refresh
             </button>
         </div>
+
+        <div class="col-md-3 text-end">
+            <span id="traineeCount" class="badge bg-info fs-6 p-2">0 Trainees</span>
+        </div>
     </div>
 
     <!-- Intern Table -->
@@ -35,16 +42,17 @@
             <table class="table table-striped" id="internTable">
                 <thead>
                     <tr>
+                        <th>Student ID</th>
                         <th>Name</th>
                         <th>Email</th>
                         <th>Program</th>
+                        <th>Year</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody id="internTableBody">
-                    <!-- Data will be loaded dynamically from database -->
                     <tr>
-                        <td colspan="4" class="text-center text-muted py-4">
+                        <td colspan="6" class="text-center text-muted py-4">
                             <i class="bi bi-people fs-1 d-block mb-2"></i>
                             Loading interns...
                         </td>
@@ -72,7 +80,7 @@
             <div class="col-md-6"><strong>Contact Person:</strong> <span id="pContactPerson"></span></div>
             <div class="col-md-6"><strong>Birthdate:</strong> <span id="pBirthdate"></span></div>
             <div class="col-md-6"><strong>Email:</strong> <span id="pEmail"></span></div>
-            <div class="col-md-6"><strong>Company:</strong> <span id="pCompany"></span></div>
+            <div class="col-md-6"><strong>Status:</strong> <span id="pStatus"></span></div>
         </div>
         <button id="backBtn" class="position-absolute bottom-0 end-0 m-4 btn" style="background-color:#0787FF; color:white; border:none;">Back to List</button>
     </div>
@@ -90,6 +98,7 @@
                 <div class="mb-3">
                     <label class="form-label"><strong>Complainee:</strong></label>
                     <span id="complaineeName" class="fw-bold"></span>
+                    <input type="hidden" id="complaineeId" />
                 </div>
                 <div class="mb-3">
                     <label for="incidentText" class="form-label"><strong>Incident:</strong></label>
@@ -114,6 +123,7 @@
             </div>
             <div class="modal-body">
                 <p id="terminateMessage" class="fs-4 fw-bold text-center"></p>
+                <input type="hidden" id="terminateStudentId" />
                 <div class="mb-3">
                     <label for="terminateRemarks" class="form-label"><strong>Remarks:</strong></label>
                     <textarea id="terminateRemarks" class="form-control" rows="5" placeholder="Reason for termination..."></textarea>
@@ -137,11 +147,12 @@
         const yearFilter = document.getElementById('yearFilter');
         const searchInput = document.getElementById('searchName');
         const refreshBtn = document.getElementById('refreshBtn');
+        const traineeCountSpan = document.getElementById('traineeCount');
 
         // ===== LOAD TRAINEES FROM DATABASE =====
         async function loadTrainees() {
             try {
-                internTableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading interns...</p></td></tr>';
+                internTableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading interns...</p></td></tr>';
 
                 const response = await fetch('/Company/GetTrainees', {
                     method: 'GET',
@@ -152,14 +163,17 @@
 
                 const result = await response.json();
 
-                if (result.success && result.data.length > 0) {
+                if (result.success && result.data && result.data.length > 0) {
                     displayTrainees(result.data);
+                    traineeCountSpan.textContent = result.data.length + ' Trainees';
                 } else {
-                    internTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-people fs-1 d-block mb-2"></i>No interns assigned yet</td></tr>';
+                    internTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4"><i class="bi bi-people fs-1 d-block mb-2"></i>No interns assigned yet</td></tr>';
+                    traineeCountSpan.textContent = '0 Trainees';
                 }
             } catch (error) {
                 console.error('Error loading trainees:', error);
-                internTableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4"><i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>Error loading interns</td></tr>';
+                internTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4"><i class="bi bi-exclamation-triangle fs-1 d-block mb-2"></i>Error loading interns</td></tr>';
+                traineeCountSpan.textContent = 'Error';
             }
         }
 
@@ -168,95 +182,121 @@
             let html = '';
             trainees.forEach(student => {
                 html += `<tr data-id="${student.id}"
-                            data-studentid="${student.studentId || ''}"
-                            data-year="2026"
-                            data-facebook=""
-                            data-mobile="${student.mobileNumber || ''}"
-                            data-address=""
-                            data-contact=""
-                            data-birthdate=""
-                            data-company="${document.getElementById('topbarCompanyName')?.textContent || ''}">
-                        <td>${student.fullName || 'N/A'}</td>
-                        <td>${student.email || 'N/A'}</td>
-                        <td>${student.program || 'N/A'}</td>
-                        <td>
-                            <div class="dropdown">
-                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown"></button>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item viewBtn" href="#">View</a></li>
-                                    <li><a class="dropdown-item reportBtn" href="#">Report</a></li>
-                                    <li><a class="dropdown-item text-danger" href="#">Terminate</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>`;
+                            data-studentid="${escapeHtml(student.studentId) || ''}"
+                            data-year="${student.year || '2026'}"
+                            data-facebook="${escapeHtml(student.facebook) || ''}"
+                            data-mobile="${escapeHtml(student.mobileNumber) || ''}"
+                            data-address="${escapeHtml(student.address) || ''}"
+                            data-contact="${escapeHtml(student.contactPerson) || ''}"
+                            data-birthdate="${student.birthDate || ''}"
+                            data-program="${escapeHtml(student.program) || ''}"
+                            data-status="${escapeHtml(student.status) || 'Active'}">
+                            <td>${escapeHtml(student.studentId) || 'N/A'}</td>
+                            <td>${escapeHtml(student.fullName) || 'N/A'}</td>
+                            <td>${escapeHtml(student.email) || 'N/A'}</td>
+                            <td>${escapeHtml(student.program) || 'N/A'}</td>
+                            <td>${student.year || 'N/A'}</td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        Actions
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item viewBtn" href="#">View Profile</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item reportBtn" href="#">Report Incident</a></li>
+                                        <li><a class="dropdown-item text-danger terminateBtn" href="#">Terminate</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>`;
             });
             internTableBody.innerHTML = html;
 
             // Re-attach event listeners
             attachEventListeners();
-            filterTable(); // Apply filters
+            filterTable();
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         // ===== ATTACH EVENT LISTENERS =====
         function attachEventListeners() {
             // View Profile
             document.querySelectorAll('.viewBtn').forEach(btn => {
-                btn.addEventListener('click', e => {
+                btn.addEventListener('click', async (e) => {
                     e.preventDefault();
                     const row = e.target.closest('tr');
                     if (!row) return;
 
-                    pName.textContent = row.children[0].textContent;
-                    pStudentID.textContent = row.dataset.studentid;
-                    pCourse.textContent = row.children[2].textContent;
-                    pYear.textContent = row.dataset.year;
-                    pFacebook.textContent = row.dataset.facebook || 'Not provided';
-                    pFacebook.href = row.dataset.facebook || '#';
-                    pMobileNumber.textContent = row.dataset.mobile || 'Not provided';
-                    pAddress.textContent = row.dataset.address || 'Not provided';
-                    pContactPerson.textContent = row.dataset.contact || 'Not provided';
-                    pBirthdate.textContent = row.dataset.birthdate || 'Not provided';
-                    pEmail.textContent = row.children[1].textContent;
-                    pCompany.textContent = row.dataset.company || 'Not provided';
-                    previewProfilePic.src = '/images/defaultpicture.jpg';
+                    const studentId = row.dataset.id;
 
-                    manageContainer.style.display = 'none';
-                    profileContainer.style.display = 'block';
+                    // Fetch full student details
+                    try {
+                        const response = await fetch(`/Company/GetTraineeDetails?studentId=${studentId}`);
+                        const result = await response.json();
+
+                        if (result.success && result.data) {
+                            const student = result.data;
+                            document.getElementById('pName').textContent = student.fullName || 'N/A';
+                            document.getElementById('pStudentID').textContent = student.studentId || 'N/A';
+                            document.getElementById('pCourse').textContent = student.program || 'N/A';
+                            document.getElementById('pYear').textContent = student.year || 'N/A';
+                            document.getElementById('pFacebook').textContent = student.facebook || 'Not provided';
+                            document.getElementById('pFacebook').href = student.facebook || '#';
+                            document.getElementById('pMobileNumber').textContent = student.mobileNumber || 'Not provided';
+                            document.getElementById('pAddress').textContent = student.address || 'Not provided';
+                            document.getElementById('pContactPerson').textContent = student.contactPerson || 'Not provided';
+                            document.getElementById('pBirthdate').textContent = student.birthDate || 'Not provided';
+                            document.getElementById('pEmail').textContent = student.email || 'N/A';
+                            document.getElementById('pStatus').textContent = row.dataset.status || 'Active';
+                            document.getElementById('previewProfilePic').src = '/images/defaultpicture.jpg';
+
+                            manageContainer.style.display = 'none';
+                            profileContainer.style.display = 'block';
+                        } else {
+                            alert('Error loading student details');
+                        }
+                    } catch (error) {
+                        console.error('Error fetching student details:', error);
+                        alert('Error loading student details');
+                    }
                 });
             });
 
             // Report
             document.querySelectorAll('.reportBtn').forEach(btn => {
-                btn.addEventListener('click', e => {
+                btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     const row = e.target.closest('tr');
-                    complaineeName.textContent = row.children[0].textContent;
-                    incidentText.value = '';
+                    const studentName = row.cells[1].textContent;
+                    const studentId = row.dataset.id;
+
+                    document.getElementById('complaineeName').textContent = studentName;
+                    document.getElementById('complaineeId').value = studentId;
+                    document.getElementById('incidentText').value = '';
                     reportModal.show();
                 });
             });
 
             // Terminate
-            document.querySelectorAll('.text-danger').forEach(btn => {
-                btn.addEventListener('click', e => {
+            document.querySelectorAll('.terminateBtn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     const row = e.target.closest('tr');
-                    terminateMessage.textContent = `Are you sure you want to terminate ${row.children[0].textContent}?`;
-                    terminateRemarks.value = '';
-                    terminateModal.show();
+                    const studentName = row.cells[1].textContent;
+                    const studentId = row.dataset.id;
 
-                    confirmTerminateBtn.onclick = () => {
-                        const terminateData = {
-                            studentId: row.dataset.id,
-                            studentName: row.children[0].textContent,
-                            remarks: terminateRemarks.value
-                        };
-                        console.log('Student Terminated:', terminateData);
-                        terminateModal.hide();
-                        alert(`${row.children[0].textContent} has been terminated!`);
-                        loadTrainees(); // Refresh the list
-                    };
+                    document.getElementById('terminateMessage').textContent = `Are you sure you want to terminate ${studentName}?`;
+                    document.getElementById('terminateStudentId').value = studentId;
+                    document.getElementById('terminateRemarks').value = '';
+                    terminateModal.show();
                 });
             });
         }
@@ -267,46 +307,117 @@
             const searchText = searchInput.value.toLowerCase();
             const rows = document.querySelectorAll('#internTable tbody tr');
 
+            let visibleCount = 0;
             rows.forEach(row => {
-                if (row.children.length === 1) return; // Skip "no data" row
-                const name = row.children[0].textContent.toLowerCase();
+                if (row.children.length === 1) return;
+                const name = row.cells[1].textContent.toLowerCase();
                 const rowYear = row.dataset.year;
-                row.style.display = ((selectedYear === 'All' || rowYear === selectedYear) && name.includes(searchText)) ? '' : 'none';
+                const shouldShow = (selectedYear === 'All' || rowYear === selectedYear) && name.includes(searchText);
+                row.style.display = shouldShow ? '' : 'none';
+                if (shouldShow) visibleCount++;
             });
+
+            // Update visible count
+            if (visibleCount > 0) {
+                traineeCountSpan.textContent = visibleCount + ' Trainees (Filtered)';
+            } else {
+                const totalRows = document.querySelectorAll('#internTable tbody tr:not([style*="display: none"])').length;
+                if (totalRows === 0 && rows.length > 0) {
+                    traineeCountSpan.textContent = '0 Trainees';
+                }
+            }
         }
 
         // ===== BACK BUTTON =====
         document.getElementById('backBtn').addEventListener('click', () => {
             profileContainer.style.display = 'none';
             manageContainer.style.display = 'block';
+            loadTrainees(); // Refresh list when coming back
         });
 
         // ===== REPORT MODAL =====
         const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
-        const complaineeName = document.getElementById('complaineeName');
         const incidentText = document.getElementById('incidentText');
         const createReportBtn = document.getElementById('createReportBtn');
 
-        createReportBtn.addEventListener('click', () => {
-            if (!incidentText.value.trim()) {
+        createReportBtn.addEventListener('click', async () => {
+            const studentId = document.getElementById('complaineeId').value;
+            const incident = incidentText.value.trim();
+
+            if (!incident) {
                 alert('Please describe the incident');
                 return;
             }
-            const reportData = {
-                complainee: complaineeName.textContent,
-                incident: incidentText.value
-            };
-            console.log('Report Created:', reportData);
-            reportModal.hide();
-            alert('Report has been created!');
-            incidentText.value = '';
+
+            try {
+                const token = document.getElementById('__RequestVerificationToken')?.value;
+
+                const response = await fetch('/Company/CreateReport', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        studentId: studentId,
+                        incident: incident
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Report has been created successfully!');
+                    reportModal.hide();
+                    incidentText.value = '';
+                } else {
+                    alert('Error creating report: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error creating report:', error);
+                alert('An error occurred while creating the report');
+            }
         });
 
         // ===== TERMINATE MODAL =====
         const terminateModal = new bootstrap.Modal(document.getElementById('terminateModal'));
-        const terminateMessage = document.getElementById('terminateMessage');
         const terminateRemarks = document.getElementById('terminateRemarks');
         const confirmTerminateBtn = document.getElementById('confirmTerminateBtn');
+
+        confirmTerminateBtn.onclick = async () => {
+            const studentId = document.getElementById('terminateStudentId').value;
+            const studentName = document.getElementById('terminateMessage').textContent.replace('Are you sure you want to terminate ', '').replace('?', '');
+            const remarks = terminateRemarks.value;
+
+            try {
+                const token = document.getElementById('__RequestVerificationToken')?.value;
+
+                const response = await fetch('/Company/TerminateTrainee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token
+                    },
+                    body: JSON.stringify({
+                        studentId: studentId,
+                        remarks: remarks
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`${studentName} has been terminated!`);
+                    terminateModal.hide();
+                    loadTrainees(); // Refresh the list
+                } else {
+                    alert('Error terminating student: ' + (result.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error terminating student:', error);
+                alert('An error occurred while terminating the student');
+            }
+        };
 
         // ===== REFRESH BUTTON =====
         refreshBtn.addEventListener('click', loadTrainees);
